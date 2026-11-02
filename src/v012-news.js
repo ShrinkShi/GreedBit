@@ -35,12 +35,13 @@ function applyCache(){const c=readCache();if(!c)return false;newsItems=c.items;u
 function voteInfo(id,title){const voteMap=JSON.parse(localStorage.getItem('greedbit_news_votes')||'{}'),seed=newsHash(title),userVote=voteMap[id]||null;return{bull:24+(seed%210)+(userVote==='bull'?1:0),bear:18+((seed>>>8)%190)+(userVote==='bear'?1:0),userVote}}
 function normalizeItem(raw,source){const title=stripHtml(raw.title||''),desc=stripHtml(raw.description||raw.content||'').slice(0,420),link=String(raw.link||raw.guid||'').trim(),pub=Date.parse(raw.pubDate||raw.published||raw.date||'')||Date.now(),id=`${source.name}-${newsHash(link||title)}`,meta=inferNewsMeta(title+' '+desc);return{id,time:new Date(pub).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),publishedAt:pub,source:source.name,link,title,desc,...meta,...voteInfo(id,title)}}
 function parseXml(xml,source){const doc=new DOMParser().parseFromString(xml,'application/xml');if(doc.querySelector('parsererror'))throw new Error('RSS parse error');const nodes=[...doc.querySelectorAll('item')];if(!nodes.length)throw new Error('RSS has no items');return nodes.slice(0,60).map(it=>normalizeItem({title:it.querySelector('title')?.textContent||'',description:it.querySelector('description')?.textContent||'',link:it.querySelector('link')?.textContent||'',pubDate:it.querySelector('pubDate')?.textContent||''},source)).filter(x=>x.title)}
-async function fetchText(url,timeout=5000){const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(url,{cache:'no-store',signal:c.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.text()}finally{clearTimeout(timer)}}
-async function fetchJson(url,timeout=5000){const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(url,{cache:'no-store',signal:c.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.json()}finally{clearTimeout(timer)}}
+async function fetchText(url,timeout=4200){const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(url,{cache:'no-store',signal:c.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.text()}finally{clearTimeout(timer)}}
+async function fetchJson(url,timeout=4200){const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(url,{cache:'no-store',signal:c.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.json()}finally{clearTimeout(timer)}}
 async function fetchFeed(source){
   const direct=source.url,proxied='https://proxy.cors.dev/'+source.url,allOrigins='https://api.allorigins.win/raw?url='+encodeURIComponent(source.url),rss2json='https://api.rss2json.com/v1/api.json?rss_url='+encodeURIComponent(source.url);
-  const routes=[async()=>parseXml(await fetchText(direct),source),async()=>parseXml(await fetchText(proxied),source),async()=>parseXml(await fetchText(allOrigins),source),async()=>{const j=await fetchJson(rss2json);if(j.status!=='ok'||!Array.isArray(j.items)||!j.items.length)throw new Error(j.message||'rss2json failed');return j.items.map(x=>normalizeItem(x,source))}];
-  let last;for(const route of routes){try{const items=await route();if(items.length)return items}catch(e){last=e}}throw last||new Error('feed unavailable')
+  const xmlRoute=url=>parseXml.bind(null);
+  try{return await Promise.any([fetchText(direct).then(x=>parseXml(x,source)),fetchText(proxied).then(x=>parseXml(x,source))])}catch{}
+  try{return await Promise.any([fetchText(allOrigins).then(x=>parseXml(x,source)),fetchJson(rss2json).then(j=>{if(j.status!=='ok'||!Array.isArray(j.items)||!j.items.length)throw new Error(j.message||'rss2json failed');return j.items.map(x=>normalizeItem(x,source))})])}catch(e){throw e}
 }
 
 const previousRenderNews=renderNews;
@@ -53,11 +54,11 @@ loadRealNews=async function(showToast=false){
     const results=[];
     const primary=FEEDS.filter(x=>!x.fallback);const settled=await Promise.allSettled(primary.map(fetchFeed));
     settled.forEach((r,i)=>{const src=primary[i];if(r.status==='fulfilled'&&r.value.length){sourceState[src.name]='live';results.push(...r.value)}else sourceState[src.name]='error'});
-    if(!results.length){const fallback=FEEDS.find(x=>x.fallback);try{const items=await fetchFeed(fallback);sourceState[fallback.name]='fallback';results.push(...items)}catch{sourceState[fallback.name]='error'}}
+    if(!results.length){const fallback=FEEDS.find(x=>x.fallback);try{const items=await fetchFeed(fallback);sourceState[fallback.name]='fallback';results.push(...items)}catch{sourceState[fallback.name]='error'}}else sourceState['CNBC Top News']='fallback';
     if(!results.length)throw new Error('all news feeds unavailable');
-    const unique=new Map();for(const n of results.sort((a,b)=>b.publishedAt-a.publishedAt))if(!unique.has(n.id))unique.set(n.id,n);newsItems=[...unique.values()].slice(0,80);writeCache(newsItems);lastSuccessfulFetch=Date.now();const liveNames=Object.entries(sourceState).filter(([,v])=>v==='live'||v==='fallback').map(([k])=>k);setOverallState('ok',`已连接 ${liveNames.join(' + ')}`);if(showToast)notify('资讯已刷新',`已加载 ${newsItems.length} 条真实新闻`,'success')
+    const unique=new Map();for(const n of results.sort((a,b)=>b.publishedAt-a.publishedAt))if(!unique.has(n.id))unique.set(n.id,n);newsItems=[...unique.values()].slice(0,80);writeCache(newsItems);lastSuccessfulFetch=Date.now();const liveNames=Object.entries(sourceState).filter(([,v])=>v==='live').map(([k])=>k);setOverallState('ok',`已连接 ${liveNames.join(' + ')||'财经备用源'}`);if(showToast)notify('资讯已刷新',`已加载 ${newsItems.length} 条真实新闻`,'success')
   }catch(e){console.warn('news load failed',e);if(!applyCache()){newsItems=[];setOverallState('error','新闻源连接失败')}if(showToast)notify('资讯刷新失败',usingCache?'已回退到本地缓存':'CoinDesk 与财经备用源当前均不可用','error',5000)}finally{newsLoading=false;renderSourceStrip();renderNews();if(user?.isAdmin)renderAdminPage()}
 };
 
-installCss();installMarket();renderSourceStrip();if(!newsItems.length)applyCache();renderNews();setTimeout(()=>loadRealNews(false),300);setTimeout(()=>{if(!lastSuccessfulFetch)loadRealNews(false)},4500);
+installCss();installMarket();renderSourceStrip();if(!newsItems.length)applyCache();renderNews();newsLoading=false;setTimeout(()=>loadRealNews(false),300);setTimeout(()=>{if(!lastSuccessfulFetch)loadRealNews(false)},5200);
 })();
