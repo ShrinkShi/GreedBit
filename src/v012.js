@@ -50,7 +50,7 @@ async function openMarketSymbol(sym){try{if(sym&&sym!==symbol)await setSymbol(sy
 function renderHomeV12(){
   const box=$('homeMarkets');if(!box)return;
   const rows=Object.keys(configs).map(sym=>{const {c,last,change}=assetSnapshot(sym);return`<article class="home-ticker-card" data-market-symbol="${sym}"><div class="home-ticker-top"><i class="home-ticker-icon" style="background:${c.color}">${c.icon}</i><b>${sym}</b><small>24H</small></div><div class="home-ticker-main"><b>${last?fmt(last,c.dec):'--'}</b><span class="${changeClass(change)}">${signedPct(change)}</span></div></article>`});
-  const s=marketStatusSnapshot();rows.push(`<article class="home-ticker-card" data-home-goto="market"><div class="home-ticker-top"><i class="home-ticker-icon" style="background:#1d7f5c">●</i><b>市场资讯</b><small>RSS</small></div><div class="home-ticker-main"><b style="font-size:14px">CoinDesk + CNBC</b><span class="green">NEWS</span></div></article>`);
+  rows.push(`<article class="home-ticker-card" data-home-goto="market"><div class="home-ticker-top"><i class="home-ticker-icon" style="background:#1d7f5c">●</i><b>市场资讯</b><small>RSS</small></div><div class="home-ticker-main"><b style="font-size:14px">CoinDesk + CNBC</b><span class="green">NEWS</span></div></article>`);
   const equity=user?totalAsset():null;rows.push(`<article class="home-ticker-card" data-home-goto="assets"><div class="home-ticker-top"><i class="home-ticker-icon" style="background:#536fce">◎</i><b>模拟账户</b><small>LOCAL</small></div><div class="home-ticker-main"><b>${equity!=null?fmt(equity)+' USDT':'未登录'}</b><span>${user?'本机存档':'LOGIN'}</span></div></article>`);box.innerHTML=rows.join('');
   const btc=assetSnapshot('BTC/USDT');if($('homeHeroPrice'))$('homeHeroPrice').textContent=btc.last?fmt(btc.last,btc.c.dec):'--';if($('homeHeroChange')){$('homeHeroChange').textContent=signedPct(btc.change);$('homeHeroChange').className=changeClass(btc.change)}
   if($('homeTotalAsset'))$('homeTotalAsset').textContent=user?fmt(totalAsset())+' USDT':'-- USDT';if($('homeAccountHint'))$('homeAccountHint').textContent=user?'当前浏览器中的现货、合约与其他模拟账户权益合计。':'登录后查看本地模拟账户总权益。所有资产仅存在于当前浏览器。';
@@ -62,7 +62,10 @@ const baseSyncAuth=syncAuth;syncAuth=function(){const out=baseSyncAuth.apply(thi
 const baseShowPage=showPage;showPage=function(page){const out=baseShowPage.apply(this,arguments);if(page==='home')renderHomeV12();return out};
 function updateVersion(){const v=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));if(v)v.textContent=`GreedBit v${VERSION}`}
 function loadNewsModule(){if(document.querySelector('script[src="src/v012-news.js"]'))return;const s=document.createElement('script');s.src='src/v012-news.js';document.body.appendChild(s)}
-function loadV13Modules(){if(document.querySelector('script[src="src/v013-market.js"]'))return;const market=document.createElement('script');market.src='src/v013-market.js';market.onload=()=>{const ui=document.createElement('script');ui.src='src/v013-ui.js';document.body.appendChild(ui)};document.body.appendChild(market)}
+function loadV13Modules(){
+  if(!document.querySelector('link[href="styles/v013-layout-fix.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v013-layout-fix.css';document.head.appendChild(l)}
+  if(document.querySelector('script[src="src/v013-market.js"]'))return;const market=document.createElement('script');market.src='src/v013-market.js';market.onload=()=>{const ui=document.createElement('script');ui.src='src/v013-ui.js';document.body.appendChild(ui)};document.body.appendChild(market)
+}
 function boot(){installV12Style();installHome();renderHomeV12();updateVersion();loadNewsModule();loadV13Modules();setInterval(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHomeV12()},1500)}
 boot();
 })();
