@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.11] - 2026-11-02
+
+- Added GreedBit logo favicon and navigation brand icon.
+- Added tick-direction green/red flash animation and breathing live-status dot.
+- Reduced market startup latency with WebSocket-first connection, raced Binance public REST endpoints, cached fastest endpoints, 500-bar initial history and 100ms depth WebSocket.
+- Added language / quote-currency menu and converted-price display.
+- Added persistent local notification inbox, unread badge, admin notification composer and profile/avatar dropdown.
+- Added configurable MA5/10/30/60 indicators and configurable volume pane/overlay.
+- Added draggable divider between K-line and separate volume pane.
+
 ## [0.0.10] - 2026-11-02
 
 - 新增合约概况页与 BTC/ETH 项目资料。
@@ -8,7 +18,6 @@
 - 新增策略交易入口：现货网格、合约网格、合约马丁格尔配置。
 - 新增计划、跟踪、分时（TWAP）高级委托，并接入本地委托状态和撤单。
 - 继续保持真实行情 / 模拟交易边界：所有订单只发生在 GreedBit 本地模拟账户。
-
 
 ## [0.0.9] - 2026-11-02
 
