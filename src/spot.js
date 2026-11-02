@@ -17,7 +17,7 @@ function spotFill(side,qty,fill,source='市价',reserved=0){
     w.coins[c]=Math.max(0,oldQty-qty);w.cost[c]=Math.max(0,(w.cost[c]||0)-avg*qty);w.usdt+=notional-fee;
     if(realized>=0)accountStats.realizedProfit+=realized;else accountStats.realizedLoss+=Math.abs(realized);
   }
-  accountStats.fees+=fee;accountStats.spotTrades++;spotTrades.unshift({time:nowText(),symbol,side,qty,price:fill,type:source,fee});addLedger('现货手续费',-fee,symbol,source,'spot');playFillSound();saveState();return true;
+  accountStats.fees+=fee;accountStats.spotTrades++;spotTrades.unshift({time:nowText(),ts:Date.now()/1000,symbol,side,qty,price:fill,type:source,fee});addLedger('现货手续费',-fee,symbol,source,'spot');playFillSound();saveState();return true;
 }
 function placeSpotOrder(){
   if(!user)return openAuth('login');if(!marketReady||!price)return notify('下单失败','真实市场行情尚未连接','error');const w=spotWallet(),c=base(),amt=+$('spotAmountInput').value;if(!amt||amt<=0)return notify('下单失败','请输入有效金额/数量','error');
