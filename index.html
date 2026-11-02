@@ -9,13 +9,13 @@
 <body>
 <header class="topnav">
   <div class="brand"><b>GREED</b><i>BIT</i></div>
-  <span class="navitem">买币⌄</span><span class="navitem">行情资讯⌄</span><span class="navitem">交易⌄</span>
-  <span class="navitem">合约⌄</span><span class="navitem">交易工具⌄</span><span class="navitem">更多⌄</span>
+  <button class="navbtn">买币⌄</button>
+  <button class="navbtn" id="newsNavBtn">行情资讯⌄</button>
+  <button class="navbtn">交易⌄</button><button class="navbtn">合约⌄</button><button class="navbtn">交易工具⌄</button><button class="navbtn">更多⌄</button>
   <input class="search" placeholder="搜索币种"/>
   <div class="authbar" id="authbar"><button class="ghost" id="loginBtn">登录</button><button class="primary" id="registerBtn">注册</button></div>
   <div class="userchip" id="userchip"><span id="usernameTop"></span><button class="ghost" id="logoutBtn">退出</button></div>
 </header>
-
 <div class="marketbar">
   <div class="pairbox"><select id="symbol"><option>BTC/USDT</option><option>ETH/USDT</option><option>SOL/USDT</option><option>DOGE/USDT</option></select></div>
   <div><div id="lastPrice" class="pricebig green">--</div><div class="muted tiny">模拟行情</div></div>
@@ -28,62 +28,45 @@
 </div>
 
 <main class="layout" id="layout">
-  <section class="chartpanel" id="chartPanel">
+  <section class="chartpanel">
     <div class="charttabs"><span class="active">图表</span><span>概况</span><span>数据</span></div>
     <div class="timebar" id="timebar"></div>
     <div class="chartwrap" id="chartwrap">
       <canvas id="chart"></canvas>
       <div class="ohlc" id="ohlc">移动鼠标查看 OHLC</div>
-      <div class="charthelp">图内滚轮：横轴缩放 · 价格轴滚轮：纵轴缩放 · 拖动可查看历史/未来 · 双击回到最新</div>
-      <div class="candle-countdown" id="candleCountdown">下一根 K 线 --:--</div>
+      <div class="charthelp">价格轴滚轮：纵轴缩放 · 时间轴/主图区滚轮：横轴缩放 · 拖动查看过去/未来 · 双击复位</div>
     </div>
   </section>
-
-  <div class="splitter splitter-v" id="splitChartBook" title="拖动调整图表与盘口宽度"></div>
-
-  <section class="orderbook" id="orderBook">
+  <div class="splitter vertical" id="splitChartBook" title="拖动调整图表与盘口宽度"></div>
+  <section class="orderbook">
     <div class="panelhead">盘口　<span class="muted normal">实时成交</span></div>
     <div class="obhead"><span>价格(USDT)</span><span>数量</span><span>累计</span></div>
     <div id="asks"></div><div class="mid" id="midPrice">--</div><div id="bids"></div>
   </section>
-
-  <div class="splitter splitter-v" id="splitBookTrade" title="拖动调整盘口与交易区宽度"></div>
-
-  <section class="trade" id="tradePanel">
+  <div class="splitter vertical" id="splitBookTrade" title="拖动调整交易区宽度"></div>
+  <section class="trade">
     <div class="tradebox">
       <div class="tabs"><button class="active">手动交易</button><button>策略交易</button></div>
       <div class="form">
         <div id="loggedTrade" class="hidden">
           <div class="futures-controls">
             <select id="marginMode" class="selectlike"><option value="cross">全仓</option><option value="isolated">逐仓</option></select>
-            <div class="selectlike center"><b id="levLabel">10X</b></div>
+            <button class="selectlike leverage-open" id="leverageBtn"><b id="levLabel">10X</b></button>
           </div>
-          <div class="leverage-row" id="leverageRow">
-            <button data-lev="1">1X</button><button data-lev="2">2X</button><button data-lev="5">5X</button>
-            <button data-lev="10" class="active">10X</button><button data-lev="20">20X</button><button data-lev="50">50X</button><button data-lev="100">100X</button>
-          </div>
-          <div class="ordertype">
-            <button class="order-type active" data-ordertype="market">市价</button>
-            <button class="order-type" data-ordertype="limit">限价</button>
-            <span class="maker-label">只做Maker⌄</span>
-          </div>
-          <div class="muted available">可用保证金：<b id="usdtBal">--</b> USDT</div>
+          <div class="ordertype"><button class="order-type active" data-ordertype="market">市价</button><button class="order-type" data-ordertype="limit">限价</button><span class="maker-label">只做Maker⌄</span></div>
+          <div class="muted balance-line">可用保证金：<b id="usdtBal">--</b> USDT</div>
           <div class="field hidden" id="limitPriceField"><label>委托价</label><input id="limitPriceInput" type="number" min="0" step="any" placeholder="0.00"/><span>USDT</span></div>
-          <div class="field"><label>保证金</label><input id="marginInput" type="number" min="0" step="1" placeholder="0.00"/><span>USDT</span></div>
-
-          <div class="percent-slider">
+          <div class="field"><label>保证金</label><input id="marginInput" type="number" min="0" step="0.01" placeholder="0.00"/><span>USDT</span></div>
+          <div class="percent-wrap">
             <input id="pct" class="range" type="range" min="0" max="100" step="1" value="0"/>
-            <div class="quick-dots">
-              <button data-pct="0" aria-label="0%"></button><button data-pct="25" aria-label="25%"></button>
-              <button data-pct="50" aria-label="50%"></button><button data-pct="75" aria-label="75%"></button><button data-pct="100" aria-label="100%"></button>
-            </div>
-            <div class="pct-label" id="pctLabel">0%</div>
+            <div class="pct-dots" id="pctDots"><button data-pct="0"></button><button data-pct="25"></button><button data-pct="50"></button><button data-pct="75"></button><button data-pct="100"></button></div>
+            <div class="pct-value" id="pctValue">0%</div>
           </div>
-
           <div class="sidehint"><span>名义价值 <b id="notionalPreview">0.00</b> USDT</span><span>手续费 <b id="feePreview">0.00</b></span></div>
-          <div class="risk-fields">
-            <div class="field"><label>止盈价</label><input id="tpInput" type="number" min="0" step="any" placeholder="可选"/><span>USDT</span></div>
-            <div class="field"><label>止损价</label><input id="slInput" type="number" min="0" step="any" placeholder="可选"/><span>USDT</span></div>
+          <label class="checkrow"><input id="tpslEnable" type="checkbox"/> <span>止盈止损</span><span class="advanced">高级 ›</span></label>
+          <div id="tpslPanel" class="tpsl-panel hidden">
+            <div class="tpsl-group"><div class="tpsl-label"><span>止盈</span><select><option>最新价格</option></select></div><div class="field"><label>触发价</label><input id="tpInput" type="number" min="0" step="any" placeholder="止盈触发价格"/><span>USDT</span></div></div>
+            <div class="tpsl-group"><div class="tpsl-label"><span>止损</span><select><option>最新价格</option></select></div><div class="field"><label>触发价</label><input id="slInput" type="number" min="0" step="any" placeholder="止损触发价格"/><span>USDT</span></div></div>
           </div>
           <div class="buySell"><button id="buyBtn" class="buy">开多 BTC</button><button id="sellBtn" class="sell">开空 BTC</button></div>
           <div class="metric-grid"><span>预计多单强平价</span><span id="longLiq">--</span><span>预计空单强平价</span><span id="shortLiq">--</span><span>维持保证金率</span><span>0.50%</span><span>开仓手续费</span><span>0.02%</span></div>
@@ -95,37 +78,27 @@
     <div class="assetbox">
       <div class="panelhead">资产 ◉</div>
       <div id="assetLogged" class="hidden">
-        <div class="asset-actions"><button>买币</button><button>划转</button></div>
-        <div class="assetbody">
-          <div class="assetrow"><span>账户权益</span><b id="equity">-- USDT</b></div>
-          <div class="assetrow"><span>可用余额</span><span id="assetUsdt">--</span></div>
-          <div class="assetrow"><span>冻结保证金</span><span id="frozenMargin">--</span></div>
-          <div class="assetrow"><span>仓位保证金</span><span id="usedMargin">--</span></div>
-          <div class="assetrow"><span>未实现盈亏</span><span id="pnl">--</span></div>
-        </div>
+        <div class="asset-actions"><button id="buyCoinBtn">买币</button><button id="withdrawBtn">出金</button><button id="accountStatsBtn">账户统计</button></div>
+        <div class="assetbody"><div class="assetrow"><span>账户权益</span><b id="equity">-- USDT</b></div><div class="assetrow"><span>可用余额</span><span id="assetUsdt">--</span></div><div class="assetrow"><span>冻结保证金</span><span id="frozenMargin">--</span></div><div class="assetrow"><span>仓位保证金</span><span id="usedMargin">--</span></div><div class="assetrow"><span>未实现盈亏</span><span id="pnl">--</span></div></div>
       </div>
       <div class="loginhint" id="assetLogin"><button id="assetLoginBtn">登录 或 注册</button></div>
     </div>
   </section>
-
-  <div class="splitter splitter-h" id="splitChartBottom" title="拖动调整图表与底部面板高度"></div>
-
-  <section class="bottom" id="bottomPanel">
-    <div class="bottomtabs">
-      <button data-table="positions" class="active">持仓 <span id="posCount">(0)</span></button>
-      <button data-table="open">当前委托 <span id="openCount">(0)</span></button>
-      <button data-table="orders">历史委托</button><button data-table="history">成交记录</button>
-      <button data-table="closed">历史仓位</button><button data-table="ledger">财务记录</button><button data-table="assets">资产</button>
-    </div>
+  <div class="splitter horizontal" id="splitChartBottom" title="拖动调整图表与持仓区高度"></div>
+  <section class="bottom">
+    <div class="bottomtabs"><button data-table="positions" class="active">持仓 <span id="posCount">(0)</span></button><button data-table="open">当前委托 <span id="openCount">(0)</span></button><button data-table="orders">历史委托</button><button data-table="history">成交记录</button><button data-table="closed">历史仓位</button><button data-table="ledger">财务记录</button><button data-table="stats">账户统计</button></div>
     <div class="subtabs" id="positionFilters"><button data-posfilter="all" class="active">全部</button><button data-posfilter="cross">全仓</button><button data-posfilter="isolated">逐仓</button></div>
     <div class="tablewrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
   </section>
 </main>
+<footer class="statusbar"><span><i class="dot"></i>系统连接稳定</span><span class="ticker up">BTCUSDT永续 +0.26%</span><span class="ticker up">ETHUSDT永续 +0.95%</span><span class="ticker down">DOGEUSDT永续 -0.22%</span><span class="ticker down">SOLUSDT永续 -0.39%</span><span class="ticker up">GreedBit v0.0.6</span><span class="footer-right">本地模拟环境 · 无真实资金</span></footer>
 
-<footer class="statusbar"><span><i class="dot"></i>系统连接稳定</span><span class="ticker up">BTCUSDT永续 +0.26%</span><span class="ticker up">ETHUSDT永续 +0.95%</span><span class="ticker down">DOGEUSDT永续 -0.22%</span><span class="ticker down">SOLUSDT永续 -0.39%</span><span class="ticker up">GreedBit v0.0.5</span><span class="push-right">模拟环境 · 无真实资金</span></footer>
-
-<div class="modal" id="authModal"><div class="card"><button class="close" id="closeModal">×</button><h1 id="authTitle">欢迎登录 GreedBit</h1><label id="authLabel">请输入您的账号</label><input id="authInput" placeholder="请输入用户名 / 邮箱"/><label>密码</label><input id="passInput" type="password" placeholder="请输入密码"/><button class="next" id="authSubmit">下一步</button><div class="switch"><span id="switchText">新用户？</span><button id="switchMode">注册</button></div><div class="legal">本地演示登录：账号信息仅保存在当前浏览器 localStorage 中，请勿使用真实密码。</div></div></div>
-
+<div class="modal" id="authModal"><div class="card auth-card"><button class="close" data-close="authModal">×</button><h1 id="authTitle">欢迎登录 GreedBit</h1><label id="authLabel">请输入您的账号</label><input id="authInput" placeholder="请输入用户名 / 邮箱"/><label>密码</label><input id="passInput" type="password" placeholder="请输入密码"/><button class="next" id="authSubmit">下一步</button><div class="switch"><span id="switchText">新用户？</span><button id="switchMode">注册</button></div><div class="legal">本地演示登录：账号信息仅保存在当前浏览器 localStorage 中，请勿使用真实密码。</div></div></div>
+<div class="modal" id="leverageModal"><div class="card dark-card leverage-card"><button class="close dark-close" data-close="leverageModal">×</button><h2>调整杠杆</h2><div class="lev-display"><button id="levMinus">−</button><strong id="levDraftText">10X</strong><button id="levPlus">＋</button></div><input id="levRange" type="range" min="1" max="200" step="1" value="10"/><div class="lev-marks"><span>1X</span><span>40X</span><span>80X</span><span>120X</span><span>160X</span><span>200X</span></div><div class="lev-info"><span>当前杠杆倍数持仓限额</span><b id="levLimit">15,000,000 USDT</b><span>当前杠杆倍数最大可开</span><b id="levMaxOpen">-- USDT</b></div><p class="risk-text">高杠杆会显著提高强制平仓风险。本模拟器的风险限额与真实交易所不同。</p><div class="modal-actions"><button class="ghostbtn" data-close="leverageModal">取消</button><button class="confirmbtn" id="levConfirm">确定</button></div></div></div>
+<div class="modal" id="fundModal"><div class="card dark-card small-card"><button class="close dark-close" data-close="fundModal">×</button><h2 id="fundTitle">购买 USDT</h2><p class="muted" id="fundDesc">模拟充值，不会发生真实支付。</p><div class="field modal-field"><label>金额</label><input id="fundAmount" type="number" min="1" step="1" placeholder="1000"/><span>USDT</span></div><div class="modal-actions"><button class="ghostbtn" data-close="fundModal">取消</button><button class="confirmbtn" id="fundConfirm">确认</button></div></div></div>
+<div class="modal" id="statsModal"><div class="card dark-card stats-card"><button class="close dark-close" data-close="statsModal">×</button><h2>账户统计</h2><div class="stat-grid" id="statGrid"></div><div class="modal-actions"><button class="confirmbtn" data-close="statsModal">关闭</button></div></div></div>
+<aside class="news-panel" id="newsPanel"><div class="news-head"><div><b>行情资讯</b><span>真假消息并存，注意辨别</span></div><button id="newsClose">×</button></div><div class="news-toolbar"><button id="generateNewsBtn">生成一条测试快讯</button><span>真实消息影响更持久；假消息可能在证伪后反向修正。</span></div><div class="news-list" id="newsList"></div></aside>
 <div class="notifications" id="notifications"></div>
 <script src="app.js"></script>
-</body></html>
+</body>
+</html>
