@@ -53,73 +53,80 @@ function readChartSettingsForm(){
   chartSettings.dateFormat=$('csDateFormat').value;chartSettings.timeFormat=$('csTimeFormat').value;chartSettings.background=$('csBackground').value;chartSettings.grid=$('csGrid').value;
   chartSettings.topMargin=Math.max(0,+$('csTopMargin').value||0);chartSettings.bottomMargin=Math.max(0,+$('csBottomMargin').value||0);chartSettings.rightBars=Math.max(0,+$('csRightBars').value||0);
 }
-function openChartSettings(){syncChartSettingsForm();$('chartSettingsModal').classList.add('show')}
+function openChartSettings(){
+  syncChartSettingsForm();$$('[data-cstab]').forEach((b,i)=>b.classList.toggle('active',i===0));$$('[data-cspanel]').forEach((b,i)=>b.classList.toggle('active',i===0));$('chartSettingsModal').classList.add('show');
+}
+function resetChartView(){visibleCount=72;viewShift=0;yZoom=1;yPan=0;hoverIndex=-1;hoverPrice=null;crosshairLocked=false;lockedCrosshair=null;draw()}
+function chartPriceAtClientY(clientY){
+  const r=canvas.getBoundingClientRect(),padT=28,padB=42,plotH=Math.max(1,r.height-padT-padB),{hi,lo}=calcPriceBounds(),y=clamp(clientY-r.top,padT,r.height-padB);
+  return hi-(y-padT)/plotH*(hi-lo);
+}
+function updateOhlcText(c){
+  if(!c){$('ohlc').textContent='æœªæ¥/å†å²ç©ºç™½åŒºåŸŸ';return}
+  const parts=[];if(chartSettings.statusTitle)parts.push(`${symbol} Â· ${tfInfo().label}`);
+  if(chartSettings.statusValues)parts.push(`O ${fmt(c.o,cfg.dec)}  H ${fmt(c.h,cfg.dec)}  L ${fmt(c.l,cfg.dec)}  C ${fmt(c.c,cfg.dec)}`);
+  if(chartSettings.statusChange){const ch=c.c-c.o,pct=c.o?ch/c.o*100:0;parts.push(`${ch>=0?'+':''}${fmt(ch,cfg.dec)} (${pct>=0?'+':''}${pct.toFixed(2)}%)`)}
+  if(chartSettings.statusVolume)parts.push(`Vol ${fmt(c.v,2)}`);
+  $('ohlc').textContent=parts.join('  ');
+}
 
-function resize(){const r=canvas.getboundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,r.width*dpr);canvas.height=Math.max(1,r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);draw()}
-function setupChartInteraction(){
-  let start=null;canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;isDragging=true;canvas.setPointerCapture(e.pointerId);start={x:e.clientX,Y:e.clientY,shift:viewShift,off:viewPriceOffset};loadMoreHistoryIfNeeded();});
-  canvas.addEventListener('pointermove',e=>{
-    const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;if(!isDragging||!start)return dr]Ê
-NÂˆÛÛœİİÏSX]›X^
-Ø[˜\Ë˜ÛY[ÚYMM
-KÚSX]›X^
+function setupChartEvents(){
+  const scaleValue=(v,f)=>{const n=v*f;return Number.isFinite(n)&&n>0?n:v};
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const r=canvas.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,priceAxis=x>=r.width-82,timeAxis=y>=r.height-42&&x<r.width-82;
+    const factor=Math.exp(e.deltaY*.002);
+    if(priceAxis)yZoom=scaleValue(yZoom,factor);
+    else if(timeAxis)visibleCount=scaleValue(visibleCount,factor);
+    else{visibleCount=scaleValue(visibleCount,factor);yZoom=scaleValue(yZoom,factor)}
+    draw();maybeLoadOlderHistory();
+  },{passive:false});
+  canvas.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;dragging=true;dragX=e.clientX;dragY=e.clientY;dragShift=viewShift;dragYPan=yPan;
+    const b=calcPriceBounds();dragRange=b.hi-b.lo;
+  });
+  window.addEventListener('mouseup',()=>dragging=false);
+  window.addEventListener('mousemove',e=>{
+    const r=canvas.getBoundingClientRect();
+    if(dragging){
+      const plotW=Math.max(1,r.width-90),cw=plotW/visibleCount,dx=e.clientX-dragX,dy=e.clientY-dragY;
+      if(Number.isFinite(cw)&&cw!==0)viewShift=dragShift-dx/cw;
+      yPan=dragYPan+dy*dragRange/Math.max(80,r.height-70);
+      draw();maybeLoadOlderHistory();return;
+    }
+    if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)return;
+    if(crosshairLocked)return;
+    const geom=viewGeometry(),plotW=Math.max(1,r.width-90),frac=(e.clientX-r.left-8)/plotW,idx=Math.floor(geom.start+frac*visibleCount);
+    hoverIndex=idx;hoverPrice=chartPriceAtClientY(e.clientY);
+    const c=idx>=0&&idx<geom.all.length?geom.all[idx]:null;updateOhlcText(c);draw();
+  });
+  canvas.addEventListener('mouseleave',()=>{if(!crosshairLocked){hoverIndex=-1;hoverPrice=null;$('ohlc').textContent='ç§»åŠ¨é¼ æ ‡æŸ¥çœ‹ OHLC';draw()}});
+  canvas.addEventListener('dblclick',resetChartView);
+  canvas.addEventListener('contextmenu',e=>{
+    e.preventDefault();const r=canvas.getBoundingClientRect(),geom=viewGeometry(),plotW=Math.max(1,r.width-90),frac=(e.clientX-r.left-8)/plotW;
+    contextIndex=Math.floor(geom.start+frac*visibleCount);contextPrice=chartPriceAtClientY(e.clientY);
+    $('contextCopyLabel').textContent=`å¤åˆ¶ä»·æ ¼ ${fmt(contextPrice,cfg.dec)}`;$('contextLockLabel').textContent=crosshairLocked?'è§£é”åå­—å…‰æ ‡çº¿':'é”å®šåå­—å…‰æ ‡çº¿';$('contextMarkerLabel').textContent=chartSettings.markers?'éšè—Kçº¿ä¸Šçš„æ ‡è®°':'æ˜¾ç¤ºKçº¿ä¸Šçš„æ ‡è®°';
+    const menu=$('chartContextMenu');menu.classList.remove('hidden');menu.style.left=Math.min(innerWidth-290,e.clientX)+'px';menu.style.top=Math.min(innerHeight-360,e.clientY)+'px';
+  });
+}
 
-Ø[˜\Ë˜ÛY[ZYÚL
-NØÛÛœİYK˜ÛY[\İ\OYK˜ÛY[K\İ\NÂˆšY]ÔÚY\İ\œÚY
-ÙÊİËÓX]›X^
-Kš\ÚX›PÛİ[
-JNİšY]ÔšXÙSÙ™œÙ]\İ\›Ù™œÙ]YKØÚ
-ËÙ\XØ[ØØ[NÂˆ˜]Ê
-NÛØY[Ü™R\İÜRY“™YYY
+/* v0.0.11 brand favicon can be installed without changing index.html */
+if(!document.querySelector('link[rel~="icon"]')){const gbIcon=document.createElement('link');gbIcon.rel='icon';gbIcon.type='image/png';gbIcon.href='assets/greedbit-logo.png';document.head.appendChild(gbIcon)}
 
-NÂˆJNÂˆÛÛœİ\J
-OOÚ\Ñ˜YÙÚ[™ÏY˜[ÙNÜİ\[[NØØ[˜\Ë˜Y]™[\İ[™\Š	ÜÚ[\\	Ë\
-NØØ[˜\Ë˜Y]™[\İ[™\Š	ÜÚ[\˜Ø[˜Ù[	Ë\
-NÂˆØ[˜\Ë˜Y]™[\İ[™\Š	İÚY[	ËOOÂˆKœ™]™[Y˜][
+/* v0.0.11 preload must execute before events.js initializes the market */
+if(!window.__greedbitV011PreloadRequested){
+  window.__greedbitV011PreloadRequested=true;
+  document.write('<script src="src/v011-preload.js"><\/script>');
+}
 
-NØÛÛœİXØ[˜\Ë™Ù]›İ[™[™ĞÛY[™Xİ
+/* v0.0.11 UI enhancements load after the base page and v0.0.9/v0.0.10 extensions */
+window.addEventListener('load',()=>{
+  if(!document.querySelector('script[src="src/v011.js"]')){
+    const ext=document.createElement('script');ext.src='src/v011.js';document.body.appendChild(ext);
+  }
+});
 
-KYK˜ÛY[\‹›YOYK˜ÛY[K\‹ÜÏ\‹ÚY\‹šZYÚØÛÛœİÛšXÙP^\Ï^•ËMÛ•[YP^\Ï^O’LÍØÛÛœİ˜XİÜSX]™^
-K™[VJ‹ŒMŠNÂˆYŠÛ”šXÙP^\Ê^İ™\XØ[ØØ[OSX]›X^
-LKLL‹™\XØ[ØØ[J™˜XİÜŠ_H[ÙHYŠÛ•[YP^\Ê^İš\ÚX›PÛİ[SX]›X^
-ŒKš\ÚX›PÛİ[
-™˜XİÜŠ_Y[Ù^İš\ÚX›PÛİ[SX]›X^
-ŒKš\ÚX›PÛİ[
-™˜XİÜŠNİ™\XØ[ØØ[OSX]›X^
-LKLL‹™\XØ[ØØ[J™˜XİÜŠ_Y˜]Ê
-NÂˆKÜ\ÜÚ]™N™˜[Ù_JNÂˆØ[˜\Ë˜Y]™[\İ[™\Š	Ù›ÛXÚÉË[\ÙY]™[Oœ™\Ù]Ú\šY]Ê
-JNÂˆØ[˜\Ë˜Y]™[\İ[™\Š	Û[İ\Ù[[İ™IËOOÚYŠ\Ñ˜YÙÚ[™Ê\™]\›ÚYŠÜ›ÜÜÚZ\“ØÚÙY
-\™]\›ØÛÛœİ\œ]š\ÚX›PØ[™\Ê
-NÚYŠX\œ‹›[™İ
-\™]\›ØÛÛœİXØ[˜\Ë™Ù]›İ[™[™ĞÛY[™Xİ
-
-KİÏSX]›X^
-‹ÚYMM
-NØÛÛœİOXÛ[\
-X]™›ÛÜŠ
-K˜ÛY[\‹›YN
-KÊİËØ\œ‹›[™İ
-JK\œ‹›[™İLJKÏX\œ–ÚWNÉ
-	ÛÚÉÊK^ÛÛ[XÈ	Ù›]
-Ë›ËÙ™Ë™XÊ_H	Ù›]
-ËšÙ™Ë™XÊ_H	Ù›]
-Ë›Ù™Ë™XÊ_HÈ	Ù›]
-Ë˜ËÙ™Ë™XÊ_X
-NßJNØØ[˜\Ë˜Y]™[\İ[™\Š	Û[İ\Ù[X]™IË
-
-OOÚYŠXÜ›ÜÜÚZ\“ØÚÙY
-I
-	ÛÚÉÊK^ÛÛ[Iùéîùbª:o(9¨!ùkçùç"ÈÒÉßJNÂŸB‚™[˜İ[ÛˆÙ]\˜[™ÙJ
-JÂˆ	
-	Üİ	ÊK˜Y]™[\İ[™\Š	Ú[œ]	ËOOØÛÛœİJÙK\™Ù]˜[Y_ÙK\™Ù]œİ[KœÙ]›Ü\J	ËK\™Ë\İ	ËŠÙÉIÊ_JNÉ
-	Üİ	ÊKœİ[KœÙ]›Ü\J	ËK\™Ë\İ	Ë	Ì	IÊNÂˆ	
-	ÜÜİİ	ÊK˜Y]™[\İ[™\Š	Ú[œ]	ËOOØÛÛœİJÙK\™Ù]˜[Y_ÙK\™Ù]œİ[KœÙ]›Ü\J	ËK\™Ë\İ	ËŠÉÉIÊ_JNÉ
-	ÜÜİİ	ÊKœİ[KœÙ]›Ü\J	ËK\™Ë\İ	Ë	Ì	IÊNÂŸB‚œÙ]\[YYœ˜[Y\Ê
-NÜÙ]\Ú\[\˜Xİ[ÛŠ
-NÜÙ]\Ü]\œÊ
-NÜÙ]\˜[™ÙJ
-NÂ‹ÊˆØYŒŒŒL^[œÚ[ÛœÎÈ[Ù[HØZ]È[[ŒŒHÚ\İ™\œšY\È\™H™XYH
-‹ÂšYŠYØİ[Y[œ]Y\TÙ[XİÜŠ	ÜØÜš\ÜÜ˜ÏHœÜ˜ËİŒLšœÈ—IÊJ^ÂˆÛÛœİŒL^YØİ[Y[˜Ü™X]Q[[Y[
-	ÜØÜš\	ÊNİŒL^œÜ˜ÏIÜÜ˜ËİŒLšœÉÎÙØİ[Y[˜›ÙK˜\[™Ú[
-ŒL^
-NÂŸB
+/* load v0.0.10 extensions; module waits until v0.0.9 chart overrides are ready */
+if(!document.querySelector('script[src="src/v010.js"]')){
+  const v010Ext=document.createElement('script');v010Ext.src='src/v010.js';document.body.appendChild(v010Ext);
+}
