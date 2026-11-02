@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- 将 GreedBit 项目路线正式定性为纯前端，不再规划自建后端、数据库或服务端鉴权。
+- 完成首轮 Bilibili Toy 静态兼容性审查：入口体积、相对资源路径、单页路由、本地存储架构均可进入 Toy 预览阶段。
+- 新增 `TOY_COMPATIBILITY.md`，记录 Toy 验收结论、风险与真实预览检查清单。
+- 新增 `tools/build-toy.ps1`，生成仅包含运行时文件的 `dist-toy/` 与 `GreedBit-toy.zip`，并检查入口 1MB 上限与根绝对资源路径。
+- Toy 正式发布前仍需在真实 preview 中验证 Binance REST/WebSocket、Futures、汇率及 CoinDesk RSS/跨域代理。
+
 ## [0.0.11] - 2026-11-02
 
 - Added GreedBit logo favicon and navigation brand icon.
