@@ -27,13 +27,13 @@
 
 <section class="page home-page hidden" id="homePage">
   <div class="hero">
-    <div><span class="eyebrow">GREEDBIT SIMULATION EXCHANGE</span><h1>虚拟市场，真实机制。</h1><p>从现货到永续合约，用连续 Tick、订单、资金费率和市场事件模拟一个会自己变化的加密货币市场。</p><div class="hero-actions"><button class="primary big" data-goto="trade">开始现货交易</button><button class="ghostbox big" data-goto="futures">进入合约交易</button></div></div>
+    <div><span class="eyebrow">GREEDBIT SIMULATION EXCHANGE</span><h1>真实行情，模拟交易。</h1><p>从现货到永续合约，BTC/ETH 历史 K 线、实时成交与盘口接入真实公开市场数据；账户、订单与资产仍为本地模拟。</p><div class="hero-actions"><button class="primary big" data-goto="trade">开始现货交易</button><button class="ghostbox big" data-goto="futures">进入合约交易</button></div></div>
     <div class="hero-board"><span>模拟总资产</span><strong id="homeTotalAsset">-- USDT</strong><small>所有子账户与持仓估值之和</small></div>
   </div>
   <div class="home-grid">
     <div class="home-card"><b>市场</b><div id="homeMarkets"></div></div>
     <div class="home-card"><b>账户分层</b><p>现货、合约、赚币、法币、策略账户相互独立。USDT 必须通过划转进入对应账户后才能使用。</p><button class="linkbtn" data-goto="assets">管理资产 →</button></div>
-    <div class="home-card"><b>行情事件</b><p>真消息、假消息、鲸鱼行为和市场情绪会改变买卖压力与波动率，但不会直接画出结果 K 线。</p><button class="linkbtn" data-goto="market">查看快讯 →</button></div>
+    <div class="home-card"><b>行情事件</b><p>真消息、假消息与用户投票继续作为游戏资讯系统存在；为保证行情真实性，它们不再修改 BTC/ETH 的真实市场价格。</p><button class="linkbtn" data-goto="market">查看快讯 →</button></div>
   </div>
 </section>
 
@@ -50,8 +50,8 @@
 <section class="page trade-page" id="tradePage">
   <div class="marketbar">
     <button class="pair-picker-btn" id="pairPickerBtn"><span id="pairName">BTC/USDT</span><span>⌄</span></button>
-    <select id="symbol" class="hidden"><option>BTC/USDT</option><option>ETH/USDT</option><option>SOL/USDT</option><option>DOGE/USDT</option></select>
-    <div><div id="lastPrice" class="pricebig green">--</div><div class="muted tiny">模拟行情</div></div>
+    <select id="symbol" class="hidden"><option>BTC/USDT</option><option>ETH/USDT</option></select>
+    <div><div id="lastPrice" class="pricebig green">--</div><div class="muted tiny">Binance 真实行情</div></div>
     <div class="stat"><small>24H涨跌</small><strong id="change24">--</strong></div>
     <div class="stat"><small>24H高</small><strong id="high24">--</strong></div>
     <div class="stat"><small>24H低</small><strong id="low24">--</strong></div>
@@ -181,8 +181,9 @@
 <div class="modal" id="statsModal"><div class="card dark-card stats-card"><button class="close dark-close" data-close="statsModal">×</button><h2>账户统计</h2><div class="stat-grid" id="statGrid"></div><div class="modal-actions"><button class="confirmbtn" data-close="statsModal">关闭</button></div></div></div>
 
 <div class="notifications" id="notifications"></div>
-<footer class="statusbar"><span><i class="dot"></i>系统连接稳定</span><span class="ticker up">BTCUSDT +0.26%</span><span class="ticker up">ETHUSDT +0.95%</span><span class="ticker down">DOGEUSDT -0.22%</span><span class="ticker down">SOLUSDT -0.39%</span><span class="ticker up">GreedBit v0.0.7</span><span class="footer-right">本地模拟环境 · 无真实资金</span></footer>
+<footer class="statusbar"><span><i class="dot" id="marketStatusDot"></i><span id="marketStatusText">连接真实行情…</span></span><span id="footerTickers"></span><span class="ticker up">GreedBit v0.0.8</span><span class="footer-right">真实市场数据 · 模拟交易 · 无真实资金</span></footer>
 <script src="src/core.js"></script>
+<script src="src/market.js"></script>
 <script src="src/futures.js"></script>
 <script src="src/spot.js"></script>
 <script src="src/account.js"></script>
