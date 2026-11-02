@@ -56,17 +56,17 @@ const newsTemplates=[
 ];
 function seedNewsHistory(){
   newsItems=[
-    {id:newsSeq++,time:'17:04',symbol:'SOL/USDT',title:'Solana 生态应用季度收入明显增长',desc:'模拟快讯：生态活跃度回升，但短线价格是否受益仍取决于市场风险偏好。',truth:true,resolved:true,sentiment:1,status:'已确认',kind:'机构',important:false,bull:128,bear:41,userVote:null},
+    {id:newsSeq++,time:'17:04',symbol:'BTC/USDT',title:'机构资金继续关注比特币现货市场',desc:'模拟快讯：该资讯仅用于游戏中的消息辨别与投票，不会修改真实行情价格。',truth:true,resolved:true,sentiment:1,status:'已确认',kind:'机构',important:false,bull:128,bear:41,userVote:null},
     {id:newsSeq++,time:'17:00',symbol:'MARKET',title:'市场等待关键宏观数据，风险资产波动率上升',desc:'模拟快讯：宏观预期出现分歧，多空双方均在降低高杠杆敞口。',truth:true,resolved:true,sentiment:0,status:'已确认',kind:'市场',important:true,bull:92,bear:88,userVote:null},
     {id:newsSeq++,time:'16:55',symbol:'ETH/USDT',title:'社交媒体流传“某机构将一次性买入大量 ETH”截图',desc:'该截图的来源和真实性尚未确认。',truth:false,resolved:true,sentiment:1,status:'已证伪',kind:'传闻',important:true,bull:211,bear:136,userVote:null}
   ];renderNews();
 }
 function generateNews(test=false){
-  const temp=newsTemplates[Math.floor(Math.random()*newsTemplates.length)],coin=base(),truth=Math.random()<.68,strength=.00004+Math.random()*.00009,vol=.18+Math.random()*.25;
-  const item={id:newsSeq++,time:nowText().slice(0,5),symbol,kind:temp.k,title:temp.t(coin),desc:temp.d,truth,resolved:false,sentiment:temp.s,status:'待核实',important:temp.important,bull:Math.floor(20+Math.random()*220),bear:Math.floor(20+Math.random()*220),userVote:null,resolveAt:Date.now()+(test?9000:18000+Math.random()*18000)};
-  newsItems.unshift(item);newsItems=newsItems.slice(0,80);activeImpacts.push({symbol,drift:temp.s*strength,vol,until:Date.now()+(truth?45000:22000)});renderNews();notify('市场快讯',item.title,temp.s>0?'success':'warning',5000);
+  const temp=newsTemplates[Math.floor(Math.random()*newsTemplates.length)],coin=base(),truth=Math.random()<.68;
+  const item={id:newsSeq++,time:nowText().slice(0,5),symbol,kind:temp.k,title:temp.t(coin),desc:temp.d+' 当前版本使用真实市场行情，因此本地快讯不会直接改变价格。',truth,resolved:false,sentiment:temp.s,status:'待核实',important:temp.important,bull:Math.floor(20+Math.random()*220),bear:Math.floor(20+Math.random()*220),userVote:null,resolveAt:Date.now()+(test?9000:18000+Math.random()*18000)};
+  newsItems.unshift(item);newsItems=newsItems.slice(0,80);renderNews();notify('市场快讯',item.title,temp.s>0?'success':'warning',5000);
 }
-function resolveNews(){const n=Date.now();let changed=false;for(const item of newsItems){if(item.resolved||!item.resolveAt||n<item.resolveAt)continue;item.resolved=true;item.status=item.truth?'已确认':'已证伪';changed=true;if(!item.truth){activeImpacts.push({symbol:item.symbol,drift:-item.sentiment*(.00005+Math.random()*.00006),vol:.12,until:n+26000});notify('消息被证伪',item.title,'info',4800)}else notify('消息已确认',item.title,'info',3800)}if(changed)renderNews()}
+function resolveNews(){const n=Date.now();let changed=false;for(const item of newsItems){if(item.resolved||!item.resolveAt||n<item.resolveAt)continue;item.resolved=true;item.status=item.truth?'已确认':'已证伪';changed=true;if(!item.truth)notify('消息被证伪',item.title,'info',4800);else notify('消息已确认',item.title,'info',3800)}if(changed)renderNews()}
 function voteNews(id,vote){const n=newsItems.find(x=>x.id===id);if(!n)return;if(n.userVote===vote)return;if(n.userVote==='bull')n.bull=Math.max(0,n.bull-1);if(n.userVote==='bear')n.bear=Math.max(0,n.bear-1);n.userVote=vote;n[vote]++;renderNews()}
 function newsMatches(n){if($('importantOnly').checked&&!n.important)return false;if(newsFilter==='all')return true;if(newsFilter==='BTC'||newsFilter==='ETH')return n.symbol.startsWith(newsFilter);return n.kind===newsFilter}
 function renderNews(){
