@@ -1,6 +1,9 @@
 /* v0.0.11 market connection acceleration hooks; loaded before events.js init */
 (function(){
 'use strict';
+// v011.js still waits for a legacy renderOverview hook that no longer exists.
+// Expose a compatibility no-op so the v0.0.11 UI module can complete initialization.
+if(typeof window.renderOverview!=='function')window.renderOverview=function(){};
 const FAST_API_HOSTS=['https://data-api.binance.vision','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com','https://api4.binance.com','https://api-gcp.binance.com','https://api.binance.com'];
 const FAST_WS_HOSTS=['wss://data-stream.binance.vision','wss://stream.binance.com:443','wss://stream.binance.com:9443'];
 let preferredApiHost=localStorage.getItem('greedbit_fast_api_host')||'',preferredWsHost=localStorage.getItem('greedbit_fast_ws_host')||'',lastDepthAt=0;
