@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const VERSION='0.0.12';
-const HERO_VIDEO='assets/mammon-home.mp4';
+const HERO_VIDEO='assets/mammon-home.webm';
 
 function installV12Style(){if(document.querySelector('link[href="styles/v012.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v012.css';document.head.appendChild(l)}
 function safeNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
@@ -62,6 +62,7 @@ const baseSyncAuth=syncAuth;syncAuth=function(){const out=baseSyncAuth.apply(thi
 const baseShowPage=showPage;showPage=function(page){const out=baseShowPage.apply(this,arguments);if(page==='home')renderHomeV12();return out};
 function updateVersion(){const v=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));if(v)v.textContent=`GreedBit v${VERSION}`}
 function loadNewsModule(){if(document.querySelector('script[src="src/v012-news.js"]'))return;const s=document.createElement('script');s.src='src/v012-news.js';document.body.appendChild(s)}
-function boot(){installV12Style();installHome();renderHomeV12();updateVersion();loadNewsModule();setInterval(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHomeV12()},1500)}
+function loadV13Modules(){if(document.querySelector('script[src="src/v013-market.js"]'))return;const market=document.createElement('script');market.src='src/v013-market.js';market.onload=()=>{const ui=document.createElement('script');ui.src='src/v013-ui.js';document.body.appendChild(ui)};document.body.appendChild(market)}
+function boot(){installV12Style();installHome();renderHomeV12();updateVersion();loadNewsModule();loadV13Modules();setInterval(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHomeV12()},1500)}
 boot();
 })();
