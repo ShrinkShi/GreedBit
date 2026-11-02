@@ -1,0 +1,21 @@
+name: JavaScript Syntax Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in src/*.js; do
+            echo "Checking $file"
+            node --check "$file"
+          done
