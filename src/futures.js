@@ -3,8 +3,8 @@ function validateTPSL(side,entry,tp,sl){if(tp&&((side==='long'&&tp<=entry)||(sid
 function executeOpen(side,margin,entry,mode,lev,tp,sl,source='市价开仓',fromReserved=false){
   const w=futuresWallet(),notional=margin*lev,fee=notional*FEE,qty=notional/entry;
   if(!fromReserved){if(margin+fee>w.usdt)return null;w.usdt-=margin+fee}else w.frozen=Math.max(0,w.frozen-(margin+fee));
-  const p={id:nextId++,symbol,side,mode,leverage:lev,margin,notional,qty,entry,fee,tp:tp||null,sl:sl||null,openedAt:nowText()};p.liq=liqPrice(side,entry,mode,margin,notional);
-  positions.unshift(p);trades.unshift({time:p.openedAt,symbol,side,qty,price:entry,type:source});accountStats.fees+=fee;accountStats.trades++;addLedger('开仓手续费',-fee,symbol,`${side==='long'?'多':'空'} ${lev}X`,'futures');playFillSound();saveState();return p;
+  const p={id:nextId++,symbol,side,mode,leverage:lev,margin,notional,qty,entry,fee,tp:tp||null,sl:sl||null,openedAt:nowText(),openedTs:Date.now()/1000};p.liq=liqPrice(side,entry,mode,margin,notional);
+  positions.unshift(p);trades.unshift({time:p.openedAt,ts:p.openedTs,symbol,side,qty,price:entry,type:source});accountStats.fees+=fee;accountStats.trades++;addLedger('开仓手续费',-fee,symbol,`${side==='long'?'多':'空'} ${lev}X`,'futures');playFillSound();saveState();return p;
 }
 function placeOrder(side){
   if(!user)return openAuth('login');if(!marketReady||!price)return notify('下单失败','真实市场行情尚未连接','error');const w=futuresWallet(),margin=+$('marginInput').value,mode=$('marginMode').value,tpsl=$('tpslEnable').checked,tp=tpsl?(+$('tpInput').value||0):0,sl=tpsl?(+$('slInput').value||0):0;
@@ -18,7 +18,7 @@ function matchOrders(){for(let i=orders.length-1;i>=0;i--){const o=orders[i];if(
 function closePosition(id,reason='手动平仓',fill=price,fraction=1){
   const w=futuresWallet(),idx=positions.findIndex(p=>p.id===id);if(idx<0)return;const p=positions[idx],f=clamp(fraction,.01,1),qty=p.qty*f,margin=p.margin*f,realized=(fill-p.entry)*qty*(p.side==='long'?1:-1),closeFee=Math.abs(qty*fill)*FEE;
   w.usdt=Math.max(0,w.usdt+margin+realized-closeFee);accountStats.fees+=closeFee;if(realized>=0)accountStats.realizedProfit+=realized;else accountStats.realizedLoss+=Math.abs(realized);if(reason==='强制平仓')accountStats.liquidations++;
-  addLedger('平仓手续费',-closeFee,p.symbol,reason,'futures');addLedger(realized>=0?'已实现盈利':'已实现亏损',realized,p.symbol,reason,'futures');trades.unshift({time:nowText(),symbol:p.symbol,side:p.side==='long'?'sell':'buy',qty,price:fill,type:reason});closedPositions.unshift({...p,qty,margin,close:fill,realized,closeFee,reason,closedAt:nowText(),partial:f<1});
+  addLedger('平仓手续费',-closeFee,p.symbol,reason,'futures');addLedger(realized>=0?'已实现盈利':'已实现亏损',realized,p.symbol,reason,'futures');trades.unshift({time:nowText(),ts:Date.now()/1000,symbol:p.symbol,side:p.side==='long'?'sell':'buy',qty,price:fill,type:reason});closedPositions.unshift({...p,qty,margin,close:fill,realized,closeFee,reason,closedAt:nowText(),partial:f<1});
   if(f>=.999)positions.splice(idx,1);else{p.qty-=qty;p.margin-=margin;p.notional-=p.notional*f;p.liq=liqPrice(p.side,p.entry,p.mode,p.margin,p.notional)}
   playFillSound();notify(reason,`${p.symbol} ${realized>=0?'+':''}${fmt(realized)} USDT`,realized>=0?'success':'warning');renderTable();updateAssets();saveState();return realized;
 }
