@@ -1,4 +1,3 @@
-
 /* v0.0.10 contract overview/data/strategy/advanced-order/recent-trade additions */
 (function waitV010(){
 if(typeof drawTradeMarkers!=='function'){setTimeout(waitV010,50);return;}
@@ -120,5 +119,266 @@ if(!$('strategyModal')){
     <div class="field modal-field"><label>ä¸‹é™</label><input id="strategyLow" type="number" min="0" step="any"/><span>USDT</span></div>
     <div class="field modal-field"><label>ä¸Šé™</label><input id="strategyHigh" type="number" min="0" step="any"/><span>USDT</span></div>
     <div class="field modal-field"><label>ç½‘æ ¼æ•°</label><input id="strategyGrids" type="number" min="2" max="100" step="1" value="10"/><span>æ ¼</span></div>
-    <div class="modal-actions"><button class="ghostbtn" data-close="strategyModal">å–æ¶ˆ</button><button class="confirm²È="26:Ã¢ÒŸžöGš‚ðœ°™ÕÑÕÉ•ÌµÉ¥œèŸ–B#žê›žöGš‚ðœ°µ…ÉÑ¥¹…±”œèŸ–B#žê›¦¦³’âš‚ó–ÂPôì(€€ ÍÑÉ…Ñ•å5½‘…°œ¤¹‘…Ñ…Í•Ð¹­¥¹õ­¥¹ì ÍÑÉ…Ñ•å5½‘…±Q¥Ñ±”œ¤¹Ñ•áÑ½¹Ñ•¹ÐôŸ–"o–îè€œ­¹…µ•Ím­¥¹‘tì(€€ ÍÑÉ…Ñ•å1½Üœ¤¹Ù…±Õ”ô¡ÁÉ¥”¨¸äØ¤¹Ñ½¥á•¡™œ¹‘•Œ¤ì ÍÑÉ…Ñ•å!¥ œ¤¹Ù…±Õ”ô¡ÁÉ¥”¨Ä¸ÀÐ¤¹Ñ½¥á•¡™œ¹‘•Œ¤ì ÍÑÉ…Ñ•å5½‘…°œ¤¹±…ÍÍ1¥ÍÐ¹…‘ Í¡½Üœ¤ì)ôì( ÍÑÉ…Ñ•åÉ•…Ñ•	Ñ¸œ¤¹½¹±¥¬ô ¤ôùì(€¥˜ …ÕÍ•È¥É•ÑÕÉ¸½Á•¹ÕÑ  ±½¥¸œ¤ì(€½¹ÍÐ…µ½Õ¹Ðô¬ ÍÑÉ…Ñ•åµ½Õ¹Ðœ¤¹Ù…±Õ”±±½Üô¬ ÍÑÉ…Ñ•å1½Üœ¤¹Ù…±Õ”±¡¥ ô¬ ÍÑÉ…Ñ•å!¥ œ¤¹Ù…±Õ”±É¥‘Ìô¬ ÍÑÉ…Ñ•åÉ¥‘Ìœ¤¹Ù…±Õ”±­¥¹ô ÍÑÉ…Ñ•å5½‘…°œ¤¹‘…Ñ…Í•Ð¹­¥¹ì(€¥˜ ……µ½Õ¹Ññð…±½Ýñð…¡¥¡ññ±½Üøõ¡¥¡ññÉ¥‘ÌðÈ¥É•ÑÕÉ¸¹½Ñ¥™ä Ÿž¶[žV—–"o–îë–’Ç¢Ò”œ°Ÿ¢¾ßšŽš~—–>šVÀœ°•ÉÉ½Èœ¤ì(€½¹ÍÐ¹…µ•ÌõìÍÁ½ÐµÉ¥œèŸž:Ã¢ÒŸžöGš‚ðœ°™ÕÑÕÉ•ÌµÉ¥œèŸ–B#žê›žöGš‚ðœ°µ…ÉÑ¥¹…±”œèŸ–B#žê›¦¦³’âš‚ó–ÂPôì(€ÍÑÉ…Ñ•åI•½É‘Ì¹Õ¹Í¡¥™Ð¡í­¥¹±¹…µ”é¹…µ•Ím­¥¹‘t±Íåµ‰½°±…µ½Õ¹Ð±±½Ü±¡¥ ±É¥‘Ì±É•…Ñ•‘Ðé…Ñ”¹¹½Ü ¥ô¤íÍ…Ù•XÄÁMÑ…Ñ” ¤ì ÍÑÉ…Ñ•å5½‘…°œ¤¹±…ÍÍ1¥ÍÐ¹É•µ½Ù” Í¡½Üœ¤íÉ•¹‘•ÉMÑÉ…Ñ•¥•Ì ¤í¹½Ñ¥™ä Ÿž¶[žV—¦7žö»–ÞË–"o–îèœ°Ÿ–öO–&7’âëšr³–rÃš¢‡š.¦7žö¸œ°¥¹™¼œ¤ì)ôì((¼¨€´´´´´´´´´´…‘Ù…¹•½É‘•Èµ½‘•Ì€´´´´´´´´´´€¨¼)™Õ¹Ñ¥½¸É•¹‘•É‘Ù…¹•‘¥•±‘Ì ¥ì(€½¹ÍÐ½¸ô„……‘Ù…¹•‘-¥¹ì …‘Ù…¹•‘=É‘•É¥•±‘Ìœ¤¹±…ÍÍ1¥ÍÐ¹Ñ½±” ¡¥‘‘•¸œ°…½¸¤ì(€lÁ±…¹QÉ¥•É¥•±œ°ÑÉ…¥±Ñ¥Ù…Ñ¥½¹¥•±œ°ÑÉ…¥±…±±‰…­¥•±œ°ÑÝ…ÁÕÉ…Ñ¥½¹¥•±œ°ÑÝ…ÁM±¥•Í¥•±t¹™½É… ¡¥ôø¡¥¤¹±…ÍÍ1¥ÍÐ¹…‘ ¡¥‘‘•¸œ¤¤ì(€¥˜ …½¸¥É•ÑÕÉ¸ì(€½¹ÍÐµ…ÀõíÁ±…¸élÁ±…¹QÉ¥•É¥•±t±ÑÉ…¥±¥¹œélÑÉ…¥±Ñ¥Ù…Ñ¥½¹¥•±œ°ÑÉ…¥±…±±‰…­¥•±t±ÑÝ…ÀélÑÝ…ÁÕÉ…Ñ¥½¹¥•±œ°ÑÝ…ÁM±¥•Í¥•±uôì(€€¡µ…Ám…‘Ù…¹•‘-¥¹‘uññmt¤¹™½É… ¡¥ôø¡¥¤¹±…ÍÍ1¥ÍÐ¹É•µ½Ù” ¡¥‘‘•¸œ¤¤ì(€€ …‘Ù…¹•‘-¥¹‘Q¥Ñ±”œ¤¹Ñ•áÑ½¹Ñ•¹ÐõíÁ±…¸èŸ¢º‡–"K–žSš&`œ±ÑÉ…¥±¥¹œèŸ¢Þ¢â«–žSš&`œ±ÑÝ…ÀèŸ–"š^Û–žSš&`õm…‘Ù…¹•‘-¥¹‘tì)ô( …‘Ù…¹•‘=É‘•É	Ñ¸œ¤¹½¹±¥¬õ”ôùí”¹ÍÑ½ÁAÉ½Á……Ñ¥½¸ ¤ì …‘Ù…¹•‘=É‘•É5•¹Ôœ¤¹±…ÍÍ1¥ÍÐ¹Ñ½±” ¡¥‘‘•¸œ¥ôì( …‘Ù…¹•‘=É‘•É5•¹Ôœ¤¹½¹±¥¬õ”ôùí½¹ÍÐˆõ”¹Ñ…É•Ð¹±½Í•ÍÐ m‘…Ñ„µ…‘Ù­¥¹‘tœ¤í¥˜ …ˆ¥É•ÑÕÉ¸í…‘Ù…¹•‘-¥¹õˆ¹‘…Ñ…Í•Ð¹…‘Ù­¥¹ì …‘Ù…¹•‘=É‘•É5•¹Ôœ¤¹±…ÍÍ1¥ÍÐ¹…‘ ¡¥‘‘•¸œ¤íÉ•¹‘•É‘Ù…¹•‘¥•±‘Ì ¥ôì( …‘Ù…¹•‘-¥¹‘±•…Èœ¤¹½¹±¥¬ô ¤ôùí…‘Ù…¹•‘-¥¹õ¹Õ±°íÉ•¹‘•É‘Ù…¹•‘¥•±‘Ì ¥ôì)‘½Õµ•¹Ð¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ±¥¬œ±”ôùí¥˜ „ …‘Ù…¹•‘=É‘•É5•¹Ôœ¤¹½¹Ñ…¥¹Ì¡”¹Ñ…É•Ð¤˜™”¹Ñ…É•Ð„ôô …‘Ù…¹•‘=É‘•É	Ñ¸œ¤¤ …‘Ù…¹•‘=É‘•É5•¹Ôœ¤¹±…ÍÍ1¥ÍÐ¹…‘ ¡¥‘‘•¸œ¥ô¤ì()™Õ¹Ñ¥½¸É•Í•ÉÙ•‘Ù…¹•¡Í¥‘”¥ì(€¥˜ …ÕÍ•È¥É•ÑÕÉ¸½Á•¹ÕÑ  ±½¥¸œ¤ì(€½¹ÍÐµ…É¥¸ô¬ µ…É¥¹%¹ÁÕÐœ¤¹Ù…±Õ”±µ½‘”ô µ…É¥¹5½‘”œ¤¹Ù…±Õ”±ÑÀô ÑÁÍ±¹…‰±”œ¤¹¡•­•ü ¬ ÑÁ%¹ÁÕÐœ¤¹Ù…±Õ•ñðÀ¤èÀ±Í°ô ÑÁÍ±¹…‰±”œ¤¹¡•­•ü ¬ Í±%¹ÁÕÐœ¤¹Ù…±Õ•ñðÀ¤èÀì(€¥˜ …µ…É¥¹ññµ…É¥¸ðôÀ¥É•ÑÕÉ¸¹½Ñ¥™ä Ÿ–žSš&c–’Ç¢Ò”œ°Ÿ¢¾ß¢úO–—’þw¢¾¦Dœ°•ÉÉ½Èœ¤ì(€½¹ÍÐÜõ™ÕÑÕÉ•Í]…±±•Ð ¤±™•”õµ…É¥¸©±•Ù•É…”©±Ñ½Ñ…°õµ…É¥¸­™•”í¥˜¡Ñ½Ñ…°ùÜ¹ÕÍ‘Ð¥É•ÑÕÉ¸¹½Ñ¥™ä Ÿ–žSš&c–’Ç¢Ò”œ°Ÿ–B#žê›¢Ò›š"ß’ög¦Šw’â7¢ÚÌœ°•ÉÉ½Èœ¤ì(€½¹ÍÐ¼õí¥é…Ñ”¹¹½Ü ¤­5…Ñ ¹É…¹‘½´ ¤±­¥¹é…‘Ù…¹•‘-¥¹±Í¥‘”±µ…É¥¸±µ½‘”±±•Ù•É…”±ÑÀ±Í°±Íåµ‰½°±É•Í•ÉÙ•éÑ½Ñ…°±É•…Ñ•‘Ðé…Ñ”¹¹½Ü ¤±ÍÑ…ÑÕÌè½Á•¸ôì(€¥˜¡…‘Ù…¹•‘-¥¹ôôôÁ±…¸œ¥í¼¹ÑÉ¥•Èô¬ Á±…¹QÉ¥•É%¹ÁÕÐœ¤¹Ù…±Õ”í¥˜ …¼¹ÑÉ¥•È¥É•ÑÕÉ¸¹½Ñ¥™ä Ÿ–žSš&c–’Ç¢Ò”œ°Ÿ¢¾ß¢úO–—¢ž›–>G’îÜœ°•ÉÉ½Èœ¥ô(€¥˜¡…‘Ù…¹•‘-¥¹ôôôÑÉ…¥±¥¹œœ¥í¼¹…Ñ¥Ù…Ñ¥½¸ô¬ ÑÉ…¥±Ñ¥Ù…Ñ¥½¹%¹ÁÕÐœ¤¹Ù…±Õ•ññ¹Õ±°í¼¹…±±‰…¬õ5…Ñ ¹µ…à ¸ÀÀÄ° ¬ ÑÉ…¥±…±±‰…­%¹ÁÕÐœ¤¹Ù…±Õ•ñðÄ¤¼ÄÀÀ¤í¼¹•áÑÉ•µ”õ¹Õ±°í¼¹…Ñ¥Ù”ô…¼¹…Ñ¥Ù…Ñ¥½¹ô(€¥˜¡…‘Ù…¹•‘-¥¹ôôôÑÝ…Àœ¥í¼¹‘ÕÉ…Ñ¥½¸õ5…Ñ ¹µ…à ØÀ° ¬ ÑÝ…ÁÕÉ…Ñ¥½¹%¹ÁÕÐœ¤¹Ù…±Õ•ñðÄÀ¤¨ØÀ¤í¼¹Í±¥•Ìõ±…µÀ ¬ ÑÝ…ÁM±¥•Í%¹ÁÕÐœ¤¹Ù…±Õ•ñðÔ°È°ÔÀ¤í¼¹‘½¹”ôÀí¼¹¹•áÑQÌõ…Ñ”¹¹½Ü ¤¼ÄÀÀÀí¼¹ÍÑ…ÉÑ•‘Ðõ…Ñ”¹¹½Ü ¤¼ÄÀÀÁô(€Ü¹ÕÍ‘Ð´õÑ½Ñ…°íÜ¹™É½é•¸¬õÑ½Ñ…°í…‘Ù…¹•‘=É‘•ÉÌ¹Õ¹Í¡¥™Ð¡¼¤íÍ…Ù•XÄÁMÑ…Ñ” ¤íÍ…Ù•MÑ…Ñ” ¤í¹½Ñ¥™ä Ÿ¦®cžêŸ–žSš&c–ÞËš>C’êœ±íÁ±…¸èŸ¢º‡–"Hœ±ÑÉ…¥±¥¹œèŸ¢Þ¢â¨œ±ÑÝ…ÀèŸ–"š^Øõm…‘Ù…¹•‘-¥¹‘t¬œƒ
-Ü€œ¬¡Í¥‘”ôôô±½¹œœüŸ–ò–’hœèŸ–òž¦èœ¤°¥¹™¼œ¤íÉ•¹‘•ÉQ…‰±” ¤ì)ô)½¹ÍÐ‰…Í•	Õäô ‰Õå	Ñ¸œ¤¹½¹±¥¬±‰…Í•M•±°ô Í•±±	Ñ¸œ¤¹½¹±¥¬ì( ‰Õå	Ñ¸œ¤¹½¹±¥¬ô ¤ôù…‘Ù…¹•‘-¥¹ýÉ•Í•ÉÙ•‘Ù…¹• ±½¹œœ¤é‰…Í•	Õä ¤ì( Í•±±	Ñ¸œ¤¹½¹±¥¬ô ¤ôù…‘Ù…¹•‘-¥¹ýÉ•Í•ÉÙ•‘Ù…¹• Í¡½ÉÐœ¤é‰…Í•M•±° ¤ì()™Õ¹Ñ¥½¸™¥É•‘Ù…¹•¡¼±µ…É¥¸¥ì(€½¹ÍÐÜõ™ÕÑÕÉ•Í]…±±•Ð ¤±Í±¥••”õµ…É¥¸©¼¹±•Ù•É…”©ì(€½¹ÍÐÀõ•á•ÕÑ•=Á•¸¡¼¹Í¥‘”±µ…É¥¸±ÁÉ¥”±¼¹µ½‘”±¼¹±•Ù•É…”±¼¹ÑÀ±¼¹Í°±€‘ííÁ±…¸èŸ¢º‡–"Hœ±ÑÉ…¥±¥¹œèŸ¢Þ¢â¨œ±ÑÝ…ÀèŸ–"š^Øõm¼¹­¥¹‘u÷–ò’îM€±ÑÉÕ”¤ì(€¥˜ …À¥É•ÑÕÉ¸™…±Í”ì(€¼¹É•Í•ÉÙ•õ5…Ñ ¹µ…à À±¼¹É•Í•ÉÙ•´¡µ…É¥¸­Í±¥••”¤¤íÉ•ÑÕÉ¸ÑÉÕ”ì)ô)™Õ¹Ñ¥½¸ÁÉ½•ÍÍ‘Ù…¹•‘=É‘•ÉÌ ¥ì(€½¹ÍÐ¹½Üõ…Ñ”¹¹½Ü ¤¼ÄÀÀÀì(€™½È¡±•Ð¤õ…‘Ù…¹•‘=É‘•ÉÌ¹±•¹Ñ ´Äí¤øôÀí¤´´¥ì(€€€½¹ÍÐ¼õ…‘Ù…¹•‘=É‘•ÉÍm¥tí¥˜¡¼¹Íåµ‰½°„ôõÍåµ‰½±ññ¼¹ÍÑ…ÑÕÌ„ôô½Á•¸œ¥½¹Ñ¥¹Õ”ì(€€€±•Ð‘½¹”õ™…±Í”ì(€€€¥˜¡¼¹­¥¹ôôôÁ±…¸œ¥ì(€€€€€½¹ÍÐ¡¥Ðõ¼¹Í¥‘”ôôô±½¹œœýÁÉ¥”øõ¼¹ÑÉ¥•ÈéÁÉ¥”ðõ¼¹ÑÉ¥•Èí¥˜¡¡¥Ð¥í™¥É•‘Ù…¹•¡¼±¼¹µ…É¥¸¤í‘½¹”õÑÉÕ•ô(€€€õ•±Í”¥˜¡¼¹­¥¹ôôôÑÉ…¥±¥¹œœ¥ì(€€€€€¥˜ …¼¹…Ñ¥Ù”¥í½¹ÍÐ…Ñ¥Ù…Ñ•õ¼¹Í¥‘”ôôô±½¹œœýÁÉ¥”ðõ¼¹…Ñ¥Ù…Ñ¥½¸éÁÉ¥”øõ¼¹…Ñ¥Ù…Ñ¥½¸í¥˜¡…Ñ¥Ù…Ñ•¥í¼¹…Ñ¥Ù”õÑÉÕ”í¼¹•áÑÉ•µ”õÁÉ¥•õô(€€€€€¥˜¡¼¹…Ñ¥Ù”¥í¼¹•áÑÉ•µ”õ¼¹•áÑÉ•µ”ôõ¹Õ±°ýÁÉ¥”è¡¼¹Í¥‘”ôôô±½¹œœý5…Ñ ¹µ¥¸¡¼¹•áÑÉ•µ”±ÁÉ¥”¤é5…Ñ ¹µ…à¡¼¹•áÑÉ•µ”±ÁÉ¥”¤¤í½¹ÍÐ¡¥Ðõ¼¹Í¥‘”ôôô±½¹œœýÁÉ¥”øõ¼¹•áÑÉ•µ”¨ Ä­¼¹…±±‰…¬¤éÁÉ¥”ðõ¼¹•áÑÉ•µ”¨ Äµ¼¹…±±‰…¬¤í¥˜¡¡¥Ð¥í™¥É•‘Ù…¹•¡¼±¼¹µ…É¥¸¤í‘½¹”õÑÉÕ•õô(€€€õ•±Í”¥˜¡¼¹­¥¹ôôôÑÝ…Àœ˜™¹½Üøõ¼¹¹•áÑQÌ˜™¼¹‘½¹”ñ¼¹Í±¥•Ì¥ì(€€€€€½¹ÍÐÉ•µ…¥¹¥¹œõ¼¹Í±¥•Ìµ¼¹‘½¹”±µ…É¥¸õ¼¹µ…É¥¸½¼¹Í±¥•Ìí¥˜¡™¥É•‘Ù…¹•¡¼±µ…É¥¸¤¥í¼¹‘½¹”¬¬í¼¹¹•áÑQÌõ¼¹ÍÑ…ÉÑ•‘Ð­¼¹‘ÕÉ…Ñ¥½¸¨¡¼¹‘½¹”½¼¹Í±¥•Ì¤í¥˜¡¼¹‘½¹”øõ¼¹Í±¥•Ì¥‘½¹”õÑÉÕ•ô(€€€ô(€€€¥˜¡‘½¹”¥í½¹ÍÐÜõ™ÕÑÕÉ•Í]…±±•Ð ¤í¥˜¡¼¹É•Í•ÉÙ•øÀ¥íÜ¹™É½é•¸õ5…Ñ ¹µ…à À±Ü¹™É½é•¸µ¼¹É•Í•ÉÙ•¤íÜ¹ÕÍ‘Ð¬õ¼¹É•Í•ÉÙ•‘õ…‘Ù…¹•‘=É‘•ÉÌ¹ÍÁ±¥”¡¤°Ä¤í¹½Ñ¥™ä Ÿ¦®cžêŸ–žSš&c–º3š"@œ±¼¹Íåµ‰½°°ÍÕ•ÍÌœ¥ô(€ô(€Í…Ù•XÄÁMÑ…Ñ” ¤íÍ…Ù•MÑ…Ñ” ¤ì)ô)½¹ÍÐ½±‘ÁÁ±åI•…±Ñ¥µ•QÉ…‘”õ…ÁÁ±åI•…±Ñ¥µ•QÉ…‘”ì)…ÁÁ±åI•…±Ñ¥µ•QÉ…‘”õ™Õ¹Ñ¥½¸¡À±Ð±Ø¥í½±‘ÁÁ±åI•…±Ñ¥µ•QÉ…‘”¡À±Ð±Ø¤íÁÉ½•ÍÍ‘Ù…¹•‘=É‘•ÉÌ ¥ôì()½¹ÍÐ½±‘I•¹‘•ÉQ…‰±”õÉ•¹‘•ÉQ…‰±”ì)É•¹‘•ÉQ…‰±”õ™Õ¹Ñ¥½¸ ¥ì(€½±‘I•¹‘•ÉQ…‰±” ¤ì(€¥˜¡Ñ…‰±•5½‘”ôôô½Á•¸œ˜™…‘Ù…¹•‘=É‘•ÉÌ¹±•¹Ñ ¥ì(€€€½¹ÍÐ‰½‘äô Ñ‰½‘äœ¤í¥˜¡‰½‘ä¹ÅÕ•ÉåM•±•Ñ½È œ¹•µÁÑäœ¤¥‰½‘ä¹¥¹¹•É!Q50ôœœì(€€€‰½‘ä¹¥¹Í•ÉÑ‘©…•¹Ñ!Q50 ‰•™½É••¹œ±…‘Ù…¹•‘=É‘•ÉÌ¹µ…À¡¼ôù€ñÑÈøñÑø‘í¹•Ü…Ñ”¡¼¹É•…Ñ•‘Ð¤¹Ñ½1½…±•Q¥µ•MÑÉ¥¹œ ¥ôð½ÑøñÑø‘í¼¹Íåµ‰½±ôð½ÑøñÑø‘í¼¹Í¥‘”ôôô±½¹œœüŸ–ò–’hœèŸ–òž¦èôð½ÑøñÑø‘ííÁ±…¸èŸ¢º‡–"Hœ±ÑÉ…¥±¥¹œèŸ¢Þ¢â¨œ±ÑÝ…ÀèŸ–"š^Øõm¼¹­¥¹‘uôð½ÑøñÑø‘í™µÐ¡¼¹µ…É¥¸¥ôð½ÑøñÑø‘í¼¹±•Ù•É…•õ`ð½ÑøñÑøñ‰ÕÑÑ½¸±…ÍÌô‰…¹•°ˆ‘…Ñ„µ…¹•±…‘Øôˆ‘í¼¹¥‘ôˆûšJ“–6Tð½‰ÕÑÑ½¸øð½Ñøð½ÑÈù€¤¹©½¥¸ œœ¤¤ì(€ô)ôì( Ñ‰½‘äœ¤¹…‘‘Ù•¹Ñ1¥ÍÑ•¹•È ±¥¬œ±”ôùì(€½¹ÍÐˆõ”¹Ñ…É•Ð¹±½Í•ÍÐ m‘…Ñ„µ…¹•±…‘Ùtœ¤í¥˜ …ˆ¥É•ÑÕÉ¸í½¹ÍÐ¥ô­ˆ¹‘…Ñ…Í•Ð¹…¹•±…‘Ø±¤õ…‘Ù…¹•‘=É‘•ÉÌ¹™¥¹‘%¹‘•à¡àôùà¹¥ôôõ¥¤í¥˜¡¤ðÀ¥É•ÑÕÉ¸í½¹ÍÐ¼õ…‘Ù…¹•‘=É‘•ÉÍm¥t±Üõ™ÕÑÕÉ•Í]…±±•Ð ¤íÜ¹™É½é•¸õ5…Ñ ¹µ…à À±Ü¹™É½é•¸µ¼¹É•Í•ÉÙ•¤íÜ¹ÕÍ‘Ð¬õ¼¹É•Í•ÉÙ•í…‘Ù…¹•‘=É‘•ÉÌ¹ÍÁ±¥”¡¤°Ä¤íÍ…Ù•XÄÁMÑ…Ñ” ¤íÍ…Ù•MÑ…Ñ” ¤íÉ•¹‘•ÉQ…‰±” ¤í¹½Ñ¥™ä Ÿ¦®cžêŸ–žSš&c–ÞËšJ“¦R œ±¼¹Íåµ‰½°°¥¹™¼œ¤ì)ô¤ì((¼¨€´´´´´´´´´´Íåµ‰½°½…ÕÑ ¥¹Ñ•É…Ñ¥½¸€´´´´´´´´´´€¨¼)½¹ÍÐ½±‘M•ÑMåµ‰½°õÍ•ÑMåµ‰½°ì)Í•ÑMåµ‰½°õ…Íå¹Œ™Õ¹Ñ¥½¸¡Íå´¥ì(€½¹ÍÐÈõ…Ý…¥Ð½±‘M•ÑMåµ‰½°¡Íå´¤ì(€¥˜¡½¹ÑÉ…ÑA…¹•±5½‘”ôôô½Ù•ÉÙ¥•Üœ¥É•¹‘•É=Ù•ÉÙ¥•Ü ¤ì(€¥˜¡½¹ÑÉ…ÑA…¹•±5½‘”ôôô‘…Ñ„œ¥É•¹‘•É¹…±åÑ¥Ì ¤ì(€…Ý…¥Ð±½…‘I••¹ÑQÉ…‘•Ì ¤í½¹¹•ÑÕÑÕÉ•ÍQÉ…‘•Ì ¤ì(€É•ÑÕÉ¸Èì)ôì)½¹ÍÐ½±‘Må¹ÕÑ õÍå¹ÕÑ ì)Íå¹ÕÑ õ™Õ¹Ñ¥½¸ ¥í½±‘Må¹ÕÑ  ¤í±½…‘XÄÁMÑ…Ñ” ¤íÉ•¹‘•ÉMÑÉ…Ñ•¥•Ì ¥ôì(()½¹ÍÐ½±‘M¡½ÝA…”õÍ¡½ÝA…”ì)Í¡½ÝA…”õ™Õ¹Ñ¥½¸¡Á…”¥ì(€¥˜¡Á…”ôôôÑÉ…‘”œ˜™½¹ÑÉ…ÑA…¹•±5½‘”„ôô¡…ÉÐœ¥Í¡½Ý½¹ÑÉ…ÑA…¹•° ¡…ÉÐœ¤ì(€½¹ÍÐÈõ½±‘M¡½ÝA…”¡Á…”¤ì(€É•ÑÕÉ¸Èì)ôì)½¹ÍÐ½±‘I•¹‘•ÉQÉ…‘¥¹5½‘”õÉ•¹‘•ÉQÉ…‘¥¹5½‘”ì)É•¹‘•ÉQÉ…‘¥¹5½‘”õ™Õ¹Ñ¥½¸ ¥ì(€½¹ÍÐÈõ½±‘I•¹‘•ÉQÉ…‘¥¹5½‘” ¤ì(€¥˜  ÍÑÉ…Ñ•åA…¹•°œ¤¥Í•ÑQÉ…‘•A…¹•° µ…¹Õ…°œ¤ì(€É•ÑÕÉ¸Èì)ôì((¼¨€´´´´´´´´´´¥¹¥Ñ¥…°€´´´´´´´´´´€¨¼)±½…‘XÄÁMÑ…Ñ” ¤íÉ•¹‘•ÉMÑÉ…Ñ•¥•Ì ¤í±½…‘I••¹ÑQÉ…‘•Ì ¤í½¹¹•ÑÕÑÕÉ•ÍQÉ…‘•Ì ¤ì)ô¤ ¤ì)ô¤ ¤ìì(
+    <div class="modal-actions"><button class="ghostbtn" data-close="strategyModal">å–æ¶ˆ</button><button class="confirmbtn" id="strategyCreateBtn">åˆ›å»ºæ¨¡æ‹Ÿç­–ç•¥</button></div>
+  </div></div>`);
+}
+
+/* ---------- chart tabs: chart / overview / data ---------- */
+const chartTabs=[...document.querySelectorAll('.charttabs span')];
+chartTabs.forEach((x,i)=>{x.dataset.contracttab=['chart','overview','data'][i]||'chart';x.style.cursor='pointer'});
+function showContractPanel(mode){
+  contractPanelMode=mode;
+  chartTabs.forEach(x=>x.classList.toggle('active',x.dataset.contracttab===mode));
+  const info=$('contractInfoPanel'), timebar=$('timebar'), wrap=$('chartwrap'), layout=$('layout');
+  const full=mode!=='chart';
+  timebar.classList.toggle('hidden',full);wrap.classList.toggle('hidden',full);info.classList.toggle('hidden',!full);
+  layout.classList.toggle('contract-info-mode',full);
+  if(mode==='overview')renderOverview();
+  if(mode==='data')renderAnalytics();
+  if(mode==='chart')setTimeout(resize,0);
+}
+chartTabs.forEach(x=>x.onclick=()=>showContractPanel(x.dataset.contracttab));
+
+function renderOverview(){
+  const m=meta[symbol],snap=marketSnapshots[symbol]||{},last=snap.last||price,marketCap=m.code==='BTC'?last*19.9e6:last*120.7e6;
+  $('contractInfoPanel').innerHTML=`
+  <div class="overview-subnav"><button class="active">åŸºç¡€ä¿¡æ¯</button><button>äº¤æ˜“å‚æ•°</button><button>èµ„é‡‘è´¹çŽ‡åŽ†å²</button><button>æŒ‡æ•°ä»·æ ¼</button></div>
+  <div class="overview-grid">
+    <section class="overview-main">
+      <h2><span class="coin-round">${configs[symbol].icon}</span>${m.code} <small>${m.name}</small></h2>
+      <h3>å¸ç§èµ„æ–™</h3><p class="coin-intro">${m.intro}</p>
+      <div class="kv-list">
+        <div><span>å¸‚å€¼æŽ’å</span><b>${m.rank}</b></div>
+        <div><span>ä¼°ç®—æµé€šå¸‚å€¼</span><b>$${shortNum(marketCap)}</b></div>
+        <div><span>24H æˆäº¤é¢</span><b>$${shortNum(snap.quoteVolume||0)}</b></div>
+        <div><span>å‘è¡Œ / æµé€šé‡</span><b>${m.supply}</b></div>
+        <div><span>æœ€å¤§ä¾›åº”é‡</span><b>${m.maxSupply}</b></div>
+        <div><span>ä¸»ç½‘ä¸Šçº¿</span><b>${m.launch}</b></div>
+      </div>
+    </section>
+    <aside class="overview-side">
+      <h3>é¡¹ç›®è¯„åˆ†</h3>
+      <div class="score-card"><span>å®‰å…¨è¯„åˆ†</span><b>æœªæŽ¥å…¥</b><small>ä¸ä¼ªé€ ç¬¬ä¸‰æ–¹è¯„åˆ†</small></div>
+      <h3>èµ„æº</h3>
+      <div class="resource-links"><a href="${m.site}" target="_blank">å®˜ç½‘</a><a href="${m.explorer}" target="_blank">åŒºå—é“¾æµè§ˆå™¨</a><a href="${m.github}" target="_blank">GitHub</a></div>
+      <p class="muted tiny">å¸‚åœºå¸‚å€¼ä¸ºæŒ‰å®žæ—¶ä»·æ ¼ä¸Žè¿‘ä¼¼æµé€šé‡è®¡ç®—çš„ä¼°å€¼ï¼Œä»…ç”¨äºŽæ¨¡æ‹Ÿå™¨å±•ç¤ºã€‚</p>
+    </aside>
+  </div>`;
+}
+
+/* ---------- analytics ---------- */
+const periods=['5m','15m','1h','2h','4h','1d'];
+function analyticsHeader(title){
+  return `<div class="metric-card-head"><h3>${title}</h3><div class="period-switch">${periods.map(p=>`<button data-period="${p}" class="${p===analyticsPeriod?'active':''}">${p==='1d'?'1æ—¥':p.replace('m','åˆ†').replace('h','å°æ—¶')}</button>`).join('')}</div></div>`;
+}
+function svgSeries(lines=[],bars=[],opts={}){
+  const W=700,H=210,p={l:28,r:12,t:12,b:28};
+  const all=[...lines.flatMap(x=>x.values),...bars.flatMap(x=>x.values)].filter(Number.isFinite);
+  if(!all.length)return '<div class="metric-empty">æš‚æ— æ•°æ®</div>';
+  let lo=opts.zero?Math.min(0,...all):Math.min(...all),hi=Math.max(...all);if(hi===lo){hi+=1;lo-=1}
+  const x=i=>p.l+(W-p.l-p.r)*(i/Math.max(1,(Math.max(...lines.map(s=>s.values.length),...bars.map(s=>s.values.length))-1)));
+  const y=v=>p.t+(H-p.t-p.b)*(hi-v)/(hi-lo);
+  let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="metric-svg">`;
+  for(let i=0;i<4;i++){const yy=p.t+(H-p.t-p.b)*i/3;s+=`<line x1="${p.l}" y1="${yy}" x2="${W-p.r}" y2="${yy}" stroke="#1d2430" stroke-dasharray="4 4"/>`}
+  bars.forEach((ser,si)=>{const bw=Math.max(2,(W-p.l-p.r)/Math.max(1,ser.values.length)*.58);ser.values.forEach((v,i)=>{const yy=y(v),y0=y(0),h=Math.abs(y0-yy);s+=`<rect x="${x(i)-bw/2}" y="${Math.min(yy,y0)}" width="${bw}" height="${Math.max(1,h)}" fill="${ser.color||'#e78a3f'}" opacity=".9"/>`})});
+  lines.forEach(ser=>{const pts=ser.values.map((v,i)=>`${x(i)},${y(v)}`).join(' ');s+=`<polyline points="${pts}" fill="none" stroke="${ser.color||'#e8edf5'}" stroke-width="2"/>`});
+  s+='</svg>';
+  return s+`<div class="metric-legend">${[...lines,...bars].map(x=>`<span><i style="background:${x.color}"></i>${x.name}</span>`).join('')}</div>`;
+}
+async function loadAnalytics(period=analyticsPeriod){
+  analyticsBusy=true;const sym=apiSymbol(),qs=`symbol=${sym}&period=${period}&limit=32`;
+  const req=[
+    fapi(`/futures/data/openInterestHist?${qs}`),
+    fapi(`/fapi/v1/klines?symbol=${sym}&interval=${period}&limit=32`),
+    fapi(`/futures/data/topLongShortAccountRatio?${qs}`),
+    fapi(`/futures/data/topLongShortPositionRatio?${qs}`),
+    fapi(`/futures/data/globalLongShortAccountRatio?${qs}`),
+    fapi(`/fapi/v1/fundingRate?symbol=${sym}&limit=32`),
+    fapi(`/fapi/v1/premiumIndexKlines?symbol=${sym}&interval=${period}&limit=32`)
+  ];
+  const r=await Promise.allSettled(req);analyticsBusy=false;
+  return r.map(x=>x.status==='fulfilled'?x.value:[]);
+}
+async function renderAnalytics(){
+  $('contractInfoPanel').innerHTML='<div class="analytics-loading">æ­£åœ¨åŠ è½½ Binance U æœ¬ä½åˆçº¦å…¬å¼€æ•°æ®â€¦</div>';
+  const [oi,klines,topAcc,topPos,globalRatio,funding,premium]=await loadAnalytics(analyticsPeriod);
+  const oiV=oi.map(x=>n(x.sumOpenInterestValue||x.sumOpenInterest));
+  const futVol=klines.map(x=>n(x[7]||x[5]));
+  const buy=klines.map(x=>n(x[10]||0));
+  const sell=klines.map(x=>-Math.max(0,n(x[7]||0)-n(x[10]||0)));
+  const net=klines.map((x,i)=>(buy[i]||0)+(sell[i]||0));
+  const longA=topAcc.map(x=>n(x.longAccount)*100),shortA=topAcc.map(x=>-n(x.shortAccount)*100);
+  const longP=topPos.map(x=>n(x.longPosition||x.longAccount)*100),shortP=topPos.map(x=>-n(x.shortPosition||x.shortAccount)*100);
+  const globalLong=globalRatio.map(x=>n(x.longAccount)*100),globalShort=globalRatio.map(x=>-n(x.shortAccount)*100);
+  const fr=funding.map(x=>n(x.fundingRate)*100);
+  const prem=premium.map(x=>n(x[4])*100);
+  const html=`
+  <div class="analytics-grid">
+    <article class="metric-card">${analyticsHeader('æŒä»“é‡å’Œäº¤æ˜“é‡')}${svgSeries([{name:'æŒä»“é‡',values:oiV,color:'#e9edf5'}],[{name:'å˜åŒ–é‡',values:futVol,color:'#f49b50'}])}</article>
+    <article class="metric-card">${analyticsHeader('åˆçº¦èµ„é‡‘æµå‘')}${svgSeries([{name:'å‡€æµå…¥',values:net,color:'#edf1f7'}],[{name:'ä¸»åŠ¨ä¹°å…¥',values:buy,color:'#55b78c'},{name:'ä¸»åŠ¨å–å‡º',values:sell,color:'#da5b68'}],{zero:true})}</article>
+    <article class="metric-card">${analyticsHeader('å¤§æˆ·å¤šç©ºäººæ•°æ¯”ï¼ˆè´¦æˆ·ï¼‰')}${svgSeries([{name:'å¤šç©ºæ¯”',values:topAcc.map(x=>n(x.longShortRatio)),color:'#edf1f7'}],[{name:'å¤šä»“è´¦æˆ·æ¯”ä¾‹',values:longA,color:'#55b78c'},{name:'ç©ºä»“è´¦æˆ·æ¯”ä¾‹',values:shortA,color:'#da5b68'}],{zero:true})}</article>
+    <article class="metric-card">${analyticsHeader('èµ„é‡‘è´¹çŽ‡')}${svgSeries([{name:'èµ„é‡‘è´¹çŽ‡ %',values:fr,color:'#55b78c'}],[],{zero:true})}</article>
+    <article class="metric-card">${analyticsHeader('å¤§æˆ·å¤šç©ºäººæ•°æ¯”ï¼ˆæŒä»“ï¼‰')}${svgSeries([{name:'å¤šç©ºæŒä»“æ¯”',values:topPos.map(x=>n(x.longShortRatio)),color:'#edf1f7'}],[{name:'å¤šä»“æŒä»“æ¯”ä¾‹',values:longP,color:'#55b78c'},{name:'ç©ºä»“æŒä»“æ¯”ä¾‹',values:shortP,color:'#da5b68'}],{zero:true})}</article>
+    <article class="metric-card">${analyticsHeader('åŸºå·® / æº¢ä»·æŒ‡æ•°')}${svgSeries([{name:'Premium Index %',values:prem,color:'#ff8f44'}],[],{zero:true})}</article>
+    <article class="metric-card">${analyticsHeader('åˆçº¦å¤šç©ºäººæ•°æ¯”')}${svgSeries([{name:'å…¨å¸‚åœºå¤šç©ºæ¯”',values:globalRatio.map(x=>n(x.longShortRatio)),color:'#edf1f7'}],[{name:'å¤šä»“è´¦æˆ·',values:globalLong,color:'#55b78c'},{name:'ç©ºä»“è´¦æˆ·',values:globalShort,color:'#da5b68'}],{zero:true})}</article>
+    <article class="metric-card">${analyticsHeader('æœªå¹³ä»“é‡ä¸Žä»·æ ¼')}${svgSeries([{name:'æŒä»“é‡',values:oiV,color:'#77aaff'},{name:'ä»·æ ¼ï¼ˆå½’ä¸€ï¼‰',values:oiV.map((_,i)=>price*(1+(i-oiV.length)/500)),color:'#ff9850'}],[])}</article>
+  </div>
+  <div class="analytics-note">æ•°æ®æºï¼šBinance USDâ“ˆ-M Futures å…¬å…±æŽ¥å£ã€‚ä¸åŒäº¤æ˜“æ‰€å£å¾„å¯èƒ½ä¸Žæˆªå›¾ä¸­çš„ HTX/AiCoin æŒ‡æ ‡ä¸å®Œå…¨ä¸€è‡´ã€‚</div>`;
+  $('contractInfoPanel').innerHTML=html;
+}
+$('contractInfoPanel').addEventListener('click',e=>{
+  const b=e.target.closest('[data-period]');if(!b||analyticsBusy)return;analyticsPeriod=b.dataset.period;renderAnalytics();
+});
+
+/* ---------- recent trades ---------- */
+function renderRecentTrades(){
+  if(!$('recentTrades'))return;
+  $('recentTrades').innerHTML=`<div class="recent-head"><span>æ—¶é—´</span><span>ä»·æ ¼(USDT)</span><span>æ•°é‡(USDT)</span></div>`+recentTrades.slice(0,80).map(t=>`<div class="recent-row"><span>${htmlEsc(t.time)}</span><span class="${t.sell?'red':'green'}">${fmt(t.price,cfg.dec)}</span><span>${fmt(t.quote,4)}</span></div>`).join('');
+}
+async function loadRecentTrades(){
+  try{
+    const rows=await fapi(`/fapi/v1/aggTrades?symbol=${apiSymbol()}&limit=80`);
+    recentTrades=rows.reverse().map(x=>({time:new Date(x.T).toLocaleTimeString(),price:n(x.p),quote:n(x.p)*n(x.q),sell:!!x.m}));
+    renderRecentTrades();
+  }catch(e){console.warn('recent trades load failed',e)}
+}
+function connectFuturesTrades(){
+  if(futuresTradeSocket){try{futuresTradeSocket.close()}catch{}}
+  const ws=new WebSocket(`${FUTURES_WS}/${apiSymbol().toLowerCase()}@aggTrade`);futuresTradeSocket=ws;
+  ws.onmessage=e=>{try{const d=JSON.parse(e.data);recentTrades.unshift({time:new Date(d.T).toLocaleTimeString(),price:n(d.p),quote:n(d.p)*n(d.q),sell:!!d.m});recentTrades=recentTrades.slice(0,100);if(recentTradeView==='trades')renderRecentTrades()}catch{}};
+  ws.onclose=()=>{if(futuresTradeSocket===ws)setTimeout(connectFuturesTrades,2500)};
+}
+document.querySelector('.orderbook .panelhead').onclick=e=>{
+  const b=e.target.closest('[data-booktab]');if(!b)return;recentTradeView=b.dataset.booktab;
+  $$('.book-tab').forEach(x=>x.classList.toggle('active',x===b));
+  const show=recentTradeView==='trades';
+  $('recentTrades').classList.toggle('hidden',!show);
+  ['asks','bids','midPrice'].forEach(id=>$(id)?.classList.toggle('hidden',show));
+  document.querySelector('.obhead')?.classList.toggle('hidden',show);
+  if(show)renderRecentTrades();
+};
+
+/* ---------- strategy tab ---------- */
+function renderStrategies(){
+  const el=$('strategyList');if(!el)return;
+  el.innerHTML=strategyRecords.length?strategyRecords.map((s,i)=>`<div class="strategy-record"><div><b>${s.name}</b><span>${s.symbol} Â· ${fmt(s.amount)} USDT</span></div><div><span>${fmt(s.low,cfg.dec)} - ${fmt(s.high,cfg.dec)}</span><button data-stopstrategy="${i}">åˆ é™¤</button></div></div>`).join(''):'<div class="muted strategy-empty">æš‚æ— ç­–ç•¥é…ç½®</div>';
+}
+function setTradePanel(mode){
+  const manual=mode==='manual';
+  $('manualTradeTab').classList.toggle('active',manual);$('strategyTradeTab').classList.toggle('active',!manual);
+  $('strategyPanel').classList.toggle('hidden',manual);$('futuresPanel').classList.toggle('hidden',!manual||tradingMode!=='futures');$('spotPanel').classList.toggle('hidden',!manual||tradingMode!=='spot');
+  if(!manual)renderStrategies();
+}
+$('manualTradeTab').onclick=()=>setTradePanel('manual');
+$('strategyTradeTab').onclick=()=>setTradePanel('strategy');
+$('strategyPanel').onclick=e=>{
+  const stop=e.target.closest('[data-stopstrategy]');if(stop){strategyRecords.splice(+stop.dataset.stopstrategy,1);saveV10State();renderStrategies();return}
+  const card=e.target.closest('[data-strategy]');if(!card)return;
+  const kind=card.dataset.strategy,names={'spot-grid':'çŽ°è´§ç½‘æ ¼','futures-grid':'åˆçº¦ç½‘æ ¼','martingale':'åˆçº¦é©¬ä¸æ ¼å°”'};
+  $('strategyModal').dataset.kind=kind;$('strategyModalTitle').textContent='åˆ›å»º '+names[kind];
+  $('strategyLow').value=(price*.96).toFixed(cfg.dec);$('strategyHigh').value=(price*1.04).toFixed(cfg.dec);$('strategyModal').classList.add('show');
+};
+$('strategyCreateBtn').onclick=()=>{
+  if(!user)return openAuth('login');
+  const amount=+$('strategyAmount').value,low=+$('strategyLow').value,high=+$('strategyHigh').value,grids=+$('strategyGrids').value,kind=$('strategyModal').dataset.kind;
+  if(!amount||!low||!high||low>=high||grids<2)return notify('ç­–ç•¥åˆ›å»ºå¤±è´¥','è¯·æ£€æŸ¥å‚æ•°','error');
+  const names={'spot-grid':'çŽ°è´§ç½‘æ ¼','futures-grid':'åˆçº¦ç½‘æ ¼','martingale':'åˆçº¦é©¬ä¸æ ¼å°”'};
+  strategyRecords.unshift({kind,name:names[kind],symbol,amount,low,high,grids,createdAt:Date.now()});saveV10State();$('strategyModal').classList.remove('show');renderStrategies();notify('ç­–ç•¥é…ç½®å·²åˆ›å»º','å½“å‰ä¸ºæœ¬åœ°æ¨¡æ‹Ÿé…ç½®','info');
+};
+
+/* ---------- advanced order modes ---------- */
+function renderAdvancedFields(){
+  const on=!!advancedKind;$('advancedOrderFields').classList.toggle('hidden',!on);
+  ['planTriggerField','trailActivationField','trailCallbackField','twapDurationField','twapSlicesField'].forEach(id=>$(id).classList.add('hidden'));
+  if(!on)return;
+  const map={plan:['planTriggerField'],trailing:['trailActivationField','trailCallbackField'],twap:['twapDurationField','twapSlicesField']};
+  (map[advancedKind]||[]).forEach(id=>$(id).classList.remove('hidden'));
+  $('advancedKindTitle').textContent={plan:'è®¡åˆ’å§”æ‰˜',trailing:'è·Ÿè¸ªå§”æ‰˜',twap:'åˆ†æ—¶å§”æ‰˜'}[advancedKind];
+}
+$('advancedOrderBtn').onclick=e=>{e.stopPropagation();$('advancedOrderMenu').classList.toggle('hidden')};
+$('advancedOrderMenu').onclick=e=>{const b=e.target.closest('[data-advkind]');if(!b)return;advancedKind=b.dataset.advkind;$('advancedOrderMenu').classList.add('hidden');renderAdvancedFields()};
+$('advancedKindClear').onclick=()=>{advancedKind=null;renderAdvancedFields()};
+document.addEventListener('click',e=>{if(!$('advancedOrderMenu').contains(e.target)&&e.target!==$('advancedOrderBtn'))$('advancedOrderMenu').classList.add('hidden')});
+
+function reserveAdvanced(side){
+  if(!user)return openAuth('login');
+  const margin=+$('marginInput').value,mode=$('marginMode').value,tp=$('tpslEnable').checked?(+$('tpInput').value||0):0,sl=$('tpslEnable').checked?(+$('slInput').value||0):0;
+  if(!margin||margin<=0)return notify('å§”æ‰˜å¤±è´¥','è¯·è¾“å…¥ä¿è¯é‡‘','error');
+  const w=futuresWallet(),fee=margin*leverage*FEE,total=margin+fee;if(total>w.usdt)return notify('å§”æ‰˜å¤±è´¥','åˆçº¦è´¦æˆ·ä½™é¢ä¸è¶³','error');
+  const o={id:Date.now()+Math.random(),kind:advancedKind,side,margin,mode,leverage,tp,sl,symbol,reserved:total,createdAt:Date.now(),status:'open'};
+  if(advancedKind==='plan'){o.trigger=+$('planTriggerInput').value;if(!o.trigger)return notify('å§”æ‰˜å¤±è´¥','è¯·è¾“å…¥è§¦å‘ä»·','error')}
+  if(advancedKind==='trailing'){o.activation=+$('trailActivationInput').value||null;o.callback=Math.max(.001,(+$('trailCallbackInput').value||1)/100);o.extreme=null;o.active=!o.activation}
+  if(advancedKind==='twap'){o.duration=Math.max(60,(+$('twapDurationInput').value||10)*60);o.slices=clamp(+$('twapSlicesInput').value||5,2,50);o.done=0;o.nextTs=Date.now()/1000;o.startedAt=Date.now()/1000}
+  w.usdt-=total;w.frozen+=total;advancedOrders.unshift(o);saveV10State();saveState();notify('é«˜çº§å§”æ‰˜å·²æäº¤',{plan:'è®¡åˆ’',trailing:'è·Ÿè¸ª',twap:'åˆ†æ—¶'}[advancedKind]+' Â· '+(side==='long'?'å¼€å¤š':'å¼€ç©º'),'info');renderTable();
+}
+const baseBuy=$('buyBtn').onclick,baseSell=$('sellBtn').onclick;
+$('buyBtn').onclick=()=>advancedKind?reserveAdvanced('long'):baseBuy();
+$('sellBtn').onclick=()=>advancedKind?reserveAdvanced('short'):baseSell();
+
+function fireAdvanced(o,margin){
+  const w=futuresWallet(),sliceFee=margin*o.leverage*FEE;
+  const p=executeOpen(o.side,margin,price,o.mode,o.leverage,o.tp,o.sl,`${{plan:'è®¡åˆ’',trailing:'è·Ÿè¸ª',twap:'åˆ†æ—¶'}[o.kind]}å¼€ä»“`,true);
+  if(!p)return false;
+  o.reserved=Math.max(0,o.reserved-(margin+sliceFee));return true;
+}
+function processAdvancedOrders(){
+  const now=Date.now()/1000;
+  for(let i=advancedOrders.length-1;i>=0;i--){
+    const o=advancedOrders[i];if(o.symbol!==symbol||o.status!=='open')continue;
+    let done=false;
+    if(o.kind==='plan'){
+      const hit=o.side==='long'?price>=o.trigger:price<=o.trigger;if(hit){fireAdvanced(o,o.margin);done=true}
+    }else if(o.kind==='trailing'){
+      if(!o.active){const activated=o.side==='long'?price<=o.activation:price>=o.activation;if(activated){o.active=true;o.extreme=price}}
+      if(o.active){o.extreme=o.extreme==null?price:(o.side==='long'?Math.min(o.extreme,price):Math.max(o.extreme,price));const hit=o.side==='long'?price>=o.extreme*(1+o.callback):price<=o.extreme*(1-o.callback);if(hit){fireAdvanced(o,o.margin);done=true}}
+    }else if(o.kind==='twap'&&now>=o.nextTs&&o.done<o.slices){
+      const remaining=o.slices-o.done,margin=o.margin/o.slices;if(fireAdvanced(o,margin)){o.done++;o.nextTs=o.startedAt+o.duration*(o.done/o.slices);if(o.done>=o.slices)done=true}
+    }
+    if(done){const w=futuresWallet();if(o.reserved>0){w.frozen=Math.max(0,w.frozen-o.reserved);w.usdt+=o.reserved}advancedOrders.splice(i,1);notify('é«˜çº§å§”æ‰˜å®Œæˆ',o.symbol,'success')}
+  }
+  saveV10State();saveState();
+}
+const oldApplyRealtimeTrade=applyRealtimeTrade;
+applyRealtimeTrade=function(p,t,v){oldApplyRealtimeTrade(p,t,v);processAdvancedOrders()};
+
+const oldRenderTable=renderTable;
+renderTable=function(){
+  oldRenderTable();
+  if(tableMode==='open'&&advancedOrders.length){
+    const body=$('tbody');if(body.querySelector('.empty'))body.innerHTML='';
+    body.insertAdjacentHTML('beforeend',advancedOrders.map(o=>`<tr><td>${new Date(o.createdAt).toLocaleTimeString()}</td><td>${o.symbol}</td><td>${o.side==='long'?'å¼€å¤š':'å¼€ç©º'}</td><td>${{plan:'è®¡åˆ’',trailing:'è·Ÿè¸ª',twap:'åˆ†æ—¶'}[o.kind]}</td><td>${fmt(o.margin)}</td><td>${o.leverage}X</td><td><button class="cancel" data-canceladv="${o.id}">æ’¤å•</button></td></tr>`).join(''));
+  }
+};
+$('tbody').addEventListener('click',e=>{
+  const b=e.target.closest('[data-canceladv]');if(!b)return;const id=+b.dataset.canceladv,i=advancedOrders.findIndex(x=>x.id===id);if(i<0)return;const o=advancedOrders[i],w=futuresWallet();w.frozen=Math.max(0,w.frozen-o.reserved);w.usdt+=o.reserved;advancedOrders.splice(i,1);saveV10State();saveState();renderTable();notify('é«˜çº§å§”æ‰˜å·²æ’¤é”€',o.symbol,'info');
+});
+
+/* ---------- symbol/auth integration ---------- */
+const oldSetSymbol=setSymbol;
+setSymbol=async function(sym){
+  const r=await oldSetSymbol(sym);
+  if(contractPanelMode==='overview')renderOverview();
+  if(contractPanelMode==='data')renderAnalytics();
+  await loadRecentTrades();connectFuturesTrades();
+  return r;
+};
+const oldSyncAuth=syncAuth;
+syncAuth=function(){oldSyncAuth();loadV10State();renderStrategies()};
+
+const oldShowPage=showPage;
+showPage=function(page){
+  if(page==='trade'&&contractPanelMode!=='chart')showContractPanel('chart');
+  const r=oldShowPage(page);
+  return r;
+};
+const oldRenderTradingMode=renderTradingMode;
+renderTradingMode=function(){
+  const r=oldRenderTradingMode();
+  if($('strategyPanel'))setTradePanel('manual');
+  return r;
+};
+
+/* ---------- initial ---------- */
+loadV10State();renderStrategies();loadRecentTrades();connectFuturesTrades();
+})();
+})();;
