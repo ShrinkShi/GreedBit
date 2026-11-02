@@ -17,7 +17,7 @@
 
   function injectShell(){
     if(!document.querySelector('link[href="styles/v011.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v011.css';document.head.appendChild(l)}
-    let favicon=document.querySelector('link[rel~="icon"]');if(!favicon){favicon=document.createElement('link');favicon.rel='icon';favicon.type='image/png';document.head.appendChild(favicon)}favicon.href=LOGO;
+    let favicon=document.querySelector('link[rel~="icon"]');if(!favicon){favicon=document.createElement('link');favicon.rel='icon';document.head.appendChild(favicon)}favicon.type='image/png';favicon.href=LOGO;
     let brand=document.querySelector('.brand');
     if(brand&&!brand.querySelector('.brand-logo'))brand.insertAdjacentHTML('afterbegin',`<img class="brand-logo" src="${LOGO}" alt="GreedBit"/>`);
     const priceNote=document.querySelector('.pricebig')?.parentElement?.querySelector('.muted.tiny');if(priceNote){priceNote.id='convertedPrice';priceNote.classList.add('converted-price')}
