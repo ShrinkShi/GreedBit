@@ -4,6 +4,16 @@
 // v011.js still waits for a legacy renderOverview hook that no longer exists.
 // Expose a compatibility no-op so the v0.0.11 UI module can complete initialization.
 if(typeof window.renderOverview!=='function')window.renderOverview=function(){};
+
+// Repository-safe logo asset. The original v0.0.11 code referenced a PNG that was never committed.
+const GB_LOGO_ASSET='assets/greedbit-logo.svg';
+function repairGreedbitLogoAssets(){
+  document.querySelectorAll('img[src$="greedbit-logo.png"]').forEach(img=>{img.src=GB_LOGO_ASSET});
+  const favicon=document.querySelector('link[rel~="icon"]');
+  if(favicon){favicon.type='image/svg+xml';favicon.href=GB_LOGO_ASSET}
+}
+window.addEventListener('DOMContentLoaded',repairGreedbitLogoAssets,{once:true});
+
 const FAST_API_HOSTS=['https://data-api.binance.vision','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com','https://api4.binance.com','https://api-gcp.binance.com','https://api.binance.com'];
 const FAST_WS_HOSTS=['wss://data-stream.binance.vision','wss://stream.binance.com:443','wss://stream.binance.com:9443'];
 let preferredApiHost=localStorage.getItem('greedbit_fast_api_host')||'',preferredWsHost=localStorage.getItem('greedbit_fast_ws_host')||'',lastDepthAt=0;
