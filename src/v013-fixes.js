@@ -31,6 +31,30 @@ setSymbol=async function(sym){
   await loadHistoricalMarket(true);renderTable();updateAssets();V.updateFeeUi?.();
 };
 
+/* Correct the GREED fee edge case when a GREED limit-sell is already frozen. */
+function consumeFeeCompat(q,sym,note,wallet){
+  if(q.asset==='GREED'){
+    const w=spotWallet(),old=+w.coins.GREED||0,avg=old?(+w.cost.GREED||0)/old:0;
+    w.coins.GREED=Math.max(0,old-q.amount);w.cost.GREED=Math.max(0,(+w.cost.GREED||0)-avg*q.amount)
+  }
+  accountStats.fees+=q.usdt;addLedger(q.asset==='GREED'?'GREED手续费抵扣':'交易手续费',-q.usdt,sym,`${note} · ${q.asset==='GREED'?`${fmt(q.amount,6)} GREED 抵扣`:`${fmt(q.usdt,4)} USDT`}`,wallet)
+}
+spotFill=function(side,qty,fill,source='市价',reserved=0){
+  const w=spotWallet(),c=base(),notional=qty*fill,liquidity=/限价|maker/i.test(source)?'maker':'taker';
+  const greedReserved=side==='sell'&&c==='GREED'&&!reserved?qty:0,q=V.feeQuote(notional,liquidity,greedReserved),usdtFee=q.asset==='USDT'?q.usdt:0;
+  if(side==='buy'){
+    const need=notional+usdtFee;if(!reserved){if(need>w.usdt+1e-10)return false;w.usdt-=need}else{if(need>reserved+w.usdt+1e-10)return false;w.frozenUsdt=Math.max(0,w.frozenUsdt-reserved);if(need>reserved)w.usdt-=need-reserved;else w.usdt+=reserved-need}
+    const prev=+w.coins[c]||0;w.coins[c]=prev+qty;w.cost[c]=(+w.cost[c]||0)+notional+q.usdt;
+  }else{
+    if(qty>spotAvailableCoin(c)+1e-10&&!reserved)return false;if(reserved)w.frozenCoins[c]=Math.max(0,(+w.frozenCoins[c]||0)-qty);const old=+w.coins[c]||0,avg=old?(+w.cost[c]||0)/old:0,realized=(fill-avg)*qty-q.usdt;w.coins[c]=Math.max(0,old-qty);w.cost[c]=Math.max(0,(+w.cost[c]||0)-avg*qty);w.usdt+=notional-usdtFee;if(realized>=0)accountStats.realizedProfit+=realized;else accountStats.realizedLoss+=Math.abs(realized)
+  }
+  consumeFeeCompat(q,symbol,source,'spot');accountStats.spotTrades++;spotTrades.unshift({time:nowText(),ts:Date.now()/1000,symbol,side,qty,price:fill,type:source,fee:q.usdt,feeAsset:q.asset,feeAmount:q.amount});playFillSound();saveState();return true;
+};
+
+/* Keep the compact footer readable after the market universe expands. */
+updateFooterTickers=function(){const box=$('footerTickers');if(!box)return;const focus=['BTC/USDT','ETH/USDT','SOL/USDT','GREED/USDT'];box.innerHTML=focus.map(sym=>{const m=marketSnapshots[sym]||{},ch=Number(m.change)||0,a=V.META[sym];return`<span class="ticker ${ch>=0?'up':'down'}">${a?.ticker||sym} ${ch>=0?'+':''}${ch.toFixed(2)}%</span>`}).join('')};
+updateFooterTickers();
+
 /* Legacy account.js writes to removed v0.0.12 home IDs. Keep invisible targets alive. */
 const bridgeObserver=new MutationObserver(()=>{if(!$('homeMarkets')||!$('homeTotalAsset'))ensureLegacyHomeNodes()});
 bridgeObserver.observe(document.body,{childList:true,subtree:false});
