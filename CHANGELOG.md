@@ -6,7 +6,18 @@
 - 完成首轮 Bilibili Toy 静态兼容性审查：入口体积、相对资源路径、单页路由、本地存储架构均可进入 Toy 预览阶段。
 - 新增 `TOY_COMPATIBILITY.md`，记录 Toy 验收结论、风险与真实预览检查清单。
 - 新增 `tools/build-toy.ps1`，生成仅包含运行时文件的 `dist-toy/` 与 `GreedBit-toy.zip`，并检查入口 1MB 上限与根绝对资源路径。
-- Toy 正式发布前仍需在真实 preview 中验证 Binance REST/WebSocket、Futures、汇率及 CoinDesk RSS/跨域代理。
+- Toy 正式发布前仍需在真实 preview 中验证 Binance REST/WebSocket、Futures、汇率及新闻 RSS 跨域链路。
+
+## [0.0.12] - 2026-11-02
+
+- 重构主页为现代化交易平台 Landing Page：大标题、实时行情卡片、模拟账户摘要与更专业的深色视觉层级。
+- 主页右侧支持 `assets/mammon-home.mp4` 动态恶魔立绘，自动播放、静音、循环；资源缺失时自动回退到 GreedBit 品牌图。
+- 行情页保持纯新闻流定位，不增加 BTC/ETH 行情总览。
+- CoinDesk 官方 RSS 继续作为主要加密资讯源。
+- 新增 CNBC Investing 与 CNBC Top News 财经 RSS 备用源。
+- 新闻读取采用多通道策略：源站直连、cors.dev、AllOrigins、rss2json，优先并发尝试可用路径。
+- 新闻成功加载后缓存最近 80 条到 localStorage；外部源临时失败时优先显示最近一次成功缓存，不再出现空白行情页。
+- 新闻自动刷新节流到 5 分钟，手动刷新不受限制。
 
 ## [0.0.11] - 2026-11-02
 
