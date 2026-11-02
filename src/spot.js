@@ -20,7 +20,7 @@ function spotFill(side,qty,fill,source='市价',reserved=0){
   accountStats.fees+=fee;accountStats.spotTrades++;spotTrades.unshift({time:nowText(),symbol,side,qty,price:fill,type:source,fee});addLedger('现货手续费',-fee,symbol,source,'spot');playFillSound();saveState();return true;
 }
 function placeSpotOrder(){
-  if(!user)return openAuth('login');const w=spotWallet(),c=base(),amt=+$('spotAmountInput').value;if(!amt||amt<=0)return notify('下单失败','请输入有效金额/数量','error');
+  if(!user)return openAuth('login');if(!marketReady||!price)return notify('下单失败','真实市场行情尚未连接','error');const w=spotWallet(),c=base(),amt=+$('spotAmountInput').value;if(!amt||amt<=0)return notify('下单失败','请输入有效金额/数量','error');
   if(spotOrderType==='market'){
     if(spotSide==='buy'){const fill=price*(1+cfg.vol*.02),qty=amt/fill;if(!spotFill('buy',qty,fill,'市价买入'))return notify('下单失败','现货账户 USDT 不足','error');notify('现货成交',`买入 ${fmt(qty,6)} ${c} @ ${fmt(fill,cfg.dec)}`)}
     else{const fill=price*(1-cfg.vol*.02),qty=amt;if(!spotFill('sell',qty,fill,'市价卖出'))return notify('下单失败',`${c} 可用数量不足`,'error');notify('现货成交',`卖出 ${fmt(qty,6)} ${c} @ ${fmt(fill,cfg.dec)}`)}
