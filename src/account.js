@@ -43,33 +43,102 @@ function openTransfer(from='fiat',to='futures'){if(!user)return openAuth('login'
 function updateTransferAvailable(){$('transferAvailable').textContent=`可用：${fmt(walletUsdt($('transferFrom').value))} USDT`}
 function confirmTransfer(){const from=$('transferFrom').value,to=$('transferTo').value,amt=+$('transferAmount').value;if(from===to)return notify('划转失败','转出和转入账户不能相同','error');if(!amt||amt<=0)return notify('划转失败','请输入有效金额','error');if(amt>walletUsdt(from))return notify('划转失败',`${walletNames[from]}账户余额不足`,'error');setWalletUsdt(from,walletUsdt(from)-amt);setWalletUsdt(to,walletUsdt(to)+amt);accountStats.transfers++;addLedger('账户划转',amt,'',`${walletNames[from]} → ${walletNames[to]}`,from);$('transferModal').classList.remove('show');notify('划转成功',`${walletNames[from]} → ${walletNames[to]} ${fmt(amt)} USDT`);saveState();updateAssets();renderTable();renderAssetPage()}
 
-/* news */
-const newsTemplates=[
-  {s:1,k:'监管',important:true,t:c=>`监管机构释放对 ${c} 现货产品更友好的信号`,d:'市场预期合规资金流入可能增加，相关资产短线买盘升温。'},
-  {s:-1,k:'监管',important:true,t:c=>`传闻监管部门将加强对 ${c} 相关交易限制`,d:'消息尚未得到官方证实，市场出现避险情绪。'},
-  {s:1,k:'机构',important:true,t:c=>`大型机构被曝增持 ${c}`,d:'链上大额转移引发市场对机构买盘的猜测。'},
-  {s:-1,k:'安全',important:true,t:c=>`${c} 生态项目疑似出现安全事件`,d:'部分社交媒体账户正在传播未经确认的攻击消息。'},
-  {s:1,k:'技术',important:false,t:c=>`${c} 生态宣布重要性能升级计划`,d:'开发者社区认为升级可能改善网络使用体验。'},
-  {s:-1,k:'交易所',important:false,t:c=>`大型交易平台出现 ${c} 提现延迟传闻`,d:'用户反馈不一，平台尚未发布正式公告。'},
-  {s:1,k:'鲸鱼',important:true,t:c=>`鲸鱼地址出现大额 ${c} 买入行为`,d:'短时买盘明显增强，成交量同步放大。'},
-  {s:-1,k:'鲸鱼',important:true,t:c=>`鲸鱼地址向交易所转入大量 ${c}`,d:'市场担忧潜在抛售压力，短线波动上升。'}
+/* admin */
+function renderAdminPage(){
+  if(!user?.isAdmin)return;
+  const users=JSON.parse(localStorage.getItem('greedbit_users')||'{}');
+  const rows=[{username:'admin',role:'管理员',createdAt:null},...Object.values(users).map(u=>({...u,role:'用户'}))];
+  const approxStorage=Object.keys(localStorage).reduce((n,k)=>n+(localStorage.getItem(k)?.length||0)+k.length,0);
+  $('adminSummary').innerHTML=`
+    <div class="admin-stat"><small>本地账户</small><b>${rows.length}</b></div>
+    <div class="admin-stat"><small>真实行情</small><b class="${marketReady?'green':'red'}">${marketReady?'已连接':'未连接'}</b></div>
+    <div class="admin-stat"><small>真实快讯</small><b>${newsItems.length}</b></div>
+    <div class="admin-stat"><small>LocalStorage</small><b>${(approxStorage/1024).toFixed(1)} KB</b></div>`;
+  $('adminUserTable').innerHTML=rows.map(u=>{
+    const hasState=u.username==='admin'||!!localStorage.getItem(`greedbit_state_${u.username}`);
+    return `<tr><td>${escapeHtml(u.username)}</td><td>${u.role}</td><td>${u.createdAt?new Date(u.createdAt).toLocaleString():'内置账号'}</td><td>${hasState?'有':'无'}</td></tr>`;
+  }).join('');
+}
+
+/* real news */
+const NEWS_SOURCES=[
+  {name:'CoinDesk',url:'https://www.coindesk.com/arc/outboundfeeds/rss/'}
 ];
-function seedNewsHistory(){
-  newsItems=[
-    {id:newsSeq++,time:'17:04',symbol:'BTC/USDT',title:'机构资金继续关注比特币现货市场',desc:'模拟快讯：该资讯仅用于游戏中的消息辨别与投票，不会修改真实行情价格。',truth:true,resolved:true,sentiment:1,status:'已确认',kind:'机构',important:false,bull:128,bear:41,userVote:null},
-    {id:newsSeq++,time:'17:00',symbol:'MARKET',title:'市场等待关键宏观数据，风险资产波动率上升',desc:'模拟快讯：宏观预期出现分歧，多空双方均在降低高杠杆敞口。',truth:true,resolved:true,sentiment:0,status:'已确认',kind:'市场',important:true,bull:92,bear:88,userVote:null},
-    {id:newsSeq++,time:'16:55',symbol:'ETH/USDT',title:'社交媒体流传“某机构将一次性买入大量 ETH”截图',desc:'该截图的来源和真实性尚未确认。',truth:false,resolved:true,sentiment:1,status:'已证伪',kind:'传闻',important:true,bull:211,bear:136,userVote:null}
-  ];renderNews();
+let newsLoading=false;
+function escapeHtml(v=''){return String(v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function stripHtml(v=''){const d=document.createElement('div');d.innerHTML=v;return (d.textContent||'').replace(/\s+/g,' ').trim()}
+function newsHash(s=''){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function inferNewsMeta(text=''){
+  const t=text.toLowerCase();
+  const symbol=/\bbitcoin\b|\bbtc\b/.test(t)?'BTC/USDT':(/\bethereum\b|\bether\b|\beth\b/.test(t)?'ETH/USDT':'MARKET');
+  let kind='市场';
+  if(/sec|regulat|law|court|government|congress|policy|ban|etf/.test(t))kind='监管';
+  else if(/whale|wallet|on-chain|onchain|transfer/.test(t))kind='鲸鱼';
+  else if(/fund|institution|blackrock|fidelity|bank|company|treasury/.test(t))kind='机构';
+  else if(/upgrade|network|protocol|developer|layer|fork|technology/.test(t))kind='技术';
+  const important=/sec|etf|hack|exploit|lawsuit|ban|fed|rate cut|rate hike|liquidat|record high|all-time high/.test(t);
+  const pos=/approve|approval|surge|gain|rise|rally|inflow|record high|all-time high|adopt|launch/.test(t);
+  const neg=/hack|exploit|drop|fall|plunge|lawsuit|ban|outflow|liquidat|fraud|crash/.test(t);
+  return{symbol,kind,important,sentiment:pos&&!neg?1:neg&&!pos?-1:0};
 }
-function generateNews(test=false){
-  const temp=newsTemplates[Math.floor(Math.random()*newsTemplates.length)],coin=base(),truth=Math.random()<.68;
-  const item={id:newsSeq++,time:nowText().slice(0,5),symbol,kind:temp.k,title:temp.t(coin),desc:temp.d+' 当前版本使用真实市场行情，因此本地快讯不会直接改变价格。',truth,resolved:false,sentiment:temp.s,status:'待核实',important:temp.important,bull:Math.floor(20+Math.random()*220),bear:Math.floor(20+Math.random()*220),userVote:null,resolveAt:Date.now()+(test?9000:18000+Math.random()*18000)};
-  newsItems.unshift(item);newsItems=newsItems.slice(0,80);renderNews();notify('市场快讯',item.title,temp.s>0?'success':'warning',5000);
+async function fetchNewsText(url){
+  try{
+    const r=await fetch(url,{cache:'no-store'});if(r.ok)return await r.text();
+  }catch{}
+  const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent(url);
+  const r=await fetch(proxy,{cache:'no-store'});if(!r.ok)throw new Error(`RSS proxy HTTP ${r.status}`);return await r.text();
 }
-function resolveNews(){const n=Date.now();let changed=false;for(const item of newsItems){if(item.resolved||!item.resolveAt||n<item.resolveAt)continue;item.resolved=true;item.status=item.truth?'已确认':'已证伪';changed=true;if(!item.truth)notify('消息被证伪',item.title,'info',4800);else notify('消息已确认',item.title,'info',3800)}if(changed)renderNews()}
-function voteNews(id,vote){const n=newsItems.find(x=>x.id===id);if(!n)return;if(n.userVote===vote)return;if(n.userVote==='bull')n.bull=Math.max(0,n.bull-1);if(n.userVote==='bear')n.bear=Math.max(0,n.bear-1);n.userVote=vote;n[vote]++;renderNews()}
-function newsMatches(n){if($('importantOnly').checked&&!n.important)return false;if(newsFilter==='all')return true;if(newsFilter==='BTC'||newsFilter==='ETH')return n.symbol.startsWith(newsFilter);return n.kind===newsFilter}
+function parseRss(xml,source){
+  const doc=new DOMParser().parseFromString(xml,'application/xml');
+  if(doc.querySelector('parsererror'))throw new Error('RSS parse error');
+  const voteMap=JSON.parse(localStorage.getItem('greedbit_news_votes')||'{}');
+  return [...doc.querySelectorAll('item')].slice(0,60).map((it,i)=>{
+    const title=stripHtml(it.querySelector('title')?.textContent||'');
+    const desc=stripHtml(it.querySelector('description')?.textContent||'').slice(0,420);
+    const link=(it.querySelector('link')?.textContent||'').trim();
+    const pub=Date.parse(it.querySelector('pubDate')?.textContent||'')||Date.now();
+    const id=`${source.name}-${newsHash(link||title)}`,meta=inferNewsMeta(title+' '+desc),seed=newsHash(title);
+    const baseBull=24+(seed%210),baseBear=18+((seed>>>8)%190),userVote=voteMap[id]||null;
+    return{id,time:new Date(pub).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),publishedAt:pub,source:source.name,link,title,desc,...meta,bull:baseBull+(userVote==='bull'?1:0),bear:baseBear+(userVote==='bear'?1:0),userVote};
+  });
+}
+function seedNewsHistory(){newsItems=[];renderNews()}
+async function loadRealNews(showToast=false){
+  if(newsLoading)return;newsLoading=true;
+  try{
+    const batches=[];
+    for(const src of NEWS_SOURCES){
+      try{batches.push(...parseRss(await fetchNewsText(src.url),src))}catch(e){console.warn(`${src.name} news failed`,e)}
+    }
+    if(!batches.length)throw new Error('no news source available');
+    const unique=new Map();for(const n of batches.sort((a,b)=>b.publishedAt-a.publishedAt))if(!unique.has(n.id))unique.set(n.id,n);
+    newsItems=[...unique.values()].slice(0,80);renderNews();if(showToast)notify('快讯已刷新',`已获取 ${newsItems.length} 条真实资讯`,'success');if(user?.isAdmin)renderAdminPage();
+  }catch(e){
+    console.warn('news load failed',e);renderNews();if(showToast)notify('快讯刷新失败','CoinDesk RSS 或跨域代理暂不可用','error',5000);
+  }finally{newsLoading=false}
+}
+function resolveNews(){}
+function voteNews(id,vote){
+  const n=newsItems.find(x=>String(x.id)===String(id));if(!n||n.userVote===vote)return;
+  const map=JSON.parse(localStorage.getItem('greedbit_news_votes')||'{}');map[n.id]=vote;localStorage.setItem('greedbit_news_votes',JSON.stringify(map));
+  n.userVote=vote;if(vote==='bull')n.bull++;else n.bear++;renderNews();
+}
+function newsMatches(n){
+  if($('importantOnly').checked&&!n.important)return false;if(newsFilter==='all')return true;
+  if(newsFilter==='BTC'||newsFilter==='ETH')return n.symbol.startsWith(newsFilter);
+  if(newsFilter==='直播')return true;
+  return n.kind===newsFilter;
+}
 function renderNews(){
   const items=newsItems.filter(newsMatches);
-  $('newsList').innerHTML=items.map(n=>{const total=n.bull+n.bear,bp=total?Math.round(n.bull/total*100):50;return`<article class="news-card"><span class="news-time">${n.time}</span><i class="news-dot"></i><div class="news-box ${n.important?'important':''}"><div class="news-title-row"><h3>${n.title}</h3><span class="news-status ${n.status==='已确认'?'good':n.status==='已证伪'?'bad':''}">${n.status}</span></div><p>${n.desc}</p><div class="news-meta-line"><span>${n.symbol==='MARKET'?'全市场':n.symbol}</span><span>${n.kind}</span><span class="impact-chip ${n.sentiment<0?'neg':''}">${n.sentiment>0?'偏多':n.sentiment<0?'偏空':'中性'}</span></div><div class="vote-row"><button class="vote-btn bull ${n.userVote==='bull'?'active':''}" data-newsvote="bull" data-newsid="${n.id}">↑ 利好 ${n.bull}</button><button class="vote-btn bear ${n.userVote==='bear'?'active':''}" data-newsvote="bear" data-newsid="${n.id}">↓ 利空 ${n.bear}</button><span class="vote-summary">其他用户：${bp}% 看多 · ${100-bp}% 看空</span></div></div></article>`}).join('')||'<div class="empty">当前筛选条件暂无快讯</div>';
+  if(!items.length){$('newsList').innerHTML=`<div class="empty">${newsLoading?'正在加载真实快讯…':'当前筛选条件暂无快讯'}</div>`;return}
+  $('newsList').innerHTML=items.map(n=>{
+    const total=n.bull+n.bear,bp=total?Math.round(n.bull/total*100):50,href=/^https?:\/\//.test(n.link)?n.link:'#';
+    return `<article class="news-card"><span class="news-time">${escapeHtml(n.time)}</span><i class="news-dot"></i><div class="news-box ${n.important?'important':''}">
+      <div class="news-title-row"><h3><a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(n.title)}</a></h3><span class="news-status good">${escapeHtml(n.source)}</span></div>
+      <p>${escapeHtml(n.desc||'')}</p>
+      <div class="news-meta-line"><span>${n.symbol==='MARKET'?'全市场':escapeHtml(n.symbol)}</span><span>${escapeHtml(n.kind)}</span><span class="impact-chip ${n.sentiment<0?'neg':''}">${n.sentiment>0?'偏多':n.sentiment<0?'偏空':'中性'}</span><span>${new Date(n.publishedAt).toLocaleDateString()}</span></div>
+      <div class="vote-row"><button class="vote-btn bull ${n.userVote==='bull'?'active':''}" data-newsvote="bull" data-newsid="${escapeHtml(n.id)}">↑ 利好 ${n.bull}</button><button class="vote-btn bear ${n.userVote==='bear'?'active':''}" data-newsvote="bear" data-newsid="${escapeHtml(n.id)}">↓ 利空 ${n.bear}</button><span class="vote-summary">社区倾向（本地模拟）：${bp}% 看多 · ${100-bp}% 看空</span></div>
+    </div></article>`;
+  }).join('');
 }
