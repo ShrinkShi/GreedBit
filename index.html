@@ -4,7 +4,11 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <title>GreedBit - 虚拟货币交易模拟器</title>
-<link rel="stylesheet" href="styles.css"/>
+<link rel="stylesheet" href="styles/base.css"/>
+<link rel="stylesheet" href="styles/market.css"/>
+<link rel="stylesheet" href="styles/trading.css"/>
+<link rel="stylesheet" href="styles/assets.css"/>
+<link rel="stylesheet" href="styles/overlays.css"/>
 </head>
 <body>
 <header class="topnav">
@@ -178,6 +182,11 @@
 
 <div class="notifications" id="notifications"></div>
 <footer class="statusbar"><span><i class="dot"></i>系统连接稳定</span><span class="ticker up">BTCUSDT +0.26%</span><span class="ticker up">ETHUSDT +0.95%</span><span class="ticker down">DOGEUSDT -0.22%</span><span class="ticker down">SOLUSDT -0.39%</span><span class="ticker up">GreedBit v0.0.7</span><span class="footer-right">本地模拟环境 · 无真实资金</span></footer>
-<script src="app.js"></script>
+<script src="src/core.js"></script>
+<script src="src/futures.js"></script>
+<script src="src/spot.js"></script>
+<script src="src/account.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/events.js"></script>
 </body>
 </html>
