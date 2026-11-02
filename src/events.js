@@ -19,5 +19,13 @@ $('pairPickerBtn').onclick=e=>{e.stopPropagation();$('coinPicker').classList.tog
 window.addEventListener('resize',resize);
 
 /* init */
-initMarketSnapshots();setupTimeframes();setupSplitters();setupChartEvents();seedNewsHistory();seed();loadAuth();renderTradingMode();renderTable();renderBook();stats();renderHomeMarkets();showPage('futures');setTimeout(resize,0);
-setInterval(realtimeTick,1000);setInterval(renderBook,1200);setInterval(()=>{if(Math.random()<.28)generateNews(false)},20000);setInterval(updateFundingUI,1000);setInterval(updateMarketSnapshots,3000);
+(async()=>{
+  initMarketSnapshots();setupTimeframes();setupSplitters();setupChartEvents();seedNewsHistory();loadAuth();renderTradingMode();renderTable();renderHomeMarkets();showPage('futures');
+  await updateMarketSnapshots();
+  await loadHistoricalMarket(true);
+  setTimeout(resize,0);
+})();
+setInterval(()=>renderBook(),2000);
+setInterval(()=>updateMarketSnapshots(),10000);
+setInterval(()=>{resolveNews();settleFunding();updateFundingUI()},1000);
+setInterval(()=>{if(Math.random()<.28)generateNews(false)},20000);
