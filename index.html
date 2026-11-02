@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<title>GreedBit - 虚拟货币交易模拟器</title>
+<style>
+:root{
+  --bg:#0b0e11;--panel:#11161c;--panel2:#171d24;--line:#242b33;--text:#eaecef;
+  --muted:#848e9c;--green:#0ecb81;--red:#f6465d;--accent:#f0b90b;
+}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;font-size:13px;overflow:hidden}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.topbar{height:48px;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 14px;gap:18px;background:#0d1117}
+.brand{font-weight:800;letter-spacing:.4px;font-size:17px}.brand b{color:var(--accent)}
+.market-head{display:flex;align-items:center;gap:18px;min-width:0;flex:1}
+.pair{font-weight:750;font-size:16px;white-space:nowrap}
+.price{font-size:17px;font-weight:750}.green{color:var(--green)}.red{color:var(--red)}.muted{color:var(--muted)}
+.stat{white-space:nowrap}.stat small{display:block;color:var(--muted);font-size:10px;margin-bottom:2px}
+.speed{display:flex;gap:4px}.speed button,.toolbar button,.tabs button{background:transparent;border:0;color:var(--muted);padding:6px 8px;border-radius:5px}
+.speed button.active,.toolbar button.active,.tabs button.active{color:var(--text);background:var(--panel2)}
+.app{height:calc(100vh - 48px);display:grid;grid-template-columns:minmax(560px,1fr) 280px 340px;grid-template-rows:minmax(360px,1fr) 250px}
+.chart-panel{grid-column:1;grid-row:1;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.toolbar{height:38px;display:flex;align-items:center;gap:3px;border-bottom:1px solid var(--line);padding:0 8px}
+.chart-wrap{position:relative;flex:1;min-height:0}
+#chart{width:100%;height:100%;display:block}
+.tooltip{position:absolute;left:8px;top:8px;color:var(--muted);font-size:11px;pointer-events:none;background:rgba(11,14,17,.72);padding:5px 7px;border-radius:4px}
+.orderbook{grid-column:2;grid-row:1;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.panel-title{height:38px;display:flex;align-items:center;padding:0 10px;font-weight:650;border-bottom:1px solid var(--line)}
+.ob-head,.ob-row{display:grid;grid-template-columns:1fr 1fr 1fr;padding:0 10px;height:22px;align-items:center;font-variant-numeric:tabular-nums;position:relative}
+.ob-head{color:var(--muted);font-size:10px;height:28px}
+.ob-row span{z-index:1;text-align:right}.ob-row span:first-child{text-align:left}
+.depth{position:absolute;right:0;top:1px;bottom:1px;opacity:.1}
+.mid{height:34px;display:flex;align-items:center;padding:0 10px;font-size:15px;font-weight:700;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.trade{grid-column:3;grid-row:1/3;display:flex;flex-direction:column;min-height:0}
+.tabs{height:40px;display:flex;border-bottom:1px solid var(--line);padding:3px 8px;gap:3px}
+.form{padding:12px;overflow:auto}
+.field{background:var(--panel2);border:1px solid var(--line);border-radius:6px;height:40px;margin-bottom:8px;display:flex;align-items:center;padding:0 10px;gap:8px}
+.field label{color:var(--muted);width:48px}.field input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:var(--text);text-align:right}
+.balance-line{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin:4px 2px 10px}
+.slider{width:100%;accent-color:var(--accent);margin:5px 0 11px}
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.buy,.sell{border:0;border-radius:6px;height:42px;color:white;font-weight:750}
+.buy{background:var(--green)}.sell{background:var(--red)}
+.notice{margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:6px;color:var(--muted);line-height:1.55;font-size:11px}
+.assets{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+.asset-row{display:flex;justify-content:space-between;margin:7px 0;font-variant-numeric:tabular-nums}
+.orders{grid-column:1/3;grid-row:2;display:flex;flex-direction:column;min-height:0}
+.orders .tabs{flex-shrink:0}.table-wrap{overflow:auto;flex:1}
+table{border-collapse:collapse;width:100%;font-size:11px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid #171d24;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:500}
+.cancel{border:0;background:transparent;color:var(--accent);padding:0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);padding:9px 14px;border-radius:6px;background:#20262d;box-shadow:0 8px 30px #0008;display:none;z-index:10}
+@media(max-width:1000px){
+ body{overflow:auto}.topbar{position:sticky;top:0;z-index:5}.stat.hide-sm{display:none}
+ .app{height:auto;display:block}.chart-panel{height:55vh;min-height:420px;border-right:0}.orderbook{height:380px;border-right:0}.trade{min-height:500px}.orders{min-height:300px}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><b>GREED</b>BIT <span style="font-size:10px;color:#848e9c;font-weight:500">v0.0.1</span></div>
+  <div class="market-head">
+    <select id="symbol" style="background:#171d24;color:#eaecef;border:1px solid #242b33;border-radius:6px;padding:6px 9px">
+      <option>BTC/USDT</option><option>ETH/USDT</option><option>SOL/USDT</option><option>DOGE/USDT</option>
+    </select>
+    <div><div id="lastPrice" class="price green">--</div><div id="usdPrice" class="muted" style="font-size:10px">模拟行情</div></div>
+    <div class="stat"><small>24h涨跌</small><span id="change24">--</span></div>
+    <div class="stat hide-sm"><small>24h最高</small><span id="high24">--</span></div>
+    <div class="stat hide-sm"><small>24h最低</small><span id="low24">--</span></div>
+    <div class="stat hide-sm"><small>24h成交额</small><span id="vol24">--</span></div>
+  </div>
+  <div class="speed"><button data-speed="1" class="active">1x</button><button data-speed="5">5x</button><button data-speed="20">20x</button></div>
+</div>
+
+<div class="app">
+  <section class="chart-panel">
+    <div class="toolbar">
+      <button class="active" data-tf="10">1m</button><button data-tf="30">5m</button><button data-tf="60">15m</button>
+      <span style="width:1px;height:16px;background:#242b33;margin:0 5px"></span>
+      <span class="muted" id="candleState">当前K线形成中</span>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+      <div class="tooltip" id="tip">移动鼠标查看 OHLC</div>
+    </div>
+  </section>
+
+  <section class="orderbook">
+    <div class="panel-title">盘口</div>
+    <div class="ob-head"><span>价格(USDT)</span><span>数量</span><span>累计</span></div>
+    <div id="asks"></div>
+    <div class="mid" id="midPrice">--</div>
+    <div id="bids"></div>
+  </section>
+
+  <section class="trade">
+    <div class="tabs"><button id="marketTab" class="active">市价</button><button id="limitTab">限价</button></div>
+    <div class="form">
+      <div class="balance-line"><span>可用 USDT</span><b id="usdtBal">100,000.00</b></div>
+      <div class="field" id="priceField" style="display:none"><label>价格</label><input id="orderPrice" type="number" step="any"/><span>USDT</span></div>
+      <div class="field"><label>数量</label><input id="orderQty" type="number" step="any" placeholder="0.0000"/><span id="baseUnit">BTC</span></div>
+      <input class="slider" id="pct" type="range" min="0" max="100" step="25" value="0">
+      <div class="action-row"><button class="buy" id="buyBtn">买入 BTC</button><button class="sell" id="sellBtn">卖出 BTC</button></div>
+      <div class="assets">
+        <b>模拟资产</b>
+        <div class="asset-row"><span>总资产估值</span><span id="equity">-- USDT</span></div>
+        <div class="asset-row"><span>持仓</span><span id="coinBal">0 BTC</span></div>
+        <div class="asset-row"><span>浮动盈亏</span><span id="pnl">0.00 USDT</span></div>
+      </div>
+      <div class="notice">仅为游戏模拟器，不接入真实交易所，不构成投资建议。行情由本地随机市场模型生成。当前蜡烛会随每个价格 tick 实时更新最高、最低与收盘价，而不是一次性生成完整 K 线。</div>
+    </div>
+  </section>
+
+  <section class="orders">
+    <div class="tabs"><button class="active" data-table="open">当前委托</button><button data-table="history">成交记录</button></div>
+    <div class="table-wrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+'use strict';
+
+const canvas=document.getElementById('chart'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const fmt=(n,d=2)=>Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const configs={
+ 'BTC/USDT':{p:68420,vol:.00055,dec:2},
+ 'ETH/USDT':{p:3520,vol:.00075,dec:2},
+ 'SOL/USDT':{p:164.2,vol:.0011,dec:3},
+ 'DOGE/USDT':{p:.1724,vol:.00145,dec:5}
+};
+
+let symbol='BTC/USDT',cfg=configs[symbol], price=cfg.p;
+let candleSeconds=10, speed=1, simTime=0, tickMs=250;
+let candles=[], current=null, marketMode='market', tableMode='open';
+let momentum=0, regime=0, regimeLife=0, nextId=1;
+let orders=[], history=[];
+let account={usdt:100000,coins:{BTC:0,ETH:0,SOL:0,DOGE:0},cost:{BTC:0,ETH:0,SOL:0,DOGE:0}};
+
+function base(){return symbol.split('/')[0]}
+function randn(){
+ let u=0,v=0; while(!u)u=Math.random();while(!v)v=Math.random();
+ return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function makeTick(){
+ if(--regimeLife<=0){regimeLife=40+Math.random()*160;regime=randn()*cfg.vol*.18}
+ const shock=(Math.random()<0.004?randn()*cfg.vol*5:0);
+ momentum=.91*momentum + randn()*cfg.vol*.16;
+ const meanPull=(cfg.p-price)/cfg.p*0.000012;
+ const r=regime+momentum+randn()*cfg.vol*.34+shock+meanPull;
+ price=Math.max(cfg.p*.05,price*Math.exp(r));
+ return price;
+}
+function feedTick(p,t,vol=1){
+ if(!current){
+   current={t:Math.floor(t/candleSeconds)*candleSeconds,o:p,h:p,l:p,c:p,v:0,live:true};
+ } else if(t>=current.t+candleSeconds){
+   current.live=false;candles.push(current);
+   if(candles.length>180)candles.shift();
+   const nt=current.t+candleSeconds;
+   current={t:nt,o:p,h:p,l:p,c:p,v:0,live:true};
+ } else {
+   current.h=Math.max(current.h,p); current.l=Math.min(current.l,p); current.c=p; current.v+=vol;
+ }
+}
+function seedHistory(){
+ candles=[];current=null;simTime=0;momentum=0;regimeLife=0;
+ price=cfg.p*(.96+Math.random()*.08);
+ // 90 根历史蜡烛，但仍通过连续 tick 聚合，OHLC 不是独立随机。
+ const steps=90*candleSeconds*4;
+ for(let i=0;i<steps;i++){simTime+=.25;feedTick(makeTick(),simTime,Math.random()*2)}
+ if(current){current.live=false;candles.push(current);current=null}
+ // 开始一根真正实时形成的新蜡烛
+ simTime+=.25;feedTick(makeTick(),simTime,1);
+ cfg.p=price;
+}
+function resize(){
+ const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
+ canvas.width=Math.max(1,r.width*dpr);canvas.height=Math.max(1,r.height*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);draw();
+}
+function visibleCandles(){
+ const arr=[...candles];if(current)arr.push(current);return arr.slice(-72);
+}
+function draw(){
+ const W=canvas.clientWidth,H=canvas.clientHeight;if(!W||!H)return;
+ ctx.clearRect(0,0,W,H);ctx.fillStyle='#0b0e11';ctx.fillRect(0,0,W,H);
+ const arr=visibleCandles();if(!arr.length)return;
+ const pad={l:8,r:64,t:22,b:22}, cw=(W-pad.l-pad.r)/arr.length;
+ let hi=Math.max(...arr.map(c=>c.h)), lo=Math.min(...arr.map(c=>c.l));
+ let range=(hi-lo)||hi*.01;hi+=range*.09;lo-=range*.09;
+ const y=p=>pad.t+(hi-p)/(hi-lo)*(H-pad.t-pad.b);
+ // grid
+ ctx.strokeStyle='#1b222a';ctx.lineWidth=1;ctx.font='10px sans-serif';ctx.fillStyle='#697481';
+ for(let i=0;i<=5;i++){
+  const yy=pad.t+(H-pad.t-pad.b)*i/5;
+  ctx.beginPath();ctx.moveTo(pad.l,yy+.5);ctx.lineTo(W-pad.r,yy+.5);ctx.stroke();
+  const pv=hi-(hi-lo)*i/5;ctx.fillText(fmt(pv,cfg.dec),W-pad.r+5,yy+3);
+ }
+ arr.forEach((c,i)=>{
+  const x=pad.l+i*cw+cw*.5, up=c.c>=c.o, col=up?'#0ecb81':'#f6465d';
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke();
+  const yo=y(c.o),yc=y(c.c), top=Math.min(yo,yc), bh=Math.max(1,Math.abs(yc-yo));
+  ctx.fillRect(Math.round(x-cw*.31),Math.round(top),Math.max(1,cw*.62),bh);
+  if(c.live){ctx.strokeStyle='#f0b90b';ctx.strokeRect(Math.round(x-cw*.36),Math.round(top-2),Math.max(2,cw*.72),bh+4)}
+ });
+ // last price
+ const py=y(price);ctx.setLineDash([4,4]);ctx.strokeStyle='#8a94a1';ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(W-pad.r,py);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle='#2b333d';ctx.fillRect(W-pad.r,py-9,pad.r,18);ctx.fillStyle='#eaecef';ctx.fillText(fmt(price,cfg.dec),W-pad.r+4,py+3);
+}
+function stats(){
+ const arr=[...candles,current].filter(Boolean), slice=arr.slice(-50);
+ const open=slice[0]?.o||price, ch=(price/open-1)*100, hi=Math.max(...slice.map(c=>c.h)),lo=Math.min(...slice.map(c=>c.l));
+ $('lastPrice').textContent=fmt(price,cfg.dec);$('midPrice').textContent=fmt(price,cfg.dec);
+ $('lastPrice').className='price '+(ch>=0?'green':'red');$('midPrice').className='mid '+(ch>=0?'green':'red');
+ $('change24').textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';$('change24').className=ch>=0?'green':'red';
+ $('high24').textContent=fmt(hi,cfg.dec);$('low24').textContent=fmt(lo,cfg.dec);
+ $('vol24').textContent=fmt(slice.reduce((a,c)=>a+c.v*price,0),0)+' USDT';
+ const b=base(), coin=account.coins[b]||0;
+ $('usdtBal').textContent=fmt(account.usdt);$('coinBal').textContent=fmt(coin,6)+' '+b;$('baseUnit').textContent=b;
+ $('buyBtn').textContent='买入 '+b;$('sellBtn').textContent='卖出 '+b;
+ const equity=account.usdt+coin*price, avg=coin>0?account.cost[b]/coin:0, pnl=coin>0?(price-avg)*coin:0;
+ $('equity').textContent=fmt(equity)+' USDT';$('pnl').textContent=(pnl>=0?'+':'')+fmt(pnl)+' USDT';$('pnl').className=pnl>=0?'green':'red';
+}
+function renderBook(){
+ let asks=[],bids=[]; const step=price*cfg.vol*.45;
+ for(let i=10;i>=1;i--){const q=Math.max(.001,Math.abs(randn())*12*(cfg.p/price));asks.push([price+step*i,q])}
+ for(let i=1;i<=10;i++){const q=Math.max(.001,Math.abs(randn())*12*(cfg.p/price));bids.push([price-step*i,q])}
+ const make=(rows,side)=>{
+   let total=rows.reduce((a,r)=>a+r[1],0), c=0;
+   return rows.map(r=>{c+=r[1];return `<div class="ob-row"><i class="depth" style="width:${c/total*100}%;background:${side==='ask'?'#f6465d':'#0ecb81'}"></i><span class="${side==='ask'?'red':'green'}">${fmt(r[0],cfg.dec)}</span><span>${fmt(r[1],4)}</span><span>${fmt(c,4)}</span></div>`}).join('');
+ };
+ $('asks').innerHTML=make(asks,'ask');$('bids').innerHTML=make(bids,'bid');
+}
+function toast(msg){const t=$('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._x);t._x=setTimeout(()=>t.style.display='none',1800)}
+function fillOrder(side,qty,fillPrice,source='市价'){
+ const b=base(), cost=qty*fillPrice;
+ if(side==='buy'){
+  if(cost>account.usdt+1e-8)return false;
+  account.usdt-=cost;account.coins[b]=(account.coins[b]||0)+qty;account.cost[b]=(account.cost[b]||0)+cost;
+ } else {
+  if(qty>(account.coins[b]||0)+1e-8)return false;
+  const old=account.coins[b], ratio=old?qty/old:0;
+  account.coins[b]-=qty;account.usdt+=cost;account.cost[b]*=(1-ratio);
+ }
+ history.unshift({time:new Date().toLocaleTimeString(),symbol,side,qty,price:fillPrice,type:source});
+ history=history.slice(0,100);renderTable();stats();return true;
+}
+function place(side){
+ const qty=parseFloat($('orderQty').value);
+ if(!qty||qty<=0)return toast('请输入有效数量');
+ if(marketMode==='market'){
+   const slip=price*cfg.vol*.08*(side==='buy'?1:-1), fp=price+slip;
+   if(!fillOrder(side,qty,fp,'市价'))return toast(side==='buy'?'USDT 余额不足':'持仓不足');
+   toast((side==='buy'?'买入':'卖出')+'成交 @ '+fmt(fp,cfg.dec));
+ }else{
+   const op=parseFloat($('orderPrice').value);if(!op||op<=0)return toast('请输入限价');
+   const b=base();if(side==='buy'&&qty*op>account.usdt)return toast('USDT 余额不足');
+   if(side==='sell'&&qty>(account.coins[b]||0))return toast('持仓不足');
+   orders.unshift({id:nextId++,time:new Date().toLocaleTimeString(),symbol,side,qty,price:op});
+   toast('限价委托已挂单');renderTable();
+ }
+}
+function matchOrders(){
+ for(let i=orders.length-1;i>=0;i--){
+  const o=orders[i];
+  if(o.symbol!==symbol)continue;
+  if((o.side==='buy'&&price<=o.price)||(o.side==='sell'&&price>=o.price)){
+    if(fillOrder(o.side,o.qty,o.price,'限价')){orders.splice(i,1);toast('限价单成交 @ '+fmt(o.price,cfg.dec))}
+  }
+ }
+}
+function renderTable(){
+ if(tableMode==='open'){
+  $('thead').innerHTML='<tr><th>时间</th><th>交易对</th><th>方向</th><th>委托价</th><th>数量</th><th>操作</th></tr>';
+  $('tbody').innerHTML=orders.length?orders.map(o=>`<tr><td>${o.time}</td><td>${o.symbol}</td><td class="${o.side==='buy'?'green':'red'}">${o.side==='buy'?'买入':'卖出'}</td><td>${fmt(o.price,configs[o.symbol].dec)}</td><td>${fmt(o.qty,6)}</td><td><button class="cancel" data-cancel="${o.id}">撤单</button></td></tr>`).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">暂无委托</td></tr>';
+ }else{
+  $('thead').innerHTML='<tr><th>时间</th><th>交易对</th><th>方向</th><th>成交价</th><th>数量</th><th>类型</th></tr>';
+  $('tbody').innerHTML=history.length?history.map(o=>`<tr><td>${o.time}</td><td>${o.symbol}</td><td class="${o.side==='buy'?'green':'red'}">${o.side==='buy'?'买入':'卖出'}</td><td>${fmt(o.price,configs[o.symbol].dec)}</td><td>${fmt(o.qty,6)}</td><td>${o.type}</td></tr>`).join(''):'<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">暂无成交</td></tr>';
+ }
+}
+function mainTick(){
+ const n=Math.max(1,Math.round(speed));
+ for(let i=0;i<n;i++){simTime+=tickMs/1000;feedTick(makeTick(),simTime,.2+Math.random()*2)}
+ matchOrders();draw();stats();
+}
+setInterval(mainTick,tickMs);
+setInterval(renderBook,900);
+
+$('symbol').onchange=e=>{symbol=e.target.value;cfg=configs[symbol];seedHistory();$('orderQty').value='';$('orderPrice').value=fmt(price,cfg.dec);stats();renderBook();draw()};
+document.querySelectorAll('.speed button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.speed button').forEach(x=>x.classList.remove('active'));b.classList.add('active');speed=+b.dataset.speed});
+document.querySelectorAll('[data-tf]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tf]').forEach(x=>x.classList.remove('active'));b.classList.add('active');candleSeconds=+b.dataset.tf;seedHistory();draw()});
+$('marketTab').onclick=()=>{marketMode='market';$('marketTab').classList.add('active');$('limitTab').classList.remove('active');$('priceField').style.display='none'};
+$('limitTab').onclick=()=>{marketMode='limit';$('limitTab').classList.add('active');$('marketTab').classList.remove('active');$('priceField').style.display='flex';$('orderPrice').value=price.toFixed(cfg.dec)};
+$('buyBtn').onclick=()=>place('buy');$('sellBtn').onclick=()=>place('sell');
+$('pct').oninput=e=>{const p=+e.target.value/100;$('orderQty').value=marketMode==='market'?(account.usdt*p/price).toFixed(6):((account.usdt*p)/(parseFloat($('orderPrice').value)||price)).toFixed(6)};
+$('tbody').onclick=e=>{const id=+e.target.dataset.cancel;if(id){orders=orders.filter(o=>o.id!==id);renderTable();toast('已撤单')}};
+document.querySelectorAll('[data-table]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-table]').forEach(x=>x.classList.remove('active'));b.classList.add('active');tableMode=b.dataset.table;renderTable()});
+canvas.addEventListener('mousemove',e=>{
+ const arr=visibleCandles();if(!arr.length)return;const r=canvas.getBoundingClientRect(),W=r.width,padL=8,padR=64,cw=(W-padL-padR)/arr.length;
+ const i=Math.max(0,Math.min(arr.length-1,Math.floor((e.clientX-r.left-padL)/cw))),c=arr[i];
+ $('tip').textContent=`O ${fmt(c.o,cfg.dec)}  H ${fmt(c.h,cfg.dec)}  L ${fmt(c.l,cfg.dec)}  C ${fmt(c.c,cfg.dec)}${c.live?' · 形成中':''}`;
+});
+canvas.addEventListener('mouseleave',()=>{$('tip').textContent='移动鼠标查看 OHLC'});
+window.addEventListener('resize',resize);
+
+seedHistory();$('orderPrice').value=price.toFixed(cfg.dec);renderTable();renderBook();stats();setTimeout(resize,0);
+})();
+</script>
+</body>
+</html>
