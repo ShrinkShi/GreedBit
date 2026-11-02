@@ -4,19 +4,31 @@
 
 - 将 GreedBit 项目路线正式定性为纯前端，不再规划自建后端、数据库或服务端鉴权。
 - 完成首轮 Bilibili Toy 静态兼容性审查：入口体积、相对资源路径、单页路由、本地存储架构均可进入 Toy 预览阶段。
-- 新增 `TOY_COMPATIBILITY.md`，记录 Toy 验收结论、风险与真实预览检查清单。
-- 新增 `tools/build-toy.ps1`，生成仅包含运行时文件的 `dist-toy/` 与 `GreedBit-toy.zip`，并检查入口 1MB 上限与根绝对资源路径。
-- Toy 正式发布前仍需在真实 preview 中验证 Binance REST/WebSocket、Futures、汇率及新闻 RSS 跨域链路。
+- 新增 `TOY_COMPATIBILITY.md` 与 `tools/build-toy.ps1`。
+- Toy 正式发布前仍需在真实 Preview 中验证公共行情、RSS/CORS、WebM 和移动端交互。
+
+## [0.0.13] - 2026-11-03
+
+- 新闻页加入按当前语言设置触发的按需翻译按钮；英文新闻可翻译为中文，English 模式下中文 GREED 模拟新闻可翻译为英文，并缓存翻译结果。
+- 主页动态立绘切换为透明 `assets/mammon-home.webm`；删除旧 `mammon-home.mp4`，立绘固定右下并与左侧组件硬分栏，避免控件遮挡。
+- 接入 `assets/bitcoinicon/` 现有币种：BTC、ETH、SOL、DOGE、BNB、FIL、TRX、ZEC、BTW、牛来、龙虾，并新增 GREED / 贪婪。
+- BTC/ETH/SOL/DOGE/BNB/FIL/TRX/ZEC 使用 Binance 公共市场数据；BTW/牛来/龙虾尝试公共行情源，不可用时明确降级为 BTC/ETH 相关的参考模拟行情。
+- 新增原创平台币 GREED：不真实上链，行情由 BTC/ETH 变化、高 Beta、独立随机波动和 GREED 模拟新闻事件共同驱动。
+- 交易手续费调整为 Maker 0.020%、Taker 0.060%；现货账户持有足够 GREED 时自动按 GREED 实时价格以 Maker 0.001%、Taker 0.002% 抵扣完整手续费。
+- 新增顶部“赚币”页面；所有现货资产可存入赚币账户，每小时结息并自动复投。
+- 赚币年化：USDT 4%（前 500 USDT 活动 10%）、BTC 1%、ETH 1.6%、SOL 1.8%、DOGE 3%、GREED 4%、其他币种 5%。
+- 现货账户扩展为支持全部已接入币种；总资产按币种市价扣除市价卖出 Taker 手续费后的净价值计算。
+- 主页与资产总览新增每日盈亏：盈利绿、亏损红、0.00% 灰；入金/出金从当日盈亏中剔除。
+- 浏览器标签页改用独立的小尺寸留白 favicon，避免高清 Logo 在选项卡中裁切或显得过大。
 
 ## [0.0.12] - 2026-11-02
 
-- 重构主页为现代化交易平台 Landing Page：大标题、实时行情卡片、模拟账户摘要与更专业的深色视觉层级。
-- 主页右侧支持 `assets/mammon-home.mp4` 动态恶魔立绘，自动播放、静音、循环；资源缺失时自动回退到 GreedBit 品牌图。
+- 重构主页为现代化交易平台 Landing Page。
 - 行情页保持纯新闻流定位，不增加 BTC/ETH 行情总览。
 - CoinDesk 官方 RSS 继续作为主要加密资讯源。
 - 新增 CNBC Investing 与 CNBC Top News 财经 RSS 备用源。
-- 新闻读取采用多通道策略：源站直连、cors.dev、AllOrigins、rss2json，优先并发尝试可用路径。
-- 新闻成功加载后缓存最近 80 条到 localStorage；外部源临时失败时优先显示最近一次成功缓存，不再出现空白行情页。
+- 新闻读取采用多通道策略：源站直连、cors.dev、AllOrigins、rss2json。
+- 新闻成功加载后缓存最近 80 条到 localStorage；外部源临时失败时优先显示最近一次成功缓存。
 - 新闻自动刷新节流到 5 分钟，手动刷新不受限制。
 
 ## [0.0.11] - 2026-11-02
@@ -59,7 +71,6 @@
 
 ### Notes
 
-- AiCoin 官方快讯 API 需要 AccessKeyId 和签名密钥，因此纯前端版本暂不硬编码接入。
 - `admin / 123456` 仅用于本地开发测试，不具备真实安全性。
 - 旧版本成交记录没有时间戳时不会在历史 K 线上补画 B / S 标记；v0.0.9 之后的新成交会记录时间戳。
 
