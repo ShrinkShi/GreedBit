@@ -62,15 +62,46 @@ bridgeObserver.observe(document.body,{childList:true,subtree:false});
 /* Persist hourly Earn settlement even when the passive UI refresh was the first caller at an hour boundary. */
 setInterval(()=>{if(user){try{saveState()}catch{}}},60000);
 
+/*
+ * Runtime ownership gate.
+ * Historical feature layers are still loaded because later features depend on them, but they are no longer
+ * allowed to poll and rewrite shared UI state. This specifically retires the v016/v017/v018 pair-label
+ * maintenance loops and the v021 news-list observer that re-clicked Translate after a user chose Original.
+ * Market polling, strategy processing, persistence and countdown timers are intentionally untouched.
+ */
+function installLegacyRuntimeGate(){
+  if(window.GreedBitLegacyGate)return;
+  const nativeSetInterval=window.setInterval.bind(window),NativeMutationObserver=window.MutationObserver;
+  const audit={suppressedIntervals:[],suppressedObservers:0,installedAt:Date.now()};
+  window.setInterval=function(fn,delay,...args){
+    const src=typeof fn==='function'?Function.prototype.toString.call(fn):'';
+    let owner='';
+    if(src.includes('syncPairLabel'))owner='v016 pair-label poller';
+    else if(src.includes('syncExternalLabel'))owner='v017 external-label poller';
+    else if(src.includes('syncPairHeader'))owner='v018 pair-header poller';
+    if(owner){audit.suppressedIntervals.push({owner,delay:Number(delay)||0});return 0}
+    return nativeSetInterval(fn,delay,...args);
+  };
+  if(NativeMutationObserver){
+    window.MutationObserver=new Proxy(NativeMutationObserver,{construct(Target,args){
+      const cb=args?.[0],src=typeof cb==='function'?Function.prototype.toString.call(cb):'';
+      if(src.includes('scheduleAutoTranslate')){audit.suppressedObservers++;return new Target(()=>{})}
+      return Reflect.construct(Target,args);
+    }});
+  }
+  window.GreedBitLegacyGate={audit,nativeSetInterval,NativeMutationObserver};
+}
+installLegacyRuntimeGate();
+
 function loadV20(){if(document.querySelector('script[src="src/v020.js"]'))return;const n=document.createElement('script');n.src='src/v020.js';document.body.appendChild(n)}
-function loadV19Hotfix(){if(document.querySelector('script[src="src/v019-hotfix.js"]')){loadV20();return}const n=document.createElement('script');n.src='src/v019-hotfix.js';n.onload=loadV20;document.body.appendChild(n)}
-function loadV19(){if(document.querySelector('script[src="src/v019.js"]')){loadV19Hotfix();return}const n=document.createElement('script');n.src='src/v019.js';n.onload=loadV19Hotfix;document.body.appendChild(n)}
+/* v019-hotfix is retired: pair/source labels must have one event-driven owner, not a textContent interceptor. */
+function loadV19(){if(document.querySelector('script[src="src/v019.js"]')){loadV20();return}const n=document.createElement('script');n.src='src/v019.js';n.onload=loadV20;document.body.appendChild(n)}
 function loadV18(){if(document.querySelector('script[src="src/v018.js"]')){loadV19();return}const n=document.createElement('script');n.src='src/v018.js';n.onload=loadV19;document.body.appendChild(n)}
 function loadV17Core(){if(document.querySelector('script[src="src/v017.js"]')){loadV18();return}const n=document.createElement('script');n.src='src/v017.js';n.onload=loadV18;document.body.appendChild(n)}
 function loadV17(){if(document.querySelector('script[src="src/v017-manifest-preload.js"]')){loadV17Core();return}const p=document.createElement('script');p.src='src/v017-manifest-preload.js';p.onload=loadV17Core;document.body.appendChild(p)}
 function loadV16(){if(document.querySelector('script[src="src/v016.js"]')){loadV17();return}const n=document.createElement('script');n.src='src/v016.js';n.onload=loadV17;document.body.appendChild(n)}
 function loadV15(){if(document.querySelector('script[src="src/v015.js"]')){loadV16();return}const n=document.createElement('script');n.src='src/v015.js';n.onload=loadV16;document.body.appendChild(n)}
-/* v0.0.14 -> v0.0.15 -> v0.0.16 -> v0.0.17 -> v0.0.18 -> v0.0.19 -> v0.0.20. Later layers deliberately override earlier behavior. */
+/* Legacy feature layers remain for functionality; shared UI ownership is consolidated by the runtime gate + v025. */
 if(!document.querySelector('script[src="src/v014.js"]')){const s=document.createElement('script');s.src='src/v014.js';s.onload=loadV15;document.body.appendChild(s)}else loadV15();
 
 })();
