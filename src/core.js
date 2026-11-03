@@ -23,8 +23,8 @@ const timeframes=[
   {label:'1周',key:'1w',sec:604800,api:'1w'},
   {label:'1月',key:'1M',sec:2592000,api:'1M',calendarMonth:true}
 ];
-const API_HOSTS=['https://api.binance.com','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com','https://api4.binance.com','https://data-api.binance.vision'];
-const WS_HOSTS=['wss://stream.binance.com:9443','wss://stream.binance.com:443'];
+const API_HOSTS=['https://data-api.binance.vision','https://api-gcp.binance.com','https://api1.binance.com','https://api2.binance.com','https://api3.binance.com','https://api4.binance.com','https://api.binance.com'];
+const WS_HOSTS=['wss://data-stream.binance.vision:443','wss://stream.binance.com:443'];
 const fmt=(n,d=2)=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const FEE=.0002,SPOT_FEE=.001,MMR=.005,FUNDING_INTERVAL=8*3600;
@@ -57,7 +57,7 @@ function freshWallets(){
     spot:{usdt:0,frozenUsdt:0,coins:{BTC:0,ETH:0},frozenCoins:{BTC:0,ETH:0},cost:{BTC:0,ETH:0}},
     futures:{usdt:0,frozen:0},
     earn:{usdt:0},
-    fiat:{usdt:100000},
+    fiat:{usdt:0},
     strategy:{usdt:0}
   };
 }
@@ -128,7 +128,7 @@ function submitAuth(){
   const users=JSON.parse(localStorage.getItem('greedbit_users')||'{}');
   if(authMode==='register'){
     if(name.toLowerCase()==='admin')return notify('注册失败','admin 为保留管理员账号','error');
-    if(users[name])return notify('注册失败','该账号已存在','error');users[name]={username:name,password:pass,createdAt:Date.now()};localStorage.setItem('greedbit_users',JSON.stringify(users));user={username:name};localStorage.setItem('greedbit_session',JSON.stringify(user));wallets=freshWallets();accountStats=freshStats();saveState();notify('注册成功','100,000 USDT 已进入法币账户');
+    if(users[name])return notify('注册失败','该账号已存在');users[name]={username:name,password:pass,createdAt:Date.now()};localStorage.setItem('greedbit_users',JSON.stringify(users));user={username:name};localStorage.setItem('greedbit_session',JSON.stringify(user));wallets=freshWallets();accountStats=freshStats();saveState();notify('注册成功','初始资产为 0 USDT，请通过入金获得模拟资金');
   }else{
     if(name==='admin'&&pass==='123456'){
       user={username:'admin',isAdmin:true};localStorage.setItem('greedbit_session',JSON.stringify(user));loadState();notify('管理员登录成功','已启用本地管理界面');
