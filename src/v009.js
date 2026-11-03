@@ -42,12 +42,29 @@ function drawHighLow(geom,pad,plotW,y,lo,hi){
   const high=vis.reduce((a,b)=>b.c.h>a.c.h?b:a),lowp=vis.reduce((a,b)=>b.c.l<a.c.l?b:a);
   for(const [obj,isHigh] of [[high,true],[lowp,false]]){const val=isHigh?obj.c.h:obj.c.l;if(val<lo||val>hi)continue;const yy=y(val),x=xForIndex(obj.idx,geom,pad,plotW),txt=`${isHigh?'最高价':'最低价'} ${fmt(val,chartDecimals())}`;ctx.strokeStyle='#46526a';ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(x,yy);ctx.lineTo(canvas.clientWidth-pad.r,yy);ctx.stroke();ctx.setLineDash([]);const tw=ctx.measureText(txt).width+8;ctx.fillStyle='#25375d';ctx.fillRect(canvas.clientWidth-pad.r-tw,yy-9,tw,18);ctx.fillStyle='#dce6ff';ctx.fillText(txt,canvas.clientWidth-pad.r-tw+4,yy+3)}
 }
+function niceGridStep(raw){
+  const v=Math.max(Math.abs(raw)||0,Number.EPSILON),p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;
+  const m=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;return m*p;
+}
 function draw(){
   if(currentPage!=='trade'&&currentPage!=='futures')return;const W=canvas.clientWidth,H=canvas.clientHeight;if(!W||!H)return;const pad={l:8,r:82,t:28,b:42},plotW=W-pad.l-pad.r,plotH=H-pad.t-pad.b;
   ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,y=p=>pad.t+(hi-p)/range*plotH;
-  ctx.font='10px sans-serif';ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.fillStyle='#6f7a8b';
-  for(let i=0;i<=5;i++){const yy=pad.t+plotH*i/5;ctx.beginPath();ctx.moveTo(pad.l,yy+.5);ctx.lineTo(W-pad.r,yy+.5);ctx.stroke();ctx.fillText(fmt(Math.max(0,hi-range*i/5),chartDecimals()),W-pad.r+5,yy+3)}
-  const tickCount=8;for(let i=0;i<=tickCount;i++){const frac=i/tickCount,idx=geom.start+visibleCount*frac,x=pad.l+plotW*frac,ts=timestampAtIndex(idx,geom.all);ctx.strokeStyle=chartSettings.grid||'#171c22';ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(formatTime(ts),Math.max(2,Math.min(W-pad.r-115,x-48)),H-11)}
+  ctx.font='10px sans-serif';ctx.fillStyle='#6f7a8b';
+
+  /* Price grid is anchored to real price levels, so vertical pan/zoom moves the grey grid too. */
+  const priceStep=niceGridStep(range/5),firstPrice=Math.ceil(lo/priceStep)*priceStep;
+  for(let pv=firstPrice,guard=0;pv<=hi+priceStep*.25&&guard<16;pv+=priceStep,guard++){
+    const yy=y(pv);if(yy<pad.t-1||yy>H-pad.b+1)continue;
+    ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.beginPath();ctx.moveTo(pad.l,Math.round(yy)+.5);ctx.lineTo(W-pad.r,Math.round(yy)+.5);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(fmt(Math.max(0,pv),chartDecimals()),W-pad.r+5,yy+3);
+  }
+
+  /* Time grid is anchored to candle indices, so horizontal drag moves grid lines with candles. */
+  const tickTarget=8,indexStep=Math.max(1,Math.ceil(visibleCount/tickTarget)),firstIndex=Math.ceil(geom.start/indexStep)*indexStep;
+  for(let idx=firstIndex,guard=0;idx<=geom.right+indexStep*.25&&guard<24;idx+=indexStep,guard++){
+    const x=xForIndex(idx,geom,pad,plotW);if(x<pad.l-1||x>W-pad.r+1)continue;
+    const ts=timestampAtIndex(idx,geom.all);ctx.strokeStyle=chartSettings.grid||'#171c22';ctx.beginPath();ctx.moveTo(Math.round(x)+.5,pad.t);ctx.lineTo(Math.round(x)+.5,H-pad.b);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(formatTime(ts),Math.max(2,Math.min(W-pad.r-115,x-48)),H-11);
+  }
+
   for(const {idx,c} of geom.visible){const x=xForIndex(idx,geom,pad,plotW),cw=plotW/visibleCount;if(x<-Math.abs(cw)*2||x>W-pad.r+Math.abs(cw)*2)continue;const col=c.c>=c.o?chartSettings.bull:chartSettings.bear,yo=y(c.o),yc=y(c.c),top=Math.min(yo,yc),bh=Math.max(1,Math.abs(yc-yo)),bodyW=Math.max(1,Math.min(40,Math.abs(cw)*.62));if(chartSettings.wick){ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke()}if(chartSettings.body){ctx.fillStyle=col;ctx.fillRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(chartSettings.border){ctx.strokeStyle=col;ctx.strokeRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(c.live){ctx.strokeStyle='#5d8cff';ctx.strokeRect(Math.round(x-bodyW/2-2),Math.round(top-2),bodyW+4,bh+4)}}
   drawTradeMarkers(geom,pad,plotW,y,lo,hi);drawHighLow(geom,pad,plotW,y,lo,hi);
   if(price>=lo&&price<=hi){const py=y(price),up=!current||current.c>=current.o,col=up?chartSettings.bull:chartSettings.bear;ctx.setLineDash([2,3]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(W-pad.r,py);ctx.stroke();ctx.setLineDash([]);const h=chartSettings.countdown?36:22,boxY=clamp(py-h/2,pad.t,H-pad.b-h);ctx.fillStyle=col;ctx.fillRect(W-pad.r,boxY,pad.r,h);ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText(fmt(price,chartDecimals()),W-pad.r+5,boxY+14);if(chartSettings.countdown){ctx.font='10px sans-serif';ctx.fillText(candleRemain(),W-pad.r+5,boxY+29)}if(chartSettings.symbolLabel){const lab=apiSymbol().replace('USDT','-USDT'),tw=ctx.measureText(lab).width+10;ctx.fillStyle=col;ctx.fillRect(W-pad.r-tw,boxY,tw,22);ctx.fillStyle='#fff';ctx.fillText(lab,W-pad.r-tw+5,boxY+14)}}
