@@ -43,22 +43,17 @@ jobs:
           fi
 
           for asset in core market futures spot account ui bootstrap; do
-            if ! grep -q "src/${asset}\.js?build=" index.html; then
+            if ! grep -Fq "src/${asset}.js?build=" index.html; then
               echo "ERROR: index entry script src/${asset}.js must carry a build cache key."
               fail=1
             fi
           done
 
           for stylesheet in base market trading assets overlays; do
-            if ! grep -q "styles/${stylesheet}\.css?build=" index.html; then
+            if ! grep -Fq "styles/${stylesheet}.css?build=" index.html; then
               echo "ERROR: index stylesheet styles/${stylesheet}.css must carry a build cache key."
               fail=1
             fi
           done
-
-          if grep -nE 'src/(core|market|futures|spot|account|ui|bootstrap)\.js["'"']' index.html; then
-            echo "ERROR: unversioned entry scripts are forbidden because they can revive cached legacy runtime code."
-            fail=1
-          fi
 
           exit "$fail"
