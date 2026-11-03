@@ -1,9 +1,13 @@
-/* Canonical chart renderer. Grid lines and axis labels share the same axis ticks. */
+/* Canonical chart renderer. This module solely owns chart geometry, axes, grid and canvas drawing. */
 function viewGeometry(){
   const all=currentSeries(),defaultFuture=Number(chartSettings.rightBars)||0,right=all.length+defaultFuture+viewShift,start=right-visibleCount;
   const from=Math.max(0,Math.floor(Math.min(start,right))-2),to=Math.min(all.length,Math.ceil(Math.max(start,right))+2),visible=[];
   for(let i=from;i<to;i++)visible.push({idx:i,c:all[i]});
   return{all,start,right,visible};
+}
+function resize(){
+  const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);
+  canvas.width=Math.max(1,r.width*dpr);canvas.height=Math.max(1,r.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);draw();
 }
 function chartDateParts(ts){
   const mode=chartSettings.timezone||'utc8',d=new Date((ts+(mode==='utc8'?8*3600:0))*1000);
@@ -18,6 +22,13 @@ function formatTime(ts){
   const {Y,M,D,h,m,sec,suffix}=chartDateParts(ts),spanSeconds=Math.abs(visibleCount*tf),date=chartSettings.dateFormat==='md'?`${M}/${D}`:`${Y}-${M}-${D}`;
   if(tf>=86400)return date;if(spanSeconds<3600)return`${date} ${h}:${m}:${sec}${suffix}`;return`${date} ${h}:${m}${suffix}`;
 }
+function candleRemain(){
+  const info=tfInfo(),n=Date.now()/1000,end=current?.end||bucketEnd(bucketStart(n,info),info),r=Math.max(0,Math.ceil(end-n)),h=Math.floor(r/3600),m=Math.floor(r%3600/60),s=r%60;
+  return h?`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function visibleCandles(geom=viewGeometry()){
+  return geom.visible.filter(x=>x.idx>=geom.start-1&&x.idx<=geom.right+1).map(x=>x.c);
+}
 function calcPriceBounds(geom=viewGeometry()){
   const d=visibleCandles(geom);let baseHi,baseLo;
   if(d.length){baseHi=Math.max(...d.map(c=>c.h));baseLo=Math.min(...d.map(c=>c.l))}else{baseHi=Math.max(price,1)*1.01;baseLo=Math.max(0,price*.99)}
@@ -26,6 +37,27 @@ function calcPriceBounds(geom=viewGeometry()){
   const center=(paddedHi+paddedLo)/2+yPan;let range=baseRange*yZoom,precisionFloor=Number.EPSILON*Math.max(1,Math.abs(center));
   if(!Number.isFinite(range)||range<=0)range=Math.max(baseRange,precisionFloor);range=Math.max(range,precisionFloor);
   let lo=center-range/2,hi=center+range/2;if(lo<0){hi-=lo;lo=0}if(hi<=lo){lo=0;hi=Math.max(.01,range)}return{hi,lo};
+}
+function activeChartOrders(){
+  if(tradingMode==='futures')return orders.filter(o=>o.symbol===symbol&&o.status==='open').map(o=>({limit:o.limit,side:o.side==='long'?'buy':'sell',label:`限价 ${o.side==='long'?'开多':'开空'} ${fmt(o.limit,cfg.dec)}`}));
+  return spotOrders.filter(o=>o.symbol===symbol&&o.status==='open').map(o=>({limit:o.limit,side:o.side,label:`现货限价 ${o.side==='buy'?'买入':'卖出'} ${fmt(o.limit,cfg.dec)}`}));
+}
+function xForIndex(idx,geom,pad,plotW){return pad.l+((idx-geom.start)+.5)/visibleCount*plotW}
+function timestampAtIndex(idx,all){
+  if(!all.length)return Date.now()/1000;
+  const info=tfInfo();
+  if(!info.calendarMonth){
+    const i=Math.floor(idx),frac=idx-i;
+    if(i>=0&&i<all.length-1)return all[i].t+(all[i+1].t-all[i].t)*frac;
+    if(i>=0&&i<all.length)return all[i].t;
+    const step=Math.max(1,info.sec||tf||60),base=i<0?all[0].t:all.at(-1).t,offset=i<0?idx:idx-(all.length-1);
+    return base+offset*step;
+  }
+  const i=Math.floor(idx),frac=idx-i;
+  if(i>=0&&i<all.length-1)return all[i].t+(all[i+1].t-all[i].t)*frac;
+  const base=i<0?all[0].t:all.at(-1).t,steps=i<0?i:i-all.length+1,d=new Date(base*1000);
+  const t0=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+steps,1)/1000,t1=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+steps+1,1)/1000;
+  return t0+(t1-t0)*frac;
 }
 function chartDecimals(){return chartSettings.precision==='auto'?cfg.dec:Math.max(0,+chartSettings.precision||0)}
 function chartTradeRecords(){const arr=tradingMode==='futures'?trades:spotTrades;return arr.filter(t=>t.symbol===symbol&&Number.isFinite(+t.ts)&&Number.isFinite(+t.price)).slice(0,250)}
@@ -68,7 +100,6 @@ function draw(){
   ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,y=p=>pad.t+(hi-p)/range*plotH;
   ctx.font='10px sans-serif';ctx.fillStyle='#6f7a8b';
 
-  /* Price ticks are the Y axis. The horizontal grid is only an extension of these exact ticks. */
   const priceTicks=buildPriceTicks(lo,hi,5);
   ctx.textAlign='left';
   for(const pv of priceTicks){
@@ -76,7 +107,6 @@ function draw(){
     const lineY=Math.round(yy)+.5;ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.beginPath();ctx.moveTo(pad.l,lineY);ctx.lineTo(W-pad.r,lineY);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(fmt(Math.max(0,pv),chartDecimals()),W-pad.r+5,yy+3);
   }
 
-  /* Candle-index ticks are the X axis. Grid and labels use the same xForIndex() as the candles. */
   const indexTicks=buildIndexTicks(geom,8);
   ctx.textAlign='center';
   for(const tick of indexTicks){
@@ -94,5 +124,5 @@ function draw(){
   const ch=crosshairLocked&&lockedCrosshair?lockedCrosshair:(hoverIndex>=0?{idx:hoverIndex,price:hoverPrice}:null);if(ch&&chartSettings.crosshair){const x=xForIndex(ch.idx,geom,pad,plotW);if(x>=pad.l&&x<=W-pad.r){ctx.strokeStyle='#697386';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();if(Number.isFinite(ch.price)){const yy=y(ch.price);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke()}ctx.setLineDash([])}}
   ctx.strokeStyle='#303741';ctx.beginPath();ctx.moveTo(W-pad.r,pad.t);ctx.lineTo(W-pad.r,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,H-pad.b);ctx.lineTo(W-pad.r,H-pad.b);ctx.stroke();
 }
-window.GreedBitChartRenderer={viewGeometry,calcPriceBounds,buildPriceTicks,buildIndexTicks,draw};
+window.GreedBitChartRenderer={viewGeometry,resize,calcPriceBounds,xForIndex,timestampAtIndex,buildPriceTicks,buildIndexTicks,draw};
 draw();
