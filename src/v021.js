@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const VERSION='0.0.23';
-let finalized=false,activeInfoMode='chart',autoTranslateBusy=false,autoTranslateTimer=0;
+let finalized=false,activeInfoMode='chart';
 
 function installStyle(done){
   let l=document.querySelector('link[href="styles/v021.css"]');
@@ -13,7 +13,7 @@ function currentSymbol(){try{if(typeof symbol==='string'&&symbol)return symbol}c
 function currentMode(){try{if(typeof tradingMode==='string'&&tradingMode)return tradingMode}catch{}return'futures'}
 function marketMeta(sym){return window.GreedBitV13?.META?.[sym]||null}
 function isZh(){return !String(document.documentElement.lang||'zh-CN').toLowerCase().startsWith('en')}
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
 function safeUrl(v){try{const u=new URL(v);return/^https?:$/.test(u.protocol)?u.href:''}catch{return''}}
 function fmtLocal(n,d=2){try{return typeof fmt==='function'?fmt(n,d):Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}catch{return String(n??'--')}}
 
@@ -28,12 +28,6 @@ function sourceLabel(){
     return isZh()?`${m?.name||m?.ticker||sym}股票代币现货 · ${src||'参考行情'}`:`${m?.name||m?.ticker||sym} stock token spot · ${src||'reference market data'}`;
   }
   try{return marketSnapshots?.[sym]?._source||(isZh()?'公开市场行情':'Public market data')}catch{return isZh()?'公开市场行情':'Public market data'}
-}
-function installSourceLabelGuard(){
-  const el=document.querySelector('#lastPrice + .muted.tiny')||document.getElementById('lastPrice')?.parentElement?.querySelector('.muted.tiny');
-  if(!el||el.dataset.gb21Guard==='1')return;const native=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');if(!native?.get||!native?.set)return;el.dataset.gb21Guard='1';
-  try{Object.defineProperty(el,'textContent',{configurable:true,get(){return native.get.call(this)},set(v){native.set.call(this,sourceLabel()||String(v??''))}})}catch{}
-  native.set.call(el,sourceLabel());
 }
 function installFavicon(){
   document.querySelectorAll('link[rel~="icon"],link[rel="shortcut icon"]').forEach(x=>x.remove());const href='assets/greedbit-favicon.png?v=0023';
@@ -156,32 +150,22 @@ function syncHomeLanguage(){
 }
 function syncMarketLanguage(){
   const zh=isZh(),head=document.querySelector('.news-center-head');if(head){const h=head.querySelector('h1'),p=head.querySelector('p');if(h)h.textContent=zh?'市场资讯':'Market news';if(p)p.textContent=zh?'聚合公开财经与加密市场 RSS；新闻加载失败不会影响交易与行情功能。':'Aggregated public finance and crypto RSS. News failures do not affect trading or live market data.'}
-  scheduleAutoTranslate();
-}
-function scheduleAutoTranslate(){clearTimeout(autoTranslateTimer);autoTranslateTimer=setTimeout(autoTranslateNews,120)}
-async function autoTranslateNews(){
-  if(autoTranslateBusy)return;const list=document.getElementById('newsList');if(!list)return;const buttons=[...list.querySelectorAll('[data-news-translate]')].filter(b=>!b.disabled&&b.dataset.state!=='translated');if(!buttons.length)return;autoTranslateBusy=true;
-  try{for(const b of buttons.slice(0,20)){if(!document.body.contains(b)||b.disabled)continue;b.click();const start=Date.now();while(b.disabled&&Date.now()-start<9000)await new Promise(r=>setTimeout(r,120));await new Promise(r=>setTimeout(r,80))}}finally{autoTranslateBusy=false;if([...list.querySelectorAll('[data-news-translate]')].some(b=>!b.disabled&&b.dataset.state!=='translated'))scheduleAutoTranslate()}
 }
 function installLanguageSync(){
-  syncHomeLanguage();syncMarketLanguage();const list=document.getElementById('newsList');if(list)new MutationObserver(()=>scheduleAutoTranslate()).observe(list,{childList:true,subtree:true});new MutationObserver(()=>{syncHomeLanguage();syncMarketLanguage();if(activeInfoMode==='overview')renderUnifiedOverview();else if(activeInfoMode==='data')renderUnifiedData();const label=document.querySelector('.gb23-amount-field label');if(label)label.textContent=isZh()?'金额':'Amount'}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  syncHomeLanguage();syncMarketLanguage();new MutationObserver(()=>{syncHomeLanguage();syncMarketLanguage();if(activeInfoMode==='overview')renderUnifiedOverview();else if(activeInfoMode==='data')renderUnifiedData();const label=document.querySelector('.gb23-amount-field label');if(label)label.textContent=isZh()?'金额':'Amount'}).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   try{const inheritedRenderHome=renderHome;renderHome=function(){const out=inheritedRenderHome.apply(this,arguments);syncHomeLanguage();return out}}catch{}
 }
 
-/* ---------- price-keyed horizontal grid: lines move when price axis pans ---------- */
-function nicePriceStep(raw){if(!Number.isFinite(raw)||raw<=0)return 1;const exp=Math.floor(Math.log10(raw)),pow=10**exp,m=raw/pow,n=m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10;return n*pow}
-function drawPriceGrid(){
-  if(activeInfoMode!=='chart')return;let W,H,bounds;try{W=canvas.clientWidth;H=canvas.clientHeight;bounds=calcPriceBounds()}catch{return}if(!W||!H||!bounds)return;const pad={l:8,r:82,t:28,b:38},plotH=H-pad.t-pad.b,range=bounds.hi-bounds.lo;if(!(range>0))return;const step=nicePriceStep(range/5.4),first=Math.ceil(bounds.lo/step)*step;ctx.save();ctx.font='10px sans-serif';ctx.lineWidth=1;
-  for(let p=first;p<=bounds.hi+step*.001;p+=step){const yy=pad.t+(bounds.hi-p)/range*plotH;if(yy<=pad.t+3||yy>=H-pad.b-3)continue;ctx.strokeStyle='rgba(74,80,92,.34)';ctx.beginPath();ctx.moveTo(pad.l,Math.round(yy)+.5);ctx.lineTo(W-pad.r,Math.round(yy)+.5);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(fmtLocal(Math.max(0,p),configs?.[currentSymbol()]?.dec??2),W-pad.r+5,yy+3)}ctx.restore();
-  try{window.GreedBitV14?.drawPositionOverlay?.()}catch{}
-}
-function installPriceGrid(){
-  if(window.__gb23PriceGrid)return;let inherited;try{inherited=draw}catch{return}if(typeof inherited!=='function')return;draw=function(){const oldStroke=ctx.stroke,oldText=ctx.fillText;ctx.stroke=function(){const s=String(this.strokeStyle||'').toLowerCase();if(s==='#1d232b'||s==='#171c22'||s==='rgb(29, 35, 43)'||s==='rgb(23, 28, 34)')return;return oldStroke.apply(this,arguments)};ctx.fillText=function(text,x,y){const W=canvas.clientWidth,fill=String(this.fillStyle||'').toLowerCase();if(x>=W-80&&(fill==='#6f7a8b'||fill==='rgb(111, 122, 139)')&&/^[-+]?\d[\d,.]*$/.test(String(text)))return;return oldText.apply(this,arguments)};let out;try{out=inherited.apply(this,arguments)}finally{ctx.stroke=oldStroke;ctx.fillText=oldText}drawPriceGrid();return out};window.__gb23PriceGrid=true;try{draw()}catch{}
-}
-
+/*
+ * Chart ownership note:
+ * v009 owns the complete canvas pass (grid, candles, markers, high/low, axes) and uses one price->Y transform.
+ * v018 may prepare temporary perpetual-contract price data before entering that pass, but this module must not
+ * repaint the price axis after v018 restores spot data. The former v021 drawPriceGrid/installPriceGrid wrapper
+ * was intentionally removed because it created a second coordinate system and caused vertical drag desync.
+ */
 function finalize(){
-  if(finalized)return;finalized=true;installSourceLabelGuard();installFavicon();updateVersion();installMarketReliability();installUnifiedContractPanels();installAmountSelector();installPriceGrid();installLanguageSync();
-  requestAnimationFrame(()=>{installSourceLabelGuard();window.GreedBitPairLabelGuard?.enforce?.();syncHomeLanguage();syncMarketLanguage();updateVersion();document.documentElement.classList.add('gb-runtime-ready')});
+  if(finalized)return;finalized=true;installFavicon();updateVersion();installMarketReliability();installUnifiedContractPanels();installAmountSelector();installLanguageSync();
+  requestAnimationFrame(()=>{syncHomeLanguage();syncMarketLanguage();updateVersion();document.documentElement.classList.add('gb-runtime-ready')});
   window.GreedBitV21={VERSION,sourceLabel,renderOverview:renderUnifiedOverview,renderData:renderUnifiedData};
 }
 function boot(){document.documentElement.classList.add('gb21-ui');installStyle(finalize);setTimeout(finalize,1500)}
