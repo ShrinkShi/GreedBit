@@ -2,14 +2,28 @@
 
 /* Whole-page scrolling: terminal content may exceed viewport, like HTX classic layout. */
 html.gb21-ui,html.gb21-ui body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+html.gb21-ui body{padding-bottom:24px!important}
 .gb21-ui .topnav{position:sticky!important;top:0!important;z-index:120!important}
-.gb21-ui .page{height:auto!important;min-height:calc(100vh - 72px)!important;overflow:visible!important}
-.gb21-ui .trade-page{min-height:calc(100vh + 120px)!important}
+.gb21-ui .statusbar{position:fixed!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:24px!important;z-index:300!important}
+.gb21-ui .page{height:auto!important;min-height:calc(100vh - 48px - 24px)!important;overflow:visible!important}
+.gb21-ui .trade-page{min-height:0!important;background:var(--gb20-bg-0)!important}
 .gb21-ui .trade-page.hidden{display:none!important}
-.gb21-ui .trade-page .layout{height:auto!important;min-height:900px!important;grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;grid-template-rows:minmax(500px,58vh) 4px minmax(320px,1fr)!important}
+
+/* Keep bottom height bound to --bottom-h so the horizontal splitter remains functional. */
+.gb21-ui .trade-page .layout{
+  height:auto!important;
+  min-height:calc(500px + 4px + var(--bottom-h))!important;
+  grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;
+  grid-template-rows:minmax(500px,58vh) 4px var(--bottom-h)!important;
+  align-content:start!important;
+}
 
 /* Overview/data replace only the chart body. Orderbook, trade panel and bottom records stay visible. */
-.gb21-ui .layout.contract-info-mode{grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;grid-template-rows:minmax(500px,58vh) 4px minmax(320px,1fr)!important}
+.gb21-ui .layout.contract-info-mode{
+  grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;
+  grid-template-rows:minmax(500px,58vh) 4px var(--bottom-h)!important;
+  min-height:calc(500px + 4px + var(--bottom-h))!important;
+}
 .gb21-ui .contract-info-mode .chartpanel{display:flex!important;grid-column:1!important;grid-row:1!important;border-bottom:1px solid var(--gb20-border)!important}
 .gb21-ui .contract-info-mode .orderbook{display:flex!important;grid-column:3!important;grid-row:1!important}
 .gb21-ui .contract-info-mode .trade{display:grid!important;grid-column:5!important;grid-row:1/4!important}
@@ -20,6 +34,17 @@ html.gb21-ui,html.gb21-ui body{height:auto!important;min-height:100%!important;o
 .gb21-ui .contract-info-mode #splitChartBottom{grid-column:1/4!important;grid-row:2!important}
 .gb21-ui .contract-info{min-height:0!important;max-height:none!important;overflow:auto!important}
 .gb21-ui .overview-grid,.gb21-ui .analytics-grid{min-height:100%!important}
+
+/* Right rail: order form is content-sized; asset panel receives remaining height.
+   Enabling TP/SL naturally expands the order form and reduces the asset panel instead of reserving an always-tall blank form. */
+.gb21-ui .trade{grid-template-rows:max-content minmax(260px,1fr)!important;min-height:0!important;overflow:visible!important;align-self:stretch!important}
+.gb21-ui .tradebox{min-height:0!important;overflow:visible!important}
+.gb21-ui .assetbox{min-height:260px!important;overflow:auto!important}
+
+/* Horizontal splitter uses the same --bottom-h variable consumed by setupSplitters(). */
+.gb21-ui #splitChartBottom{display:block!important;min-height:4px!important;height:4px!important;cursor:row-resize!important;touch-action:none!important;position:relative!important;z-index:25!important}
+.gb21-ui #splitChartBottom::after{content:""!important;position:absolute!important;inset:-5px 0!important}
+.gb21-ui #splitChartBottom:hover,.gb21-ui #splitChartBottom.dragging{background:#343741!important}
 
 /* Selected/preselected states: highlight text/icon only. No pill, border box or glow. */
 .gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button).active{
