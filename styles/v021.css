@@ -2,8 +2,8 @@
 
 /* Whole-page scrolling: terminal content may exceed viewport, like HTX classic layout. */
 html.gb21-ui,html.gb21-ui body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
-html.gb21-ui body{padding-bottom:24px!important}
-.gb21-ui .topnav{position:sticky!important;top:0!important;z-index:120!important}
+html.gb21-ui body{padding-top:48px!important;padding-bottom:24px!important}
+.gb21-ui .topnav{position:fixed!important;left:0!important;right:0!important;top:0!important;width:100%!important;z-index:320!important}
 .gb21-ui .statusbar{position:fixed!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:24px!important;z-index:300!important}
 .gb21-ui .page{height:auto!important;min-height:calc(100vh - 48px - 24px)!important;overflow:visible!important}
 .gb21-ui .trade-page{min-height:0!important;background:var(--gb20-bg-0)!important}
@@ -35,8 +35,7 @@ html.gb21-ui body{padding-bottom:24px!important}
 .gb21-ui .contract-info{min-height:0!important;max-height:none!important;overflow:auto!important}
 .gb21-ui .overview-grid,.gb21-ui .analytics-grid{min-height:100%!important}
 
-/* Right rail: order form is content-sized; asset panel receives remaining height.
-   Enabling TP/SL naturally expands the order form and reduces the asset panel instead of reserving an always-tall blank form. */
+/* Right rail: order form is content-sized; asset panel receives remaining height. */
 .gb21-ui .trade{grid-template-rows:max-content minmax(260px,1fr)!important;min-height:0!important;overflow:visible!important;align-self:stretch!important}
 .gb21-ui .tradebox{min-height:0!important;overflow:visible!important}
 .gb21-ui .assetbox{min-height:260px!important;overflow:auto!important}
@@ -46,13 +45,19 @@ html.gb21-ui body{padding-bottom:24px!important}
 .gb21-ui #splitChartBottom::after{content:""!important;position:absolute!important;inset:-5px 0!important}
 .gb21-ui #splitChartBottom:hover,.gb21-ui #splitChartBottom.dragging{background:#343741!important}
 
-/* Selected/preselected states: highlight text/icon only. No pill, border box or glow. */
+/* Selection is expressed consistently: bright text/icon plus a short blue underline. Hover only brightens content. */
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button){position:relative!important}
 .gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button).active{
-  color:#f1f4f9!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;outline:none!important;filter:none!important
+  color:#f1f4f9!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;outline:none!important;filter:none!important;transform:none!important
 }
-.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.gb19-kind-tabs button).active::after{display:none!important}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button).active::after{
+  content:""!important;display:block!important;position:absolute!important;left:50%!important;bottom:0!important;width:18px!important;height:2px!important;transform:translateX(-50%)!important;background:#0173e5!important;border-radius:2px!important;box-shadow:none!important
+}
 .gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):hover{
   color:#f1f4f9!important;background:transparent!important;box-shadow:none!important;filter:none!important
+}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):active{
+  transform:none!important;background:transparent!important;box-shadow:none!important;filter:none!important
 }
 .gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):focus-visible{
   outline:none!important;box-shadow:none!important
@@ -62,8 +67,13 @@ html.gb21-ui body{padding-bottom:24px!important}
 .gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):hover svg,
 .gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):focus-visible svg{color:#f1f4f9!important;fill:currentColor!important}
 
-/* Neutral time-frame selection remains text-only as requested. */
-.gb21-ui .timebar button.active{background:transparent!important;color:#f1f4f9!important}
+/* Final authoritative slider geometry: legacy layers cannot restore the old thick blue rail. */
+.gb21-ui #pct,.gb21-ui #spotPct,.gb21-ui #levRange{--gb18-range-pct:0%;-webkit-appearance:none!important;appearance:none!important;width:100%!important;height:22px!important;margin:0!important;padding:0!important;background:transparent!important;outline:none!important;cursor:pointer!important}
+.gb21-ui #pct::-webkit-slider-runnable-track,.gb21-ui #spotPct::-webkit-slider-runnable-track,.gb21-ui #levRange::-webkit-slider-runnable-track{height:1px!important;border:0!important;border-radius:0!important;background:linear-gradient(90deg,#0173e5 0 var(--gb18-range-pct),#343842 var(--gb18-range-pct) 100%)!important;box-shadow:none!important}
+.gb21-ui #pct::-moz-range-track,.gb21-ui #spotPct::-moz-range-track,.gb21-ui #levRange::-moz-range-track{height:1px!important;border:0!important;border-radius:0!important;background:#343842!important}.gb21-ui #pct::-moz-range-progress,.gb21-ui #spotPct::-moz-range-progress,.gb21-ui #levRange::-moz-range-progress{height:1px!important;background:#0173e5!important}
+.gb21-ui #pct::-webkit-slider-thumb,.gb21-ui #spotPct::-webkit-slider-thumb,.gb21-ui #levRange::-webkit-slider-thumb{-webkit-appearance:none!important;appearance:none!important;width:14px!important;height:14px!important;margin-top:-6.5px!important;border:0!important;border-radius:50%!important;background:radial-gradient(circle at center,#141517 0 4px,#d7ddeb 4.2px 7px)!important;box-shadow:none!important;transform:none!important}
+.gb21-ui #pct::-moz-range-thumb,.gb21-ui #spotPct::-moz-range-thumb,.gb21-ui #levRange::-moz-range-thumb{width:14px!important;height:14px!important;border:0!important;border-radius:50%!important;background:radial-gradient(circle at center,#141517 0 4px,#d7ddeb 4.2px 7px)!important;box-shadow:none!important}
+.gb21-ui .percent-wrap{position:relative!important;padding:8px 0 30px!important;margin-top:2px!important}.gb21-ui .pct-dots{left:2px!important;right:2px!important;top:14px!important;height:10px!important;align-items:center!important}.gb21-ui .pct-dots button{position:relative!important;width:10px!important;height:10px!important;padding:0!important;border:2px solid #141517!important;border-radius:50%!important;background:#343842!important;box-shadow:none!important;transform:none!important}.gb21-ui .pct-dots button.passed{background:#0173e5!important}.gb21-ui .pct-dots button:hover{background:#2a8df0!important;transform:none!important}.gb21-ui .pct-value{display:none!important}
 
 @media(max-width:1100px){
   .gb21-ui .trade-page .layout,.gb21-ui .layout.contract-info-mode{grid-template-columns:minmax(420px,1fr) 4px 250px 4px 330px!important}
