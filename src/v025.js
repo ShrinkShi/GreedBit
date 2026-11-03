@@ -67,11 +67,17 @@ function rememberManualNewsChoice(e){
 }
 function waitTranslation(btn,timeout=9000){return new Promise(resolve=>{const start=Date.now(),tick=()=>{if(!document.body.contains(btn)||!btn.disabled||Date.now()-start>=timeout)return resolve();setTimeout(tick,100)};tick()})}
 async function applyNewsTranslationPolicy(){
-  if(newsPolicyBusy)return;const list=document.getElementById('newsList');if(!list)return;const prefs=readManualNews();
-  const buttons=[...list.querySelectorAll('[data-news-translate]')].filter(b=>!b.disabled&&b.dataset.state!=='translated'&&!isPinnedOriginal(b,prefs));if(!buttons.length)return;
-  newsPolicyBusy=true;
-  try{for(const btn of buttons.slice(0,20)){if(!document.body.contains(btn)||btn.disabled||isPinnedOriginal(btn,readManualNews()))continue;btn.click();await waitTranslation(btn);await new Promise(r=>setTimeout(r,60))}}
-  finally{newsPolicyBusy=false}
+  if(newsPolicyBusy)return;const list=document.getElementById('newsList');if(!list)return;newsPolicyBusy=true;
+  try{
+    const all=[...list.querySelectorAll('[data-news-translate]')];
+    for(const btn of all){
+      if(!document.body.contains(btn)||btn.disabled)continue;
+      const pinned=isPinnedOriginal(btn,readManualNews());
+      if(pinned&&btn.dataset.state==='translated'){btn.click();await waitTranslation(btn);await new Promise(r=>setTimeout(r,40))}
+    }
+    const prefs=readManualNews(),buttons=[...list.querySelectorAll('[data-news-translate]')].filter(b=>!b.disabled&&b.dataset.state!=='translated'&&!isPinnedOriginal(b,prefs));
+    for(const btn of buttons.slice(0,20)){if(!document.body.contains(btn)||btn.disabled||isPinnedOriginal(btn,readManualNews()))continue;btn.click();await waitTranslation(btn);await new Promise(r=>setTimeout(r,60))}
+  }finally{newsPolicyBusy=false}
 }
 function scheduleNewsPolicy(delay=140){clearTimeout(newsPolicyTimer);newsPolicyTimer=setTimeout(applyNewsTranslationPolicy,delay)}
 function installNewsOwnership(){
