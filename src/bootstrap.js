@@ -26,12 +26,20 @@ const MODULES=[
   'src/strategy/grid.js',
   'src/app/runtime.js'
 ];
+function applyCompatibilityAlias(path){
+  if(path==='src/trading/contracts.js'&&window.GreedBitContracts){
+    window.GreedBitV18=window.GreedBitContracts;
+  }
+  if(path==='src/ui/runtime.js'&&window.GreedBitV21){
+    window.GreedBitRuntimeUI=window.GreedBitV21;
+  }
+}
 function loadModule(path){
   return new Promise((resolve,reject)=>{
-    if(document.querySelector(`script[data-gb-module="${path}"]`)){resolve();return}
+    if(document.querySelector(`script[data-gb-module="${path}"]`)){applyCompatibilityAlias(path);resolve();return}
     const script=document.createElement('script');
     script.src=path;script.async=false;script.dataset.gbModule=path;
-    script.onload=resolve;
+    script.onload=()=>{applyCompatibilityAlias(path);resolve()};
     script.onerror=()=>reject(new Error(`模块加载失败: ${path}`));
     document.body.appendChild(script);
   });
@@ -41,7 +49,7 @@ async function boot(){
   try{
     for(const path of MODULES)await loadModule(path);
     document.documentElement.dataset.gbBoot='ready';
-    window.GreedBitBootstrap={modules:[...MODULES],ready:true};
+    window.GreedBitBootstrap={modules:[...MODULES],ready:true,compatibilityAliases:['GreedBitV18','GreedBitV21']};
     document.dispatchEvent(new CustomEvent('greedbit:ready'));
   }catch(error){
     document.documentElement.dataset.gbBoot='error';
