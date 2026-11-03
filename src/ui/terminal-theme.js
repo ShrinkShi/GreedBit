@@ -1,15 +1,9 @@
-/* v0.0.20 HTX-inspired terminal polish */
+/* HTX-inspired terminal theme and range controls. */
 (function(){
 'use strict';
-const VERSION='0.0.20';
-
 function installStyle(){
   if(document.querySelector('link[href="styles/v020.css"]'))return;
   const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v020.css';document.head.appendChild(l);
-}
-function updateVersion(){
-  const el=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));
-  if(el)el.textContent=`GreedBit v${VERSION}`;
 }
 function pct(input){
   if(!input)return 0;const min=Number(input.min)||0,max=Number(input.max)||100,v=Number(input.value)||0;
@@ -43,25 +37,10 @@ function installRangeSync(){
   }
 }
 function removeLegacyScrollbarOverride(){document.getElementById('gb19ScrollbarPolish')?.remove()}
-function loadV25(){
-  if(document.querySelector('script[src="src/v025.js"]'))return;
-  const s=document.createElement('script');s.src='src/v025.js';document.body.appendChild(s);
-}
-function loadV24(){
-  const existing=document.querySelector('script[src="src/v024.js"]');
-  if(existing){existing.addEventListener('load',loadV25,{once:true});if(existing.dataset.gbLoaded==='1')loadV25();return}
-  const s=document.createElement('script');s.src='src/v024.js';s.addEventListener('load',()=>{s.dataset.gbLoaded='1';loadV25()},{once:true});document.body.appendChild(s);
-}
-function loadV21(){
-  const existing=document.querySelector('script[src="src/v021.js"]');
-  if(existing){if(window.GreedBitV21)loadV24();else existing.addEventListener('load',loadV24,{once:true});return}
-  const n=document.createElement('script');n.src='src/v021.js';n.addEventListener('load',loadV24,{once:true});document.body.appendChild(n);
-}
 function boot(){
-  installStyle();removeLegacyScrollbarOverride();document.body.classList.add('gb20-ui');installLeverageDots();installRangeSync();updateVersion();
+  installStyle();removeLegacyScrollbarOverride();document.body.classList.add('gb20-ui');installLeverageDots();installRangeSync();
   const modal=document.getElementById('leverageModal');if(modal)new MutationObserver(()=>{if(modal.classList.contains('show')){installLeverageDots();syncRange(document.getElementById('levRange'))}}).observe(modal,{attributes:true,attributeFilter:['class']});
-  window.GreedBitV20={VERSION,syncRange};
-  loadV21();
+  window.GreedBitTerminalTheme={syncRange};
 }
 boot();
 })();

@@ -1,27 +1,17 @@
-/* v0.0.25 runtime ownership consolidation */
-(function waitV025(){
-if(!window.GreedBitV21||!document.getElementById('pairName')){setTimeout(waitV025,60);return}
+/* Canonical shared-UI runtime owner. */
+(function waitRuntime(){
+if(!window.GreedBitRuntimeUI||!window.GreedBitContracts||!document.getElementById('pairName')){setTimeout(waitRuntime,60);return}
 (()=>{
 'use strict';
-const VERSION='0.0.25';
-const MANUAL_NEWS_KEY='greedbit_news_manual_original_v25';
+const VERSION='0.0.26';
+const MANUAL_NEWS_KEY='greedbit_news_manual_original';
 let newsPolicyBusy=false,newsPolicyTimer=0;
-const nativeText=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
 
 function isZh(){return !String(document.documentElement.lang||'zh-CN').toLowerCase().startsWith('en')}
 function currentSymbol(){try{if(typeof symbol==='string'&&symbol)return symbol}catch{}return document.getElementById('symbol')?.value||''}
 function currentMode(){try{if(typeof tradingMode==='string'&&tradingMode)return tradingMode}catch{}return'futures'}
 function metaFor(sym){return window.GreedBitV13?.META?.[sym]||null}
-function rawSetText(el,value){if(!el)return;const text=String(value??'');if(nativeText?.set)nativeText.set.call(el,text);else el.textContent=text}
-function setTextIfChanged(el,value){if(!el)return;const text=String(value??'');let cur='';try{cur=nativeText?.get?nativeText.get.call(el):el.textContent}catch{}if(cur!==text)rawSetText(el,text)}
-
-function releaseLegacyTextGuards(){
-  const source=document.querySelector('#lastPrice + .muted.tiny')||document.getElementById('lastPrice')?.parentElement?.querySelector('.muted.tiny');
-  for(const el of [document.getElementById('pairName'),source]){
-    if(!el)continue;const own=Object.getOwnPropertyDescriptor(el,'textContent');if(own?.configurable){try{delete el.textContent}catch{}}
-  }
-  try{delete window.GreedBitPairLabelGuard}catch{}
-}
+function setTextIfChanged(el,value){if(!el)return;const text=String(value??'');if(el.textContent!==text)el.textContent=text}
 function desiredPairLabel(){
   const sym=currentSymbol();if(!sym)return'';const mode=currentMode(),m=metaFor(sym),market=m?.market||m?.category||'',code=String(sym).replaceAll('/','');
   if(mode==='futures'&&market!=='commodity'&&market!=='forex')return`${code}永续合约`;
@@ -32,7 +22,7 @@ function desiredPairLabel(){
 function desiredSourceLabel(){
   const sym=currentSymbol(),mode=currentMode(),m=metaFor(sym),market=m?.market||m?.category||'';if(!sym)return'';
   if(mode==='futures'&&market!=='commodity'&&market!=='forex'){
-    const basis=Number(window.GreedBitV18?.basisPct?.(sym));
+    const basis=Number(window.GreedBitContracts?.basisPct?.(sym));
     return isZh()?`永续合约模拟价格 · 基差 ${Number.isFinite(basis)?`${basis>=0?'+':''}${basis.toFixed(3)}%`:'--'}`:`Simulated perpetual price · basis ${Number.isFinite(basis)?`${basis>=0?'+':''}${basis.toFixed(3)}%`:'--'}`;
   }
   if(market==='stock'&&mode==='spot'){
@@ -42,16 +32,15 @@ function desiredSourceLabel(){
   try{return marketSnapshots?.[sym]?._source||(isZh()?'公开市场行情':'Public market data')}catch{return isZh()?'公开市场行情':'Public market data'}
 }
 function syncPairUi(){
-  releaseLegacyTextGuards();setTextIfChanged(document.getElementById('pairName'),desiredPairLabel());
+  setTextIfChanged(document.getElementById('pairName'),desiredPairLabel());
   const source=document.querySelector('#lastPrice + .muted.tiny')||document.getElementById('lastPrice')?.parentElement?.querySelector('.muted.tiny');setTextIfChanged(source,desiredSourceLabel());
 }
-
 function installEventDrivenPairOwnership(){
-  try{const prev=setSymbol;if(!prev.__gb25){const wrapped=async function(){const out=await prev.apply(this,arguments);syncPairUi();return out};wrapped.__gb25=true;setSymbol=wrapped}}catch{}
-  try{const prev=showPage;if(!prev.__gb25){const wrapped=function(){const out=prev.apply(this,arguments);syncPairUi();return out};wrapped.__gb25=true;showPage=wrapped}}catch{}
-  try{const prev=renderTradingMode;if(!prev.__gb25){const wrapped=function(){const out=prev.apply(this,arguments);syncPairUi();return out};wrapped.__gb25=true;renderTradingMode=wrapped}}catch{}
-  try{const prev=stats;if(!prev.__gb25){const wrapped=function(){const out=prev.apply(this,arguments);syncPairUi();return out};wrapped.__gb25=true;stats=wrapped}}catch{}
+  try{const prev=setSymbol;if(!prev.__gbCanonicalPair){const wrapped=async function(){const out=await prev.apply(this,arguments);syncPairUi();return out};wrapped.__gbCanonicalPair=true;setSymbol=wrapped}}catch{}
+  try{const prev=showPage;if(!prev.__gbCanonicalPair){const wrapped=function(){const out=prev.apply(this,arguments);syncPairUi();return out};wrapped.__gbCanonicalPair=true;showPage=wrapped}}catch{}
+  try{const prev=renderTradingMode;if(!prev.__gbCanonicalPair){const wrapped=function(){const out=prev.apply(this,arguments);syncPairUi();return out};wrapped.__gbCanonicalPair=true;renderTradingMode=wrapped}}catch{}
   document.getElementById('symbol')?.addEventListener('change',()=>queueMicrotask(syncPairUi));
+  document.addEventListener('greedbit:market-context-changed',syncPairUi);
 }
 
 function readManualNews(){try{return JSON.parse(localStorage.getItem(MANUAL_NEWS_KEY)||'{}')}catch{return{}}}
@@ -82,27 +71,21 @@ async function applyNewsTranslationPolicy(){
 function scheduleNewsPolicy(delay=140){clearTimeout(newsPolicyTimer);newsPolicyTimer=setTimeout(applyNewsTranslationPolicy,delay)}
 function installNewsOwnership(){
   document.addEventListener('click',rememberManualNewsChoice,true);
-  try{const prev=renderNews;if(!prev.__gb25){const wrapped=function(){const out=prev.apply(this,arguments);scheduleNewsPolicy();return out};wrapped.__gb25=true;renderNews=wrapped}}catch{}
-  const langObserver=new MutationObserver(()=>scheduleNewsPolicy(180));langObserver.observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+  try{const prev=renderNews;if(!prev.__gbCanonicalNews){const wrapped=function(){const out=prev.apply(this,arguments);scheduleNewsPolicy();return out};wrapped.__gbCanonicalNews=true;renderNews=wrapped}}catch{}
+  new MutationObserver(()=>scheduleNewsPolicy(180)).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
   scheduleNewsPolicy(250);
 }
-
 function updateVersion(){const el=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));if(el)el.textContent=`GreedBit v${VERSION}`}
 function runtimeAudit(){
-  const source=document.querySelector('#lastPrice + .muted.tiny')||document.getElementById('lastPrice')?.parentElement?.querySelector('.muted.tiny');
   return{
     version:VERSION,
-    pairLabelOwner:'v025:event-driven',
-    newsTranslationOwner:'v025:user-preference + render/language events',
-    pairOwnTextDescriptor:!!Object.getOwnPropertyDescriptor(document.getElementById('pairName')||{},'textContent'),
-    sourceOwnTextDescriptor:!!Object.getOwnPropertyDescriptor(source||{},'textContent'),
-    legacyGate:window.GreedBitLegacyGate?.audit||null,
-    pairGuardPresent:!!window.GreedBitPairLabelGuard
+    pairLabelOwner:'app/runtime:event-driven',
+    newsTranslationOwner:'app/runtime:user-preference + render/language events',
+    legacyVersionScripts:[...document.scripts].map(x=>x.getAttribute('src')||'').filter(x=>/src\/v\d{3}/.test(x)),
+    loadedModules:window.GreedBitBootstrap?.modules||[]
   };
 }
-
-releaseLegacyTextGuards();installEventDrivenPairOwnership();installNewsOwnership();syncPairUi();updateVersion();
-window.GreedBitV25={VERSION,syncPairUi,applyNewsTranslationPolicy,runtimeAudit};
-window.GreedBitRuntime=window.GreedBitV25;
+installEventDrivenPairOwnership();installNewsOwnership();syncPairUi();updateVersion();
+window.GreedBitRuntime={VERSION,syncPairUi,applyNewsTranslationPolicy,runtimeAudit};
 })();
 })();

@@ -1,20 +1,11 @@
-/* v0.0.14 position overlay / favorites picker / notification PnL / favicon */
+/* Trading experience: position overlays, favorites picker and PnL-aware notifications. */
 (function(){
 'use strict';
-const V=window.GreedBitV13;
-if(!V){setTimeout(()=>{if(!document.querySelector('script[src="src/v014.js"]')){const s=document.createElement('script');s.src='src/v014.js';document.body.appendChild(s)}},80);return}
-const VERSION='0.0.14';
+const V=window.GreedBitV13;if(!V)throw new Error('market/model.js must load before ui/trading-experience.js');
 const FAV_KEY='greedbit_pair_favorites_v14';
 let pickerMode='favorites';
 
 function installStyle(){if(document.querySelector('link[href="styles/v014.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v014.css';document.head.appendChild(l)}
-function installFavicon(){
-  document.querySelectorAll('link[rel~="icon"]').forEach(x=>x.remove());
-  const href=`assets/favicon.ico?v=${VERSION.replaceAll('.','')}`;
-  const icon=document.createElement('link');icon.rel='icon';icon.type='image/x-icon';icon.href=href;icon.sizes='any';document.head.appendChild(icon);
-  const shortcut=document.createElement('link');shortcut.rel='shortcut icon';shortcut.type='image/x-icon';shortcut.href=href;document.head.appendChild(shortcut);
-}
-function updateVersion(){const el=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));if(el)el.textContent=`GreedBit v${VERSION}`}
 
 /* ---------- notification profit/loss colors ---------- */
 function appendColoredMessage(parent,text){
@@ -53,13 +44,12 @@ function drawPositionOverlay(){
     const sideTxt=p.side==='long'?'L':'S';ctx.fillStyle=col;ctx.fillRect(W-pad.r-20,labelY-9,20,18);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(sideTxt,W-pad.r-10,labelY);ctx.textAlign='left';
   });ctx.restore();
 }
-const baseDrawV14=draw;draw=function(){const out=baseDrawV14.apply(this,arguments);drawPositionOverlay();return out};
+const baseDraw=draw;draw=function(){const out=baseDraw.apply(this,arguments);drawPositionOverlay();return out};
 
 /* ---------- picker favorites + futures / spot tabs ---------- */
 function readFavorites(){try{return new Set(JSON.parse(localStorage.getItem(FAV_KEY)||'[]'))}catch{return new Set()}}
 function saveFavorites(set){localStorage.setItem(FAV_KEY,JSON.stringify([...set]))}
 function favId(market,sym){return`${market}|${sym}`}
-function isFav(market,sym){return readFavorites().has(favId(market,sym))}
 function toggleFav(market,sym){const set=readFavorites(),id=favId(market,sym);set.has(id)?set.delete(id):set.add(id);saveFavorites(set)}
 function pickerAssets(){
   const q=($('coinSearch')?.value||'').trim().toUpperCase(),all=V.ASSETS||[];
@@ -86,7 +76,7 @@ function installPicker(){
   if($('coinSearch'))$('coinSearch').oninput=renderCoinList;renderCoinList();
 }
 
-function boot(){installStyle();installFavicon();installPicker();updateVersion();draw();setTimeout(()=>{renderCoinList();draw()},120)}
+function boot(){installStyle();installPicker();draw();setTimeout(()=>{renderCoinList();draw()},120)}
 boot();
-window.GreedBitV14={VERSION,renderCoinList,drawPositionOverlay};
+window.GreedBitTradingExperience={renderCoinList,drawPositionOverlay};
 })();

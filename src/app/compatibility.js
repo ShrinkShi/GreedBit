@@ -1,7 +1,9 @@
-/* v0.0.13 compatibility fixes for legacy modules */
+/* Compatibility bridge between the original core modules and the consolidated feature modules.
+ * This file contains data-shape compatibility only. It must not dynamically load modules or poll shared UI state.
+ */
 (function(){
 'use strict';
-const V=window.GreedBitV13;if(!V)return;
+const V=window.GreedBitV13;if(!V)throw new Error('market/model.js must load before app/compatibility.js');
 
 function ensureLegacyHomeNodes(){
   let host=$('v13LegacyHomeBridge');
@@ -31,7 +33,6 @@ setSymbol=async function(sym){
   await loadHistoricalMarket(true);renderTable();updateAssets();V.updateFeeUi?.();
 };
 
-/* Correct the GREED fee edge case when a GREED limit-sell is already frozen. */
 function consumeFeeCompat(q,sym,note,wallet){
   if(q.asset==='GREED'){
     const w=spotWallet(),old=+w.coins.GREED||0,avg=old?(+w.cost.GREED||0)/old:0;
@@ -51,48 +52,12 @@ spotFill=function(side,qty,fill,source='市价',reserved=0){
   consumeFeeCompat(q,symbol,source,'spot');accountStats.spotTrades++;spotTrades.unshift({time:nowText(),ts:Date.now()/1000,symbol,side,qty,price:fill,type:source,fee:q.usdt,feeAsset:q.asset,feeAmount:q.amount});playFillSound();saveState();return true;
 };
 
-/* Keep the compact footer readable after the market universe expands. */
 updateFooterTickers=function(){const box=$('footerTickers');if(!box)return;const focus=['BTC/USDT','ETH/USDT','SOL/USDT','GREED/USDT'];box.innerHTML=focus.map(sym=>{const m=marketSnapshots[sym]||{},ch=Number(m.change)||0,a=V.META[sym];return`<span class="ticker ${ch>=0?'up':'down'}">${a?.ticker||sym} ${ch>=0?'+':''}${ch.toFixed(2)}%</span>`}).join('')};
 updateFooterTickers();
 
-/* Legacy account.js writes to removed v0.0.12 home IDs. Keep invisible targets alive. */
 const bridgeObserver=new MutationObserver(()=>{if(!$('homeMarkets')||!$('homeTotalAsset'))ensureLegacyHomeNodes()});
 bridgeObserver.observe(document.body,{childList:true,subtree:false});
-
-/* Persist hourly Earn settlement even when the passive UI refresh was the first caller at an hour boundary. */
 setInterval(()=>{if(user){try{saveState()}catch{}}},60000);
 
-/*
- * Temporary ownership gate for three still-loaded historical pair-label pollers.
- * v021 no longer installs a news-list observer or a secondary chart renderer, so MutationObserver itself is
- * no longer proxied here. The remaining interval gate is deliberately narrow and must disappear when the
- * v016/v017/v018 label pollers are physically removed during module consolidation.
- */
-function installLegacyRuntimeGate(){
-  if(window.GreedBitLegacyGate)return;
-  const nativeSetInterval=window.setInterval.bind(window);
-  const audit={suppressedIntervals:[],installedAt:Date.now()};
-  window.setInterval=function(fn,delay,...args){
-    const src=typeof fn==='function'?Function.prototype.toString.call(fn):'';
-    let owner='';
-    if(src.includes('syncPairLabel'))owner='v016 pair-label poller';
-    else if(src.includes('syncExternalLabel'))owner='v017 external-label poller';
-    else if(src.includes('syncPairHeader'))owner='v018 pair-header poller';
-    if(owner){audit.suppressedIntervals.push({owner,delay:Number(delay)||0});return 0}
-    return nativeSetInterval(fn,delay,...args);
-  };
-  window.GreedBitLegacyGate={audit,nativeSetInterval};
-}
-installLegacyRuntimeGate();
-
-function loadV20(){if(document.querySelector('script[src="src/v020.js"]'))return;const n=document.createElement('script');n.src='src/v020.js';document.body.appendChild(n)}
-function loadV19(){if(document.querySelector('script[src="src/v019.js"]')){loadV20();return}const n=document.createElement('script');n.src='src/v019.js';n.onload=loadV20;document.body.appendChild(n)}
-function loadV18(){if(document.querySelector('script[src="src/v018.js"]')){loadV19();return}const n=document.createElement('script');n.src='src/v018.js';n.onload=loadV19;document.body.appendChild(n)}
-function loadV17Core(){if(document.querySelector('script[src="src/v017.js"]')){loadV18();return}const n=document.createElement('script');n.src='src/v017.js';n.onload=loadV18;document.body.appendChild(n)}
-function loadV17(){if(document.querySelector('script[src="src/v017-manifest-preload.js"]')){loadV17Core();return}const p=document.createElement('script');p.src='src/v017-manifest-preload.js';p.onload=loadV17Core;document.body.appendChild(p)}
-function loadV16(){if(document.querySelector('script[src="src/v016.js"]')){loadV17();return}const n=document.createElement('script');n.src='src/v016.js';n.onload=loadV17;document.body.appendChild(n)}
-function loadV15(){if(document.querySelector('script[src="src/v015.js"]')){loadV16();return}const n=document.createElement('script');n.src='src/v015.js';n.onload=loadV16;document.body.appendChild(n)}
-/* Legacy feature layers remain for functionality; shared UI ownership is consolidated by the narrow gate + v025. */
-if(!document.querySelector('script[src="src/v014.js"]')){const s=document.createElement('script');s.src='src/v014.js';s.onload=loadV15;document.body.appendChild(s)}else loadV15();
-
+window.GreedBitCompatibility={ensureLegacyHomeNodes,ensureSymbolOptions};
 })();

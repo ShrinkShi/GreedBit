@@ -1,17 +1,15 @@
-/* v0.0.12 modern home */
+/* Home page module. Historical v0.0.12 implementation consolidated under a functional module name. */
 (function(){
 'use strict';
-const VERSION='0.0.12';
 const HERO_VIDEO='assets/mammon-home.webm';
 
-function installV12Style(){if(document.querySelector('link[href="styles/v012.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v012.css';document.head.appendChild(l)}
+function installStyle(){if(document.querySelector('link[href="styles/v012.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v012.css';document.head.appendChild(l)}
 function safeNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
 function changeClass(v){return safeNum(v)>=0?'green':'red'}
 function signedPct(v){v=safeNum(v);return`${v>=0?'+':''}${v.toFixed(2)}%`}
-function marketStatusSnapshot(){const text=$('marketStatusText')?.textContent||'正在连接真实行情…',state=marketReady?'live':(/失败|不可用|error/i.test(text)?'error':'connecting');return{state,text}}
-function assetSnapshot(sym){const c=configs[sym],m=marketSnapshots[sym]||{};return{c,last:safeNum(m.last||c.anchor),change:safeNum(m.change)}}
+function assetSnapshot(sym){const c=configs[sym],m=marketSnapshots[sym]||{};return{c,last:safeNum(m.last||c?.anchor),change:safeNum(m.change)}}
 
-function homeMarkup(){return`
+function markup(){return`
 <div class="home-v12">
   <section class="home-hero-v12">
     <div class="home-copy-v12">
@@ -42,12 +40,12 @@ function homeMarkup(){return`
 </div>`}
 
 function installHome(){
-  const home=$('homePage');if(!home)return;home.innerHTML=homeMarkup();
+  const home=$('homePage');if(!home)return;home.innerHTML=markup();
   const stage=$('mammonStage'),video=$('mammonHero');if(video&&stage){const ready=()=>stage.classList.add('video-ready'),failed=()=>stage.classList.add('video-failed');video.addEventListener('loadeddata',ready,{once:true});video.addEventListener('canplay',ready,{once:true});video.addEventListener('error',failed,{once:true});video.play().catch(()=>{})}
   home.addEventListener('click',e=>{const b=e.target.closest('[data-home-goto]');if(b){showPage(b.dataset.homeGoto);return}const card=e.target.closest('[data-market-symbol]');if(card)openMarketSymbol(card.dataset.marketSymbol)})
 }
 async function openMarketSymbol(sym){try{if(sym&&sym!==symbol)await setSymbol(sym);showPage('futures')}catch(e){console.warn('open market symbol failed',e)}}
-function renderHomeV12(){
+function renderHome(){
   const box=$('homeMarkets');if(!box)return;
   const rows=Object.keys(configs).map(sym=>{const {c,last,change}=assetSnapshot(sym);return`<article class="home-ticker-card" data-market-symbol="${sym}"><div class="home-ticker-top"><i class="home-ticker-icon" style="background:${c.color}">${c.icon}</i><b>${sym}</b><small>24H</small></div><div class="home-ticker-main"><b>${last?fmt(last,c.dec):'--'}</b><span class="${changeClass(change)}">${signedPct(change)}</span></div></article>`});
   rows.push(`<article class="home-ticker-card" data-home-goto="market"><div class="home-ticker-top"><i class="home-ticker-icon" style="background:#1d7f5c">●</i><b>市场资讯</b><small>RSS</small></div><div class="home-ticker-main"><b style="font-size:14px">CoinDesk + CNBC</b><span class="green">NEWS</span></div></article>`);
@@ -56,19 +54,12 @@ function renderHomeV12(){
   if($('homeTotalAsset'))$('homeTotalAsset').textContent=user?fmt(totalAsset())+' USDT':'-- USDT';if($('homeAccountHint'))$('homeAccountHint').textContent=user?'当前浏览器中的现货、合约与其他模拟账户权益合计。':'登录后查看本地模拟账户总权益。所有资产仅存在于当前浏览器。';
 }
 
-const baseUpdateSnapshots=updateMarketSnapshots;updateMarketSnapshots=async function(){const out=await baseUpdateSnapshots.apply(this,arguments);renderHomeV12();return out};
-const baseSetStatus=setMarketStatus;setMarketStatus=function(){const out=baseSetStatus.apply(this,arguments);renderHomeV12();return out};
-const baseSyncAuth=syncAuth;syncAuth=function(){const out=baseSyncAuth.apply(this,arguments);setTimeout(renderHomeV12,0);return out};
-const baseShowPage=showPage;showPage=function(page){const out=baseShowPage.apply(this,arguments);if(page==='home')renderHomeV12();return out};
-function updateVersion(){const v=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));if(v)v.textContent=`GreedBit v${VERSION}`}
-function loadNewsModule(){if(document.querySelector('script[src="src/v012-news.js"]'))return;const s=document.createElement('script');s.src='src/v012-news.js';document.body.appendChild(s)}
-function loadV13Modules(){
-  if(!document.querySelector('link[href="styles/v013-layout-fix.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v013-layout-fix.css';document.head.appendChild(l)}
-  if(document.querySelector('script[src="src/v013-market.js"]'))return;
-  const market=document.createElement('script');market.src='src/v013-market.js';market.onload=()=>{
-    const ui=document.createElement('script');ui.src='src/v013-ui.js';ui.onload=()=>{const fixes=document.createElement('script');fixes.src='src/v013-fixes.js';document.body.appendChild(fixes)};document.body.appendChild(ui)
-  };document.body.appendChild(market)
-}
-function boot(){installV12Style();installHome();renderHomeV12();updateVersion();loadNewsModule();loadV13Modules();setInterval(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHomeV12()},1500)}
+const baseUpdateSnapshots=updateMarketSnapshots;updateMarketSnapshots=async function(){const out=await baseUpdateSnapshots.apply(this,arguments);renderHome();return out};
+const baseSetStatus=setMarketStatus;setMarketStatus=function(){const out=baseSetStatus.apply(this,arguments);renderHome();return out};
+const baseSyncAuth=syncAuth;syncAuth=function(){const out=baseSyncAuth.apply(this,arguments);setTimeout(renderHome,0);return out};
+const baseShowPage=showPage;showPage=function(page){const out=baseShowPage.apply(this,arguments);if(page==='home')renderHome();return out};
+
+function boot(){installStyle();installHome();renderHome();setInterval(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHome()},1500)}
 boot();
+window.GreedBitHome={render:renderHome};
 })();

@@ -110,23 +110,5 @@ function setupChartEvents(){
   });
 }
 
-/* v0.0.11 brand favicon can be installed without changing index.html */
-if(!document.querySelector('link[rel~="icon"]')){const gbIcon=document.createElement('link');gbIcon.rel='icon';gbIcon.type='image/png';gbIcon.href='assets/greedbit-logo.png';document.head.appendChild(gbIcon)}
-
-/* v0.0.11 preload must execute before events.js initializes the market */
-if(!window.__greedbitV011PreloadRequested){
-  window.__greedbitV011PreloadRequested=true;
-  document.write('<script src="src/v011-preload.js"><\/script>');
-}
-
-/* v0.0.11 UI enhancements load after the base page and v0.0.9/v0.0.10 extensions */
-window.addEventListener('load',()=>{
-  if(!document.querySelector('script[src="src/v011.js"]')){
-    const ext=document.createElement('script');ext.src='src/v011.js';document.body.appendChild(ext);
-  }
-});
-
-/* load v0.0.10 extensions; module waits until v0.0.9 chart overrides are ready */
-if(!document.querySelector('script[src="src/v010.js"]')){
-  const v010Ext=document.createElement('script');v010Ext.src='src/v010.js';document.body.appendChild(v010Ext);
-}
+/* Base UI contains no feature-module loader. bootstrap.js owns module order. */
+if(!document.querySelector('link[rel~="icon"]')){const gbIcon=document.createElement('link');gbIcon.rel='icon';gbIcon.type='image/png';gbIcon.href='assets/greedbit-favicon.png';document.head.appendChild(gbIcon)}

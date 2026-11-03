@@ -1,4 +1,4 @@
-name: JavaScript Syntax Check
+name: Runtime Integrity Check
 
 on:
   push:
@@ -11,11 +11,35 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Check JavaScript syntax
+      - name: Check JavaScript syntax recursively
         shell: bash
         run: |
           set -euo pipefail
-          for file in src/*.js; do
+          while IFS= read -r -d '' file; do
             echo "Checking $file"
             node --check "$file"
-          done
+          done < <(find src -type f -name '*.js' -print0 | sort -z)
+      - name: Enforce runtime architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+
+          legacy_files=$(find src -maxdepth 1 -type f -regextype posix-extended -regex '.*/v[0-9]{3}.*\.js' -print)
+          if [[ -n "$legacy_files" ]]; then
+            echo "ERROR: legacy version scripts are forbidden:"
+            echo "$legacy_files"
+            fail=1
+          fi
+
+          if grep -R -nE 'src/v[0-9]{3}[^ ]*\.js' src index.html; then
+            echo "ERROR: runtime still references legacy version scripts."
+            fail=1
+          fi
+
+          if grep -R -nE 'syncPairLabel|syncExternalLabel|syncPairHeader' src; then
+            echo "ERROR: retired shared-UI pollers returned."
+            fail=1
+          fi
+
+          exit "$fail"
