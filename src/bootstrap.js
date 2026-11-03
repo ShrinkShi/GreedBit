@@ -3,7 +3,7 @@
  */
 (function(){
 'use strict';
-const BUILD='0026-20261103c';
+const BUILD='0026-20261103d';
 const MODULE_TIMEOUT_MS=8000;
 const MODULES=[
   'src/market/preload.js',
@@ -48,6 +48,10 @@ function applyCompatibilityAlias(path){
     document.documentElement.classList.remove('gb-runtime-ready');
   }
 }
+function validateModulePostcondition(path){
+  if(path==='src/market/model.js'&&!window.GreedBitV13)throw new Error('模块初始化不完整: src/market/model.js 未导出 GreedBitV13');
+  if(path==='src/trading/contracts.js'&&!window.GreedBitContracts)throw new Error('模块初始化不完整: src/trading/contracts.js 未导出 GreedBitContracts');
+}
 function versioned(path){
   const join=path.includes('?')?'&':'?';
   return `${path}${join}gb=${encodeURIComponent(BUILD)}`;
@@ -62,7 +66,8 @@ function loadModule(path){
   return new Promise((resolve,reject)=>{
     const existing=document.querySelector(`script[data-gb-module="${path}"]`);
     if(existing&&existing.dataset.gbLoaded==='1'){
-      applyCompatibilityAlias(path);resolve();return;
+      try{validateModulePostcondition(path);applyCompatibilityAlias(path);resolve()}catch(error){reject(error)}
+      return;
     }
     if(existing)existing.remove();
     const script=document.createElement('script');
@@ -77,7 +82,10 @@ function loadModule(path){
       window.removeEventListener('error',onRuntimeError,true);
       script.onload=null;script.onerror=null;
       if(error){script.remove();reject(error);return}
-      script.dataset.gbLoaded='1';applyCompatibilityAlias(path);resolve();
+      try{
+        validateModulePostcondition(path);
+        script.dataset.gbLoaded='1';applyCompatibilityAlias(path);resolve();
+      }catch(postError){script.remove();reject(postError)}
     };
     window.addEventListener('error',onRuntimeError,true);
     const timer=setTimeout(()=>finish(new Error(`模块加载超时（${MODULE_TIMEOUT_MS/1000}秒）: ${path}`)),MODULE_TIMEOUT_MS);
