@@ -3,6 +3,19 @@
  */
 (function(){
 'use strict';
+
+/* Transitional path adapter for the old performance module. This is intentionally centralized here so no
+ * version-named worker file has to remain in the runtime tree. Remove once performance/runtime.js is rewritten. */
+if(window.Worker&&!window.__gbCanonicalWorkerPath){
+  const NativeWorker=window.Worker;
+  window.Worker=new Proxy(NativeWorker,{construct(Target,args){
+    let url=String(args?.[0]||'');
+    if(url.startsWith('src/v015-market-worker.js'))url='src/performance/market-worker.js';
+    return Reflect.construct(Target,[url,...args.slice(1)]);
+  }});
+  window.__gbCanonicalWorkerPath=true;
+}
+
 const MODULES=[
   {path:'src/market/preload.js'},
   {path:'src/chart/renderer.js'},
