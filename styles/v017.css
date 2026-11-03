@@ -1,0 +1,11 @@
+/* v0.0.17 forex + stock-token polish */
+.coin-tabs{overflow-x:auto;scrollbar-width:none}
+.coin-tabs::-webkit-scrollbar{display:none}
+.coin-tabs [data-v17-picker]{white-space:nowrap}
+.coin-picker-mode-note-v14{max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.coin-market-badge-v14.gb17-sim-badge{color:#c8b7ff;background:rgba(139,108,220,.12);border-color:rgba(139,108,220,.28)}
+#coinList .coin-row[data-market="stock"],#coinList .coin-row[data-market="forex"]{min-height:64px}
+#coinList .coin-row[data-market="stock"] .coin-text-v14 small,#coinList .coin-row[data-market="forex"] .coin-text-v14 small{max-width:310px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#coinList .coin-row[data-market="stock"] .coin-icon-img,#coinList .coin-row[data-market="forex"] .coin-icon-img{object-fit:contain;background:rgba(255,255,255,.04)}
+#contractInfoPanel .overview-tags-v16 span{white-space:nowrap}
+@media(max-width:900px){.coin-picker-mode-note-v14{display:none}#coinList .coin-row[data-market="stock"] .coin-text-v14 small{max-width:190px}}
