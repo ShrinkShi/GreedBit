@@ -62,9 +62,10 @@ bridgeObserver.observe(document.body,{childList:true,subtree:false});
 /* Persist hourly Earn settlement even when the passive UI refresh was the first caller at an hour boundary. */
 setInterval(()=>{if(user){try{saveState()}catch{}}},60000);
 
-function loadV16(){if(document.querySelector('script[src="src/v016.js"]'))return;const n=document.createElement('script');n.src='src/v016.js';document.body.appendChild(n)}
+function loadV17(){if(document.querySelector('script[src="src/v017.js"]'))return;const n=document.createElement('script');n.src='src/v017.js';document.body.appendChild(n)}
+function loadV16(){if(document.querySelector('script[src="src/v016.js"]')){loadV17();return}const n=document.createElement('script');n.src='src/v016.js';n.onload=loadV17;document.body.appendChild(n)}
 function loadV15(){if(document.querySelector('script[src="src/v015.js"]')){loadV16();return}const n=document.createElement('script');n.src='src/v015.js';n.onload=loadV16;document.body.appendChild(n)}
-/* v0.0.14 -> v0.0.15 -> v0.0.16. Later layers deliberately override earlier behavior. */
+/* v0.0.14 -> v0.0.15 -> v0.0.16 -> v0.0.17. Later layers deliberately override earlier behavior. */
 if(!document.querySelector('script[src="src/v014.js"]')){const s=document.createElement('script');s.src='src/v014.js';s.onload=loadV15;document.body.appendChild(s)}else loadV15();
 
 })();
