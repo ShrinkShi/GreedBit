@@ -77,24 +77,33 @@ $required = @(
   'assets\stocksicon\anthropic.png',
   'src\core.js',
   'src\market.js',
-  'src\v009.js',
-  'src\v011-preload.js',
-  'src\v011.js',
-  'src\v013-market.js',
-  'src\v013-ui.js',
-  'src\v013-fixes.js',
-  'src\v014.js',
-  'src\v015.js',
-  'src\v015-market-worker.js',
-  'src\v016.js',
-  'src\v017-manifest-preload.js',
-  'src\v017.js',
-  'src\v018.js',
-  'src\v019.js',
-  'src\v020.js',
-  'src\v021.js',
-  'src\v024.js',
-  'src\v025.js',
+  'src\futures.js',
+  'src\spot.js',
+  'src\account.js',
+  'src\ui.js',
+  'src\bootstrap.js',
+  'src\app\events.js',
+  'src\app\compatibility.js',
+  'src\app\runtime.js',
+  'src\chart\renderer.js',
+  'src\market\preload.js',
+  'src\market\model.js',
+  'src\market\extended.js',
+  'src\market\stock-manifest-preload.js',
+  'src\market\external.js',
+  'src\news\feeds.js',
+  'src\performance\runtime.js',
+  'src\performance\market-worker.js',
+  'src\trading\advanced-orders.js',
+  'src\trading\contracts.js',
+  'src\trading\records.js',
+  'src\strategy\grid.js',
+  'src\ui\preferences.js',
+  'src\ui\home.js',
+  'src\ui\shell.js',
+  'src\ui\trading-experience.js',
+  'src\ui\terminal-theme.js',
+  'src\ui\runtime.js',
   'styles\base.css',
   'styles\trading.css',
   'styles\v011.css',
@@ -114,12 +123,19 @@ foreach ($relative in $required) {
   }
 }
 
+# Version scripts are not allowed back into the runtime after consolidation.
+$legacyVersionScripts = Get-ChildItem (Join-Path $out 'src') -File -Filter 'v*.js' -ErrorAction SilentlyContinue
+if ($legacyVersionScripts) {
+  throw "Legacy version-script regression detected: $($legacyVersionScripts.Name -join ', ')"
+}
+
 $files = Get-ChildItem $out -Recurse -File
 $total = ($files | Measure-Object Length -Sum).Sum
 Write-Host "Runtime files: $($files.Count)"
 Write-Host "index.html: $($index.Length) bytes"
 Write-Host ("Package size before ZIP: {0:N2} MB" -f ($total / 1MB))
 Write-Host 'Relative-path precheck: PASS'
+Write-Host 'Canonical-module precheck: PASS'
 
 if (-not $NoZip) {
   if (Test-Path $zip) {
