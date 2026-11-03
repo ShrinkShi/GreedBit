@@ -3,7 +3,7 @@
  */
 (function(){
 'use strict';
-const BUILD='0026-20261103a';
+const BUILD='0026-20261103b';
 const MODULE_TIMEOUT_MS=8000;
 const MODULES=[
   'src/market/preload.js',
@@ -31,13 +31,17 @@ const MODULES=[
 const bootState={build:BUILD,modules:[...MODULES],loaded:[],current:null,ready:false,error:null,compatibilityAliases:['GreedBitV18','GreedBitV21']};
 window.GreedBitBootstrap=bootState;
 
+function installFavicon(){
+  document.querySelectorAll('link[rel~="icon"],link[rel="shortcut icon"]').forEach(x=>x.remove());
+  const png=document.createElement('link');png.rel='icon';png.type='image/png';png.href=`assets/greedbit-favicon.png?gb=${encodeURIComponent(BUILD)}`;document.head.appendChild(png);
+  const ico=document.createElement('link');ico.rel='shortcut icon';ico.type='image/x-icon';ico.href=`assets/favicon.ico?gb=${encodeURIComponent(BUILD)}`;document.head.appendChild(ico);
+}
 function applyCompatibilityAlias(path){
   if(path==='src/trading/contracts.js'&&window.GreedBitContracts){
     window.GreedBitV18=window.GreedBitContracts;
   }
   if(path==='src/ui/runtime.js'){
     if(window.GreedBitV21)window.GreedBitRuntimeUI=window.GreedBitV21;
-    /* ui/runtime still contains a historical ready marker; bootstrap owns visibility now. */
     document.documentElement.classList.remove('gb-runtime-ready');
   }
 }
@@ -81,6 +85,7 @@ function showBootError(error){
 }
 async function boot(){
   const root=document.documentElement;
+  installFavicon();
   root.dataset.gbBoot='loading';
   root.classList.remove('gb-runtime-ready');
   try{
@@ -96,7 +101,6 @@ async function boot(){
   }catch(error){
     bootState.error={message:error?.message||String(error),module:bootState.current};
     root.dataset.gbBoot='error';
-    /* Never leave the CSS boot curtain spinning forever. Reveal the diagnostic panel instead. */
     root.classList.add('gb-runtime-ready');
     console.error('[GreedBit] bootstrap failed',error,bootState);
     showBootError(error);
