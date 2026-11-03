@@ -62,7 +62,8 @@ bridgeObserver.observe(document.body,{childList:true,subtree:false});
 /* Persist hourly Earn settlement even when the passive UI refresh was the first caller at an hour boundary. */
 setInterval(()=>{if(user){try{saveState()}catch{}}},60000);
 
-function loadV17(){if(document.querySelector('script[src="src/v017.js"]'))return;const n=document.createElement('script');n.src='src/v017.js';document.body.appendChild(n)}
+function loadV17Core(){if(document.querySelector('script[src="src/v017.js"]'))return;const n=document.createElement('script');n.src='src/v017.js';document.body.appendChild(n)}
+function loadV17(){if(document.querySelector('script[src="src/v017-manifest-preload.js"]')){loadV17Core();return}const p=document.createElement('script');p.src='src/v017-manifest-preload.js';p.onload=loadV17Core;document.body.appendChild(p)}
 function loadV16(){if(document.querySelector('script[src="src/v016.js"]')){loadV17();return}const n=document.createElement('script');n.src='src/v016.js';n.onload=loadV17;document.body.appendChild(n)}
 function loadV15(){if(document.querySelector('script[src="src/v015.js"]')){loadV16();return}const n=document.createElement('script');n.src='src/v015.js';n.onload=loadV16;document.body.appendChild(n)}
 /* v0.0.14 -> v0.0.15 -> v0.0.16 -> v0.0.17. Later layers deliberately override earlier behavior. */
