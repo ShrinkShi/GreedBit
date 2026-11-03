@@ -1,16 +1,12 @@
-/* v0.0.15 design system / virtual tables / worker-throttled market rendering */
+/* Design system, virtual tables and worker-throttled market rendering. */
 (function(){
 'use strict';
-const V=window.GreedBitV13;
-if(!V){setTimeout(()=>{if(!document.querySelector('script[src="src/v015.js"]')){const s=document.createElement('script');s.src='src/v015.js';document.body.appendChild(s)}},80);return}
-const VERSION='0.0.15';
+const V=window.GreedBitV13;if(!V)throw new Error('market/model.js must load before performance/runtime.js');
 const ROW_H=40,BUFFER=7,VIRTUAL_THRESHOLD=80;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function installStyle(){if(document.querySelector('link[href="styles/v015.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v015.css';document.head.appendChild(l)}
-function updateVersion(){const el=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));if(el)el.textContent=`GreedBit v${VERSION}`}
 
-/* ---------- contrast migration ---------- */
 function migrateChartContrast(){
   if(typeof chartDefaults==='object')chartDefaults.bear='#ff6b78';
   const old=String(chartSettings?.bear||'').toLowerCase();
@@ -18,7 +14,6 @@ function migrateChartContrast(){
   draw();
 }
 
-/* ---------- field validation states ---------- */
 const POSITIVE_IDS=new Set(['marginInput','limitPriceInput','spotLimitInput','spotAmountInput','fundAmount','transferAmount','earnAmount','tpInput','slInput']);
 function fieldHost(input){return input.closest('.field')||input.parentElement}
 function clearFieldError(input){const host=fieldHost(input);host?.classList.remove('gb-invalid');input.removeAttribute('aria-invalid');const err=host?.nextElementSibling;if(err?.classList.contains('gb-field-error'))err.remove()}
@@ -37,7 +32,6 @@ function installValidation(){
   document.addEventListener('input',e=>{const i=e.target;if(i instanceof HTMLInputElement&&i.type==='number'&&i.getAttribute('aria-invalid')==='true')validateNumber(i)},true);
 }
 
-/* ---------- progressive financial terminology ---------- */
 const TERMS={
   '保证金':'用于建立和维持杠杆仓位的抵押资金。保证金越低，距离强制平仓通常越近。',
   '强平价':'当仓位风险达到维持保证金要求时，系统预计触发强制平仓的价格。',
@@ -68,17 +62,15 @@ function installTerms(){
   const mo=new MutationObserver(()=>requestAnimationFrame(annotateTerms));mo.observe(document.body,{childList:true,subtree:true});annotateTerms();
 }
 
-/* ---------- skeleton transitions ---------- */
 function chartSkeleton(){return`<div class="gb-chart-skeleton" id="gbChartSkeleton">${[32,58,42,74,48,82,55,68,36,77,49,63].map(h=>`<i style="height:${h}%"></i>`).join('')}</div>`}
 function showChartSkeleton(){const host=$('chartwrap');if(host&&!$('gbChartSkeleton'))host.insertAdjacentHTML('beforeend',chartSkeleton())}
 function hideChartSkeleton(){const el=$('gbChartSkeleton');if(!el)return;el.style.opacity='0';el.style.transition='opacity .14s ease';setTimeout(()=>el.remove(),150)}
 function pageSkeleton(){return`<div class="gb-page-skeleton"><div class="gb-skeleton hero"></div><div class="grid">${'<div class="gb-skeleton card"></div>'.repeat(6)}</div></div>`}
-const inheritedSetSymbolV15=setSymbol;
-setSymbol=async function(sym){if(!configs[sym]||sym===symbol)return inheritedSetSymbolV15.apply(this,arguments);showChartSkeleton();try{return await inheritedSetSymbolV15.apply(this,arguments)}finally{hideChartSkeleton();setTimeout(annotateTerms,0)}};
-const inheritedShowPageV15=showPage,visitedLocalPages=new Set();
-showPage=function(page){const first=!visitedLocalPages.has(page)&&(page==='assets'||page==='earn'),out=inheritedShowPageV15.apply(this,arguments);if(first){visitedLocalPages.add(page);const host=page==='assets'?$('assetPageBody'):$('earnShell');if(host){host.innerHTML=pageSkeleton();requestAnimationFrame(()=>{if(currentPage!==page)return;if(page==='assets')renderAssetPage();else V.renderEarn?.();annotateTerms()})}}setTimeout(annotateTerms,0);return out};
+const inheritedSetSymbol=setSymbol;
+setSymbol=async function(sym){if(!configs[sym]||sym===symbol)return inheritedSetSymbol.apply(this,arguments);showChartSkeleton();try{return await inheritedSetSymbol.apply(this,arguments)}finally{hideChartSkeleton();setTimeout(annotateTerms,0)}};
+const inheritedShowPage=showPage,visitedLocalPages=new Set();
+showPage=function(page){const first=!visitedLocalPages.has(page)&&(page==='assets'||page==='earn'),out=inheritedShowPage.apply(this,arguments);if(first){visitedLocalPages.add(page);const host=page==='assets'?$('assetPageBody'):$('earnShell');if(host){host.innerHTML=pageSkeleton();requestAnimationFrame(()=>{if(currentPage!==page)return;if(page==='assets')renderAssetPage();else V.renderEarn?.();annotateTerms()})}}setTimeout(annotateTerms,0);return out};
 
-/* ---------- native table virtualization ---------- */
 let virtual={spec:null,key:'',wrap:null,raf:0,onScroll:null};
 function fmtDec(sym){return configs[sym]?.dec??2}
 function virtualSpec(){
@@ -96,18 +88,17 @@ function renderVirtualRows(){
   body.innerHTML=`<tr class="gb-virtual-spacer"><td colspan="${s.cols}"><div style="height:${top}px"></div></td></tr>${rows}<tr class="gb-virtual-spacer"><td colspan="${s.cols}"><div style="height:${bottom}px"></div></td></tr>`;annotateTerms();
 }
 function attachVirtualScroll(){const wrap=document.querySelector('.bottom .tablewrap');if(!wrap)return;if(virtual.wrap===wrap&&virtual.onScroll)return;if(virtual.wrap&&virtual.onScroll)virtual.wrap.removeEventListener('scroll',virtual.onScroll);virtual.wrap=wrap;virtual.onScroll=()=>{if(virtual.raf)return;virtual.raf=requestAnimationFrame(()=>{virtual.raf=0;renderVirtualRows()})};wrap.addEventListener('scroll',virtual.onScroll,{passive:true})}
-const inheritedRenderTableV15=renderTable;
+const inheritedRenderTable=renderTable;
 renderTable=function(){
   const spec=virtualSpec();
-  if(!spec||spec.arr.length<VIRTUAL_THRESHOLD){virtual.spec=null;virtual.key='';return inheritedRenderTableV15.apply(this,arguments)}
+  if(!spec||spec.arr.length<VIRTUAL_THRESHOLD){virtual.spec=null;virtual.key='';return inheritedRenderTable.apply(this,arguments)}
   $('positionFilters')?.classList.add('hidden');$('thead').innerHTML=spec.head;attachVirtualScroll();if(virtual.key!==spec.key){virtual.key=spec.key;if(virtual.wrap)virtual.wrap.scrollTop=0}virtual.spec=spec;renderVirtualRows();
 };
 
-/* ---------- worker-backed websocket parsing + rAF/throttled DOM ---------- */
 let marketWorker=null,activeSeq=0,activeExpected='',uiQueued=false,lastUi=0,uiTimer=0;
 function ensureMarketWorker(){
   if(marketWorker)return marketWorker;
-  try{marketWorker=new Worker('src/v015-market-worker.js?v=0015');marketWorker.onmessage=e=>handleWorkerBatch(e.data)}catch(e){console.warn('market worker unavailable; using main-thread fallback',e);marketWorker=null}
+  try{marketWorker=new Worker('src/performance/market-worker.js');marketWorker.onmessage=e=>handleWorkerBatch(e.data)}catch(e){console.warn('market worker unavailable; using main-thread fallback',e);marketWorker=null}
   return marketWorker;
 }
 function applyTradeCore(p,t,v){
@@ -128,9 +119,9 @@ function handleWorkerBatch(msg){
   scheduleMarketUi();
 }
 function directRawFallback(payload,seq){try{const root=JSON.parse(payload),d=root?.data||root;if(d.e==='aggTrade')handleWorkerBatch({type:'batch',seq,trades:[{p:+d.p,t:+d.T/1000,v:+d.q}],ticker:null});else if(d.e==='24hrTicker')handleWorkerBatch({type:'batch',seq,trades:[],ticker:{last:+d.c,change:+d.P,high:+d.h,low:+d.l,quoteVolume:+d.q}})}catch{}}
-const inheritedConnectMarketV15=connectMarketSocket;
+const inheritedConnectMarket=connectMarketSocket;
 connectMarketSocket=function(hostIndex=0){
-  const meta=V.META?.[symbol];if(meta?.market!=='binance')return inheritedConnectMarketV15.apply(this,arguments);
+  const meta=V.META?.[symbol];if(meta?.market!=='binance')return inheritedConnectMarket.apply(this,arguments);
   closeMarketSocket(false);marketSocketHostIndex=hostIndex;const s=apiSymbol().toLowerCase(),host=WS_HOSTS[hostIndex]||WS_HOSTS[0],url=`${host}/stream?streams=${s}@aggTrade/${s}@ticker`;setMarketStatus('connecting','正在连接实时行情…');
   try{marketSocket=new WebSocket(url)}catch{scheduleSocketReconnect(hostIndex+1);return}
   const expected=symbol,seq=++activeSeq;activeExpected=expected;ensureMarketWorker()?.postMessage({type:'reset',seq});
@@ -140,9 +131,9 @@ connectMarketSocket=function(hostIndex=0){
 };
 
 function boot(){
-  installStyle();migrateChartContrast();installValidation();installTerms();updateVersion();renderTable();annotateTerms();
+  installStyle();migrateChartContrast();installValidation();installTerms();renderTable();annotateTerms();
   const meta=V.META?.[symbol];if((currentPage==='trade'||currentPage==='futures')&&meta?.market==='binance')connectMarketSocket();
 }
 boot();
-window.GreedBitV15={VERSION,annotateTerms,validateNumber};
+window.GreedBitPerformance={annotateTerms,validateNumber};
 })();
