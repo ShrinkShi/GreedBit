@@ -3,7 +3,7 @@
  */
 (function(){
 'use strict';
-const BUILD='0026-20261103b';
+const BUILD='0026-20261103c';
 const MODULE_TIMEOUT_MS=8000;
 const MODULES=[
   'src/market/preload.js',
@@ -28,7 +28,7 @@ const MODULES=[
   'src/strategy/grid.js',
   'src/app/runtime.js'
 ];
-const bootState={build:BUILD,modules:[...MODULES],loaded:[],current:null,ready:false,error:null,compatibilityAliases:['GreedBitV18','GreedBitV21']};
+const bootState={build:BUILD,modules:[...MODULES],loaded:[],current:null,ready:false,error:null,compatibilityAliases:['GreedBitV13','GreedBitV18','GreedBitV21']};
 window.GreedBitBootstrap=bootState;
 
 function installFavicon(){
@@ -37,6 +37,9 @@ function installFavicon(){
   const ico=document.createElement('link');ico.rel='shortcut icon';ico.type='image/x-icon';ico.href=`assets/favicon.ico?gb=${encodeURIComponent(BUILD)}`;document.head.appendChild(ico);
 }
 function applyCompatibilityAlias(path){
+  if(path==='src/market/model.js'&&window.GreedBitV13){
+    window.GreedBitMarketModel=window.GreedBitV13;
+  }
   if(path==='src/trading/contracts.js'&&window.GreedBitContracts){
     window.GreedBitV18=window.GreedBitContracts;
   }
@@ -49,6 +52,12 @@ function versioned(path){
   const join=path.includes('?')?'&':'?';
   return `${path}${join}gb=${encodeURIComponent(BUILD)}`;
 }
+function moduleError(path,event){
+  const filename=String(event?.filename||'');
+  if(filename&&!filename.includes(path))return null;
+  const detail=event?.error?.stack||event?.error?.message||event?.message||'未知运行时错误';
+  return new Error(`模块执行失败: ${path}\n${detail}`);
+}
 function loadModule(path){
   return new Promise((resolve,reject)=>{
     const existing=document.querySelector(`script[data-gb-module="${path}"]`);
@@ -58,13 +67,19 @@ function loadModule(path){
     if(existing)existing.remove();
     const script=document.createElement('script');
     let settled=false;
+    const onRuntimeError=event=>{
+      const error=moduleError(path,event);
+      if(error)finish(error);
+    };
     const finish=(error)=>{
       if(settled)return;
       settled=true;clearTimeout(timer);
+      window.removeEventListener('error',onRuntimeError,true);
       script.onload=null;script.onerror=null;
       if(error){script.remove();reject(error);return}
       script.dataset.gbLoaded='1';applyCompatibilityAlias(path);resolve();
     };
+    window.addEventListener('error',onRuntimeError,true);
     const timer=setTimeout(()=>finish(new Error(`模块加载超时（${MODULE_TIMEOUT_MS/1000}秒）: ${path}`)),MODULE_TIMEOUT_MS);
     script.src=versioned(path);script.async=false;script.dataset.gbModule=path;
     script.onload=()=>finish();
@@ -76,11 +91,11 @@ function showBootError(error){
   const old=document.getElementById('gbBootError');if(old)old.remove();
   const panel=document.createElement('div');panel.id='gbBootError';
   panel.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:#0b0e12;color:#e7edf7;font-family:Inter,system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;padding:24px';
-  const card=document.createElement('div');card.style.cssText='width:min(680px,92vw);border:1px solid #303846;background:#11151b;border-radius:12px;padding:24px;box-shadow:0 20px 70px #0008';
+  const card=document.createElement('div');card.style.cssText='width:min(760px,92vw);border:1px solid #303846;background:#11151b;border-radius:12px;padding:24px;box-shadow:0 20px 70px #0008';
   const title=document.createElement('h2');title.textContent='GreedBit 启动失败';title.style.cssText='margin:0 0 12px;font-size:20px';
-  const msg=document.createElement('div');msg.textContent=error?.message||String(error);msg.style.cssText='color:#ff7a86;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-all;margin:0 0 14px';
-  const hint=document.createElement('p');hint.textContent='请确认本地已拉取最新 main 并重启 8080 服务。若仍失败，把上面的具体模块名发给我即可继续定位。';hint.style.cssText='color:#98a4b7;line-height:1.7;margin:0 0 18px';
-  const btn=document.createElement('button');btn.type='button';btn.textContent='重新加载';btn.style.cssText='border:0;border-radius:7px;background:#4f7df3;color:white;padding:9px 18px;cursor:pointer;font-weight:700';btn.onclick=()=>location.reload();
+  const msg=document.createElement('pre');msg.textContent=error?.message||String(error);msg.style.cssText='white-space:pre-wrap;color:#ff7a86;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-word;margin:0 0 14px;max-height:45vh;overflow:auto';
+  const hint=document.createElement('p');hint.textContent='启动器已停止自动刷新。上面的模块名和错误堆栈就是实际故障点。';hint.style.cssText='color:#98a4b7;line-height:1.7;margin:0 0 18px';
+  const btn=document.createElement('button');btn.type='button';btn.textContent='手动重新加载';btn.style.cssText='border:0;border-radius:7px;background:#4f7df3;color:white;padding:9px 18px;cursor:pointer;font-weight:700';btn.onclick=()=>location.reload();
   card.append(title,msg,hint,btn);panel.appendChild(card);document.body.appendChild(panel);
 }
 async function boot(){
