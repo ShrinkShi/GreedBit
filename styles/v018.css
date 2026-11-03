@@ -1,0 +1,44 @@
+/* v0.0.18 trading interaction polish */
+
+/* Pair picker should use a stable selected state, never a pulsing/flashing animation. */
+#coinList .coin-row.active,#coinList .coin-row.active *,#coinList .coin-row[data-market="stock"].active,#coinList .coin-row[data-market="futures"].active{animation:none!important}
+#coinList .coin-row.active{background:#1a2230!important;box-shadow:inset 3px 0 0 #708aff,0 0 0 1px rgba(112,138,255,.14)!important;filter:none!important}
+#coinList .coin-row.active:hover{background:#1d2635!important;filter:none!important}
+
+/* Stock tokens have an explicit local mode switch: spot cannot short; perpetual can. */
+.gb18-stock-mode-switch{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 16px;border-bottom:1px solid #1c222b;background:#10151c;color:#78869a;font-size:10px}
+.gb18-stock-mode-switch.hidden{display:none!important}.gb18-stock-mode-switch>div{display:inline-flex;padding:2px;border:1px solid #293343;border-radius:8px;background:#151b23}.gb18-stock-mode-switch button{border:0;background:transparent;color:#7f8da1;padding:6px 12px;border-radius:6px!important;font-weight:750}.gb18-stock-mode-switch button.active{background:#273554;color:#e7edff;box-shadow:0 0 0 1px rgba(112,138,255,.22)}
+.gb18-stock-asset-row small{display:block;margin-top:2px;color:#68768a;font-size:9px;font-weight:500}.asset-list-row.gb18-stock-asset-row>span:first-child{display:flex;flex-direction:column;align-items:flex-start}
+
+/* Replace text chevrons with a compact SVG and rotate it when the pair picker opens. */
+.gb18-chevron{display:inline-block;vertical-align:-3px;flex:0 0 auto;transform:rotate(180deg);transform-origin:50% 50%;transition:transform .15s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.gb18-pair-chevron{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;color:#c7d0df;transition:transform .15s cubic-bezier(.2,.8,.2,1)}
+.gb18-pair-chevron .gb18-main-chevron{width:15px;height:15px;transform:rotate(180deg)}
+.gb18-pair-chevron.is-open .gb18-main-chevron{transform:rotate(0deg)}
+.maker-label{display:inline-flex;align-items:center;gap:2px}.maker-label .gb18-chevron{width:12px;height:12px;color:#758297}
+
+/* The old circular fee "i" is removed; its explanation now lives on 开仓手续费. */
+#feeStripFutures,#feeStripSpot{display:none!important}
+#futuresPanel .metric-grid .gb-term-tip{display:inline-flex;align-items:center;width:max-content;border-bottom:1px dashed rgba(150,164,184,.72);cursor:help}
+
+/* Cleaner financial range controls: slim track, filled progress, restrained thumb. */
+#pct,#spotPct,#levRange{--gb18-range-pct:0%;appearance:none!important;-webkit-appearance:none!important;width:100%;height:22px;background:transparent!important;outline:0!important;cursor:pointer}
+#pct::-webkit-slider-runnable-track,#spotPct::-webkit-slider-runnable-track,#levRange::-webkit-slider-runnable-track{height:4px;border-radius:999px;background:linear-gradient(90deg,#6f87ff 0 var(--gb18-range-pct),#303744 var(--gb18-range-pct) 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.025)}
+#pct::-moz-range-track,#spotPct::-moz-range-track,#levRange::-moz-range-track{height:4px;border-radius:999px;background:linear-gradient(90deg,#6f87ff 0 var(--gb18-range-pct),#303744 var(--gb18-range-pct) 100%)}
+#pct::-webkit-slider-thumb,#spotPct::-webkit-slider-thumb,#levRange::-webkit-slider-thumb{-webkit-appearance:none!important;width:15px;height:15px;margin-top:-5.5px;border:3px solid #8ca1ff;border-radius:50%;background:#10151c;box-shadow:0 0 0 3px rgba(111,135,255,.12),0 2px 7px rgba(0,0,0,.45);transition:transform .1s ease,box-shadow .1s ease}
+#pct::-moz-range-thumb,#spotPct::-moz-range-thumb,#levRange::-moz-range-thumb{width:10px;height:10px;border:3px solid #8ca1ff;border-radius:50%;background:#10151c;box-shadow:0 0 0 3px rgba(111,135,255,.12),0 2px 7px rgba(0,0,0,.45)}
+#pct:hover::-webkit-slider-thumb,#spotPct:hover::-webkit-slider-thumb,#levRange:hover::-webkit-slider-thumb{transform:scale(1.08);box-shadow:0 0 0 5px rgba(111,135,255,.14),0 2px 8px rgba(0,0,0,.5)}
+.percent-wrap{padding-top:8px!important}.pct-dots{left:6px!important;right:6px!important;top:18px!important}.pct-dots button{width:8px!important;height:8px!important;border:1px solid #566276!important;background:#141a22!important;box-shadow:0 0 0 2px #0f1216!important}.pct-dots button.passed{border-color:#7e96ff!important;background:#708aff!important}.pct-dots button:hover{transform:scale(1.15)!important;background:#8da1ff!important}
+.lev-range-wrap{padding:5px 3px 0}.lev-marks{margin-top:0!important;color:#657286!important}.lev-display{gap:12px}.lev-display strong{font-variant-numeric:tabular-nums}
+
+/* Native number spinners are visually noisy in the trading panel. */
+input[type="number"]{-moz-appearance:textfield!important;appearance:textfield}
+input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button{-webkit-appearance:none!important;appearance:none!important;margin:0!important}
+
+/* Funding is a transfer mechanism, not a PnL color signal; use restrained semantic accents. */
+#fundingRate.gb18-funding-positive{color:#aab9ff!important}#fundingRate.gb18-funding-negative{color:#c6a8ff!important}
+
+/* Long perpetual labels need more room than BTC/USDT. */
+.pair-picker-btn{max-width:270px}.pair-picker-btn #pairName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.coin-picker{width:min(780px,calc(100vw - 28px))}
+
+@media(max-width:760px){.gb18-stock-mode-switch{align-items:flex-start;flex-direction:column}.pair-picker-btn{max-width:190px}.coin-picker{width:calc(100vw - 16px)}}
