@@ -43,9 +43,14 @@ function installRangeSync(){
   }
 }
 function removeLegacyScrollbarOverride(){document.getElementById('gb19ScrollbarPolish')?.remove()}
+function loadV24(){
+  if(document.querySelector('script[src="src/v024.js"]'))return;
+  const s=document.createElement('script');s.src='src/v024.js';document.body.appendChild(s);
+}
 function loadV21(){
-  if(document.querySelector('script[src="src/v021.js"]'))return;
-  const n=document.createElement('script');n.src='src/v021.js';document.body.appendChild(n);
+  const existing=document.querySelector('script[src="src/v021.js"]');
+  if(existing){if(window.GreedBitV21)loadV24();else existing.addEventListener('load',loadV24,{once:true});return}
+  const n=document.createElement('script');n.src='src/v021.js';n.addEventListener('load',loadV24,{once:true});document.body.appendChild(n);
 }
 function boot(){
   installStyle();removeLegacyScrollbarOverride();document.body.classList.add('gb20-ui');installLeverageDots();installRangeSync();updateVersion();
