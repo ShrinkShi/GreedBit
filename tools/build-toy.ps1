@@ -89,6 +89,8 @@ $required = @(
   'src\v017.js',
   'src\v018.js',
   'src\v019.js',
+  'src\v019-hotfix.js',
+  'src\v020.js',
   'styles\base.css',
   'styles\trading.css',
   'styles\v011.css',
@@ -97,7 +99,8 @@ $required = @(
   'styles\v016.css',
   'styles\v017.css',
   'styles\v018.css',
-  'styles\v019.css'
+  'styles\v019.css',
+  'styles\v020.css'
 )
 foreach ($relative in $required) {
   if (-not (Test-Path (Join-Path $out $relative))) {
@@ -118,7 +121,7 @@ if (-not $NoZip) {
   }
   Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zip -CompressionLevel Optimal
   $zipItem = Get-Item $zip
-  Write-Host ("ZIP: {0} ({1:N2} MB)" -f $zipItem.FullName, ($zipItem.Length / 1MB))
+  Write-Host ("ZIP: {0} ({1:N2} MB)" -f ($zipItem.FullName, ($zipItem.Length / 1MB)))
 }
 
 Write-Host 'Build complete.'
