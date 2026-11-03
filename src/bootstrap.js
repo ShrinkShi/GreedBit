@@ -30,8 +30,10 @@ function applyCompatibilityAlias(path){
   if(path==='src/trading/contracts.js'&&window.GreedBitContracts){
     window.GreedBitV18=window.GreedBitContracts;
   }
-  if(path==='src/ui/runtime.js'&&window.GreedBitV21){
-    window.GreedBitRuntimeUI=window.GreedBitV21;
+  if(path==='src/ui/runtime.js'){
+    if(window.GreedBitV21)window.GreedBitRuntimeUI=window.GreedBitV21;
+    /* ui/runtime still contains a historical ready marker; bootstrap owns visibility now. */
+    document.documentElement.classList.remove('gb-runtime-ready');
   }
 }
 function loadModule(path){
@@ -45,14 +47,18 @@ function loadModule(path){
   });
 }
 async function boot(){
-  document.documentElement.dataset.gbBoot='loading';
+  const root=document.documentElement;
+  root.dataset.gbBoot='loading';
+  root.classList.remove('gb-runtime-ready');
   try{
     for(const path of MODULES)await loadModule(path);
-    document.documentElement.dataset.gbBoot='ready';
+    root.dataset.gbBoot='ready';
+    root.classList.add('gb-runtime-ready');
     window.GreedBitBootstrap={modules:[...MODULES],ready:true,compatibilityAliases:['GreedBitV18','GreedBitV21']};
     document.dispatchEvent(new CustomEvent('greedbit:ready'));
   }catch(error){
-    document.documentElement.dataset.gbBoot='error';
+    root.dataset.gbBoot='error';
+    root.classList.remove('gb-runtime-ready');
     console.error('[GreedBit] bootstrap failed',error);
     const loading=document.getElementById('gbBootLoader');
     if(loading)loading.innerHTML='<strong>GreedBit 启动失败</strong><small>请打开开发者工具查看具体模块错误。</small>';
