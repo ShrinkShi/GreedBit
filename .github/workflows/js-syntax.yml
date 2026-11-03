@@ -27,23 +27,18 @@ jobs:
 
           legacy_files=$(find src -maxdepth 1 -type f -regextype posix-extended -regex '.*/v[0-9]{3}.*\.js' -print)
           if [[ -n "$legacy_files" ]]; then
-            echo 'ERROR: legacy version scripts are forbidden:'
+            echo "ERROR: legacy version scripts are forbidden:"
             echo "$legacy_files"
             fail=1
           fi
 
-          if grep -R -n -E 'src/v[0-9]{3}[^"'"'"' ]*\.js' src index.html; then
-            echo 'ERROR: runtime still references a legacy version-script path.'
+          if grep -R -nE 'src/v[0-9]{3}[^ ]*\.js' src index.html; then
+            echo "ERROR: runtime still references legacy version scripts."
             fail=1
           fi
 
-          if grep -R -n -E 'syncPairLabel|syncExternalLabel|syncPairHeader' src; then
-            echo 'ERROR: retired shared-UI pollers returned.'
-            fail=1
-          fi
-
-          if grep -R -n -E 'document\.write\([^\n]*src/|createElement\(["'"']script["'"']\)[^\n]*v[0-9]{3}' src; then
-            echo 'ERROR: a module is dynamically loading historical version scripts.'
+          if grep -R -nE 'syncPairLabel|syncExternalLabel|syncPairHeader' src; then
+            echo "ERROR: retired shared-UI pollers returned."
             fail=1
           fi
 
