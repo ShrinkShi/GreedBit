@@ -53,6 +53,7 @@ if ($pathErrors.Count -gt 0) {
 
 $required = @(
   'assets\greedbit-logo.png',
+  'assets\greedbit-favicon.png',
   'assets\default avatar.png',
   'assets\favicon.ico',
   'assets\mammon-home.webm',
@@ -76,6 +77,7 @@ $required = @(
   'assets\stocksicon\anthropic.png',
   'src\core.js',
   'src\market.js',
+  'src\v009.js',
   'src\v011-preload.js',
   'src\v011.js',
   'src\v013-market.js',
@@ -91,6 +93,7 @@ $required = @(
   'src\v019.js',
   'src\v019-hotfix.js',
   'src\v020.js',
+  'src\v021.js',
   'styles\base.css',
   'styles\trading.css',
   'styles\v011.css',
@@ -100,7 +103,8 @@ $required = @(
   'styles\v017.css',
   'styles\v018.css',
   'styles\v019.css',
-  'styles\v020.css'
+  'styles\v020.css',
+  'styles\v021.css'
 )
 foreach ($relative in $required) {
   if (-not (Test-Path (Join-Path $out $relative))) {
