@@ -1,0 +1,47 @@
+/* v0.0.15 design system / financial UI polish */
+:root{
+  --space-1:8px;--space-2:16px;--space-3:24px;--space-4:32px;--space-5:40px;
+  --radius-xs:6px;--radius-sm:8px;--radius-md:12px;--radius-lg:16px;
+  --focus-ring:0 0 0 3px rgba(93,140,255,.22);
+  --control-border:#2a3340;--control-border-hover:#46546a;--control-bg:#171c24;
+  --danger:#ff6b78;--green-strong:#3dbb83;
+  --font-mono:ui-monospace,"SFMono-Regular","Roboto Mono",Consolas,"Liberation Mono",Menlo,monospace;
+  --red:#ff6b78;
+}
+
+/* 8px grid and restrained professional radii. */
+button,input,select,textarea,.field,.selectlike,.search{border-radius:var(--radius-sm)!important}
+.home-equity-v13,.earn-card,.earn-summary-card,.earn-promo,.earn-history,.wallet-card,.asset-detail,.asset-overview-total,.stat-tile,.coin-picker,.news-box,.modal .card,.home-mini-asset{border-radius:var(--radius-md)!important}
+.coin-star-v14,.fee-strip-v13,.dot,.pct-dots button,.continuous-range::-webkit-slider-thumb{border-radius:999px!important}
+.home-actions-v13{gap:var(--space-1)!important;margin-top:var(--space-3)!important}.home-actions-v13 button{border-radius:var(--radius-sm)!important}
+.earn-shell{padding:var(--space-4) var(--space-3) 72px!important}.earn-grid{gap:var(--space-2)!important}.earn-card{padding:var(--space-2)!important}.earn-card-head{gap:var(--space-1)!important}.earn-balances{grid-template-columns:1fr 1fr!important;gap:var(--space-1)!important;margin:var(--space-2) 0!important;align-items:stretch}.earn-balances>div{min-height:64px!important;padding:var(--space-1) 10px!important;display:grid!important;grid-template-rows:16px 24px!important;align-content:center!important}.earn-balances small{line-height:16px!important;margin:0!important}.earn-balances b{line-height:24px!important;margin:0!important;align-self:end!important}.earn-actions{gap:var(--space-1)!important}.earn-actions button{border-radius:var(--radius-sm)!important;padding:9px 12px!important}
+
+/* Asset overview: the total equity is the visual anchor. */
+.asset-overview-total{padding:var(--space-4)!important;margin-bottom:var(--space-3)!important;border:1px solid #273140!important;background:linear-gradient(135deg,#111821,#0d1218)!important;box-shadow:0 18px 50px rgba(0,0,0,.18)!important}.asset-overview-total>small{display:block!important;color:#78869b!important;font-size:11px!important;letter-spacing:.04em!important}.asset-overview-total>strong{display:block!important;margin-top:10px!important;font:800 clamp(34px,4vw,48px)/1.08 var(--font-mono)!important;letter-spacing:-.035em!important;color:#f5f8fd!important}.asset-daily-pnl-v13{margin-top:12px!important;font:700 13px/1.4 var(--font-mono)!important}.wallet-grid{gap:var(--space-2)!important}.wallet-card{padding:var(--space-2)!important}
+
+/* Financial-grade form states. */
+.field,.selectlike,.search,input:not([type="range"]):not([type="checkbox"]):not([type="color"]),select{transition:border-color .14s ease,box-shadow .14s ease,background-color .14s ease,opacity .14s ease}
+.field:hover,.selectlike:hover,.search:hover{border-color:var(--control-border-hover)!important;background-color:#1b212a!important}.field:focus-within,.selectlike:focus-visible,.search:focus-visible,input:not([type="range"]):not([type="checkbox"]):not([type="color"]):focus-visible,select:focus-visible{border-color:#6788ff!important;box-shadow:var(--focus-ring)!important;outline:none!important}.field.gb-invalid{border-color:var(--danger)!important;box-shadow:0 0 0 3px rgba(255,107,120,.12)!important}.gb-field-error{display:block;margin:-3px 0 8px 2px;color:var(--danger);font-size:10px;line-height:1.35}.field:has(input:disabled),.field:has(select:disabled),input:disabled,select:disabled,button:disabled{opacity:.46!important;cursor:not-allowed!important}.field:has(input:disabled){background:#12161c!important}.field input:disabled{cursor:not-allowed!important}
+
+/* Buy/sell micro-interactions. */
+.buySell button,.spot-action,.primary-earn,.home-actions-v13 button{transition:transform .1s ease,filter .12s ease,box-shadow .12s ease!important}.buySell .buy:hover,.spot-action.buy:hover{filter:brightness(1.09) saturate(1.08)!important;box-shadow:0 6px 20px rgba(61,187,131,.14)!important}.buySell .sell:hover,.spot-action.sell:hover{filter:brightness(1.09) saturate(1.08)!important;box-shadow:0 6px 20px rgba(255,107,120,.14)!important}.buySell button:active,.spot-action:active,.primary-earn:active,.home-actions-v13 button:active{transform:translateY(1px) scale(.985)!important;box-shadow:inset 0 2px 5px rgba(0,0,0,.28)!important}
+
+/* Monospaced critical numeric data + tabular fallback everywhere. */
+body{font-variant-numeric:tabular-nums}.pricebig,.mid,.stat strong,.obrow span,.ohlc,.sidehint b,.metric-grid span:nth-child(even),.assetrow b,.assetrow span:last-child,.asset-overview-total strong,.asset-daily-pnl-v13,.wallet-card>strong,.earn-apr strong,.earn-balances b,.home-equity-main strong,.home-daily-pnl b,.home-mini-asset>strong,table td,input[type="number"],.notice-pnl-pos,.notice-pnl-neg,.notice-pnl-zero{font-family:var(--font-mono)!important;font-variant-numeric:tabular-nums slashed-zero}
+
+/* Stronger K-line loss color; green already exceeds 7:1 on the chart background. */
+.red,.negative,.ticker.down{color:var(--danger)!important}.sell{background:#df5967!important}.notice-pnl-neg{color:var(--danger)!important}
+
+/* Progressive terminology help. */
+.gb-term-tip{border-bottom:1px dashed rgba(150,164,184,.55);cursor:help;text-decoration:none}.gb-term-tooltip{position:fixed;z-index:250;max-width:310px;padding:9px 11px;border:1px solid #303a49;border-radius:var(--radius-sm);background:#151b23;color:#cad4e2;font-size:11px;line-height:1.55;box-shadow:0 14px 38px rgba(0,0,0,.55);pointer-events:none;opacity:0;transform:translateY(3px);transition:opacity .1s ease,transform .1s ease}.gb-term-tooltip.show{opacity:1;transform:translateY(0)}
+
+/* Skeletons mirror final layout instead of blocking the page. */
+@keyframes gbSkeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}.gb-skeleton{background:linear-gradient(90deg,#131820 25%,#1c232d 37%,#131820 63%);background-size:400% 100%;animation:gbSkeleton 1.25s ease infinite;border-radius:var(--radius-sm)}.gb-chart-skeleton{position:absolute;inset:0;z-index:18;background:#0b0e12;padding:34px 18px 20px;display:grid;grid-template-columns:repeat(12,1fr);gap:8px;align-items:end;pointer-events:none}.gb-chart-skeleton i{display:block;min-height:20px;background:linear-gradient(180deg,#202936,#151b23);border-radius:4px;opacity:.8}.gb-page-skeleton{padding:var(--space-3);display:grid;gap:var(--space-2)}.gb-page-skeleton .hero{height:86px}.gb-page-skeleton .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2)}.gb-page-skeleton .card{height:150px}
+
+/* Virtualized table rows use fixed height so spacer math stays stable. */
+.bottom .tablewrap{position:relative;contain:layout paint}.bottom tbody tr:not(.gb-virtual-spacer){height:40px}.gb-virtual-spacer td{height:0;padding:0!important;border:0!important}.gb-virtual-spacer>td>div{width:1px;pointer-events:none}.gb-virtualized-note{font-size:9px;color:#5f6d80;margin-left:auto;padding-right:10px}
+
+/* Low-contrast immersive scrollbars. */
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.13) transparent}*::-webkit-scrollbar{width:6px;height:6px}*::-webkit-scrollbar-track{background:transparent}*::-webkit-scrollbar-thumb{background:rgba(255,255,255,.11);border-radius:999px}*::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.19)}*::-webkit-scrollbar-corner{background:transparent}
+
+@media(max-width:1000px){.gb-page-skeleton .grid{grid-template-columns:1fr 1fr}.asset-overview-total>strong{font-size:34px!important}}@media(max-width:640px){.gb-page-skeleton .grid{grid-template-columns:1fr}.earn-shell{padding:24px 12px 60px!important}.asset-overview-total{padding:24px 18px!important}}
