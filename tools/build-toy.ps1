@@ -56,6 +56,15 @@ $required = @(
   'assets\default avatar.png',
   'assets\favicon.ico',
   'assets\mammon-home.webm',
+  'assets\voice\收银机音效.wav',
+  'assets\bitcoinicon\xau.png',
+  'assets\bitcoinicon\xag.png',
+  'assets\bitcoinicon\xpt.png',
+  'assets\bitcoinicon\xpd.png',
+  'assets\bitcoinicon\copper.png',
+  'assets\bitcoinicon\usoil.png',
+  'assets\bitcoinicon\brentoil.png',
+  'assets\bitcoinicon\natgas.png',
   'src\core.js',
   'src\market.js',
   'src\v011-preload.js',
@@ -66,11 +75,13 @@ $required = @(
   'src\v014.js',
   'src\v015.js',
   'src\v015-market-worker.js',
+  'src\v016.js',
   'styles\base.css',
   'styles\trading.css',
   'styles\v011.css',
   'styles\v014.css',
-  'styles\v015.css'
+  'styles\v015.css',
+  'styles\v016.css'
 )
 foreach ($relative in $required) {
   if (-not (Test-Path (Join-Path $out $relative))) {
