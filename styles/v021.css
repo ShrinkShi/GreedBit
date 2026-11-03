@@ -1,80 +1,49 @@
-/* v0.0.21 HTX layout/selection fixes */
-
-/* Whole-page scrolling: terminal content may exceed viewport, like HTX classic layout. */
+/* final HTX layout / interaction authority (v0.0.23) */
 html.gb21-ui,html.gb21-ui body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
 html.gb21-ui body{padding-top:48px!important;padding-bottom:24px!important}
 .gb21-ui .topnav{position:fixed!important;left:0!important;right:0!important;top:0!important;width:100%!important;z-index:320!important}
 .gb21-ui .statusbar{position:fixed!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:24px!important;z-index:300!important}
 .gb21-ui .page{height:auto!important;min-height:calc(100vh - 48px - 24px)!important;overflow:visible!important}
-.gb21-ui .trade-page{min-height:0!important;background:var(--gb20-bg-0)!important}
-.gb21-ui .trade-page.hidden{display:none!important}
+.gb21-ui .trade-page{min-height:0!important;background:var(--gb20-bg-0)!important}.gb21-ui .trade-page.hidden{display:none!important}
 
-/* Keep bottom height bound to --bottom-h so the horizontal splitter remains functional. */
-.gb21-ui .trade-page .layout{
-  height:auto!important;
-  min-height:calc(500px + 4px + var(--bottom-h))!important;
-  grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;
-  grid-template-rows:minmax(500px,58vh) 4px var(--bottom-h)!important;
-  align-content:start!important;
-}
-
-/* Overview/data replace only the chart body. Orderbook, trade panel and bottom records stay visible. */
-.gb21-ui .layout.contract-info-mode{
-  grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;
-  grid-template-rows:minmax(500px,58vh) 4px var(--bottom-h)!important;
-  min-height:calc(500px + 4px + var(--bottom-h))!important;
-}
+.gb21-ui .trade-page .layout,.gb21-ui .layout.contract-info-mode{height:auto!important;min-height:calc(500px + 4px + var(--bottom-h))!important;grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;grid-template-rows:minmax(500px,58vh) 4px var(--bottom-h)!important;align-content:start!important}
 .gb21-ui .contract-info-mode .chartpanel{display:flex!important;grid-column:1!important;grid-row:1!important;border-bottom:1px solid var(--gb20-border)!important}
 .gb21-ui .contract-info-mode .orderbook{display:flex!important;grid-column:3!important;grid-row:1!important}
 .gb21-ui .contract-info-mode .trade{display:grid!important;grid-column:5!important;grid-row:1/4!important}
 .gb21-ui .contract-info-mode .bottom{display:flex!important;grid-column:1/4!important;grid-row:3!important}
-.gb21-ui .contract-info-mode .splitter{display:block!important}
-.gb21-ui .contract-info-mode #splitChartBook{grid-column:2!important;grid-row:1!important}
-.gb21-ui .contract-info-mode #splitBookTrade{grid-column:4!important;grid-row:1/4!important}
-.gb21-ui .contract-info-mode #splitChartBottom{grid-column:1/4!important;grid-row:2!important}
-.gb21-ui .contract-info{min-height:0!important;max-height:none!important;overflow:auto!important}
-.gb21-ui .overview-grid,.gb21-ui .analytics-grid{min-height:100%!important}
+.gb21-ui .contract-info-mode .splitter{display:block!important}.gb21-ui .contract-info-mode #splitChartBook{grid-column:2!important;grid-row:1!important}.gb21-ui .contract-info-mode #splitBookTrade{grid-column:4!important;grid-row:1/4!important}.gb21-ui .contract-info-mode #splitChartBottom{grid-column:1/4!important;grid-row:2!important}
+.gb21-ui .contract-info{min-height:0!important;max-height:none!important;overflow:auto!important;background:#141517!important;color:#d7ddeb!important;font-size:12px!important}
+.gb21-ui .trade{grid-template-rows:max-content minmax(260px,1fr)!important;min-height:0!important;overflow:visible!important;align-self:stretch!important}.gb21-ui .tradebox{min-height:0!important;overflow:visible!important}.gb21-ui .assetbox{min-height:260px!important;overflow:auto!important}
 
-/* Right rail: order form is content-sized; asset panel receives remaining height. */
-.gb21-ui .trade{grid-template-rows:max-content minmax(260px,1fr)!important;min-height:0!important;overflow:visible!important;align-self:stretch!important}
-.gb21-ui .tradebox{min-height:0!important;overflow:visible!important}
-.gb21-ui .assetbox{min-height:260px!important;overflow:auto!important}
+.gb21-ui #splitChartBottom{display:block!important;min-height:4px!important;height:4px!important;cursor:row-resize!important;touch-action:none!important;position:relative!important;z-index:25!important}.gb21-ui #splitChartBottom::after{content:""!important;position:absolute!important;inset:-5px 0!important}.gb21-ui #splitChartBottom:hover,.gb21-ui #splitChartBottom.dragging{background:#343741!important}
 
-/* Horizontal splitter uses the same --bottom-h variable consumed by setupSplitters(). */
-.gb21-ui #splitChartBottom{display:block!important;min-height:4px!important;height:4px!important;cursor:row-resize!important;touch-action:none!important;position:relative!important;z-index:25!important}
-.gb21-ui #splitChartBottom::after{content:""!important;position:absolute!important;inset:-5px 0!important}
-.gb21-ui #splitChartBottom:hover,.gb21-ui #splitChartBottom.dragging{background:#343741!important}
-
-/* Selection is expressed consistently: bright text/icon plus a short blue underline. Hover only brightens content. */
+/* Selected state = bright content + short blue underline. Hover is content-only. */
 .gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button){position:relative!important}
-.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button).active{
-  color:#f1f4f9!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;outline:none!important;filter:none!important;transform:none!important
-}
-.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button).active::after{
-  content:""!important;display:block!important;position:absolute!important;left:50%!important;bottom:0!important;width:18px!important;height:2px!important;transform:translateX(-50%)!important;background:#0173e5!important;border-radius:2px!important;box-shadow:none!important
-}
-.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):hover{
-  color:#f1f4f9!important;background:transparent!important;box-shadow:none!important;filter:none!important
-}
-.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):active{
-  transform:none!important;background:transparent!important;box-shadow:none!important;filter:none!important
-}
-.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):focus-visible{
-  outline:none!important;box-shadow:none!important
-}
-.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):hover,
-.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):focus-visible{background:transparent!important;box-shadow:none!important;filter:none!important;color:#f1f4f9!important;outline:none!important}
-.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):hover svg,
-.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):focus-visible svg{color:#f1f4f9!important;fill:currentColor!important}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button).active{color:#f1f4f9!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;outline:none!important;filter:none!important;transform:none!important}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button).active::after{content:""!important;display:block!important;position:absolute!important;left:50%!important;bottom:0!important;width:18px!important;height:2px!important;transform:translateX(-50%)!important;background:#0173e5!important;border-radius:2px!important;box-shadow:none!important}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):hover{color:#f1f4f9!important;background:transparent!important;box-shadow:none!important;filter:none!important}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):active{transform:none!important;background:transparent!important;box-shadow:none!important;filter:none!important}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):focus-visible{outline:none!important;box-shadow:none!important}
+.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):hover,.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):focus-visible{background:transparent!important;box-shadow:none!important;filter:none!important;color:#f1f4f9!important;outline:none!important}.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):hover svg,.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):focus-visible svg{color:#f1f4f9!important;fill:currentColor!important}
 
-/* Final authoritative slider geometry: legacy layers cannot restore the old thick blue rail. */
+/* Authoritative HTX-like slider geometry. */
 .gb21-ui #pct,.gb21-ui #spotPct,.gb21-ui #levRange{--gb18-range-pct:0%;-webkit-appearance:none!important;appearance:none!important;width:100%!important;height:22px!important;margin:0!important;padding:0!important;background:transparent!important;outline:none!important;cursor:pointer!important}
-.gb21-ui #pct::-webkit-slider-runnable-track,.gb21-ui #spotPct::-webkit-slider-runnable-track,.gb21-ui #levRange::-webkit-slider-runnable-track{height:1px!important;border:0!important;border-radius:0!important;background:linear-gradient(90deg,#0173e5 0 var(--gb18-range-pct),#343842 var(--gb18-range-pct) 100%)!important;box-shadow:none!important}
-.gb21-ui #pct::-moz-range-track,.gb21-ui #spotPct::-moz-range-track,.gb21-ui #levRange::-moz-range-track{height:1px!important;border:0!important;border-radius:0!important;background:#343842!important}.gb21-ui #pct::-moz-range-progress,.gb21-ui #spotPct::-moz-range-progress,.gb21-ui #levRange::-moz-range-progress{height:1px!important;background:#0173e5!important}
-.gb21-ui #pct::-webkit-slider-thumb,.gb21-ui #spotPct::-webkit-slider-thumb,.gb21-ui #levRange::-webkit-slider-thumb{-webkit-appearance:none!important;appearance:none!important;width:14px!important;height:14px!important;margin-top:-6.5px!important;border:0!important;border-radius:50%!important;background:radial-gradient(circle at center,#141517 0 4px,#d7ddeb 4.2px 7px)!important;box-shadow:none!important;transform:none!important}
-.gb21-ui #pct::-moz-range-thumb,.gb21-ui #spotPct::-moz-range-thumb,.gb21-ui #levRange::-moz-range-thumb{width:14px!important;height:14px!important;border:0!important;border-radius:50%!important;background:radial-gradient(circle at center,#141517 0 4px,#d7ddeb 4.2px 7px)!important;box-shadow:none!important}
+.gb21-ui #pct::-webkit-slider-runnable-track,.gb21-ui #spotPct::-webkit-slider-runnable-track,.gb21-ui #levRange::-webkit-slider-runnable-track{height:1px!important;border:0!important;border-radius:0!important;background:linear-gradient(90deg,#0173e5 0 var(--gb18-range-pct),#343842 var(--gb18-range-pct) 100%)!important;box-shadow:none!important}.gb21-ui #pct::-moz-range-track,.gb21-ui #spotPct::-moz-range-track,.gb21-ui #levRange::-moz-range-track{height:1px!important;border:0!important;border-radius:0!important;background:#343842!important}.gb21-ui #pct::-moz-range-progress,.gb21-ui #spotPct::-moz-range-progress,.gb21-ui #levRange::-moz-range-progress{height:1px!important;background:#0173e5!important}
+.gb21-ui #pct::-webkit-slider-thumb,.gb21-ui #spotPct::-webkit-slider-thumb,.gb21-ui #levRange::-webkit-slider-thumb{-webkit-appearance:none!important;appearance:none!important;width:14px!important;height:14px!important;margin-top:-6.5px!important;border:0!important;border-radius:50%!important;background:radial-gradient(circle at center,#141517 0 4px,#d7ddeb 4.2px 7px)!important;box-shadow:none!important;transform:none!important}.gb21-ui #pct::-moz-range-thumb,.gb21-ui #spotPct::-moz-range-thumb,.gb21-ui #levRange::-moz-range-thumb{width:14px!important;height:14px!important;border:0!important;border-radius:50%!important;background:radial-gradient(circle at center,#141517 0 4px,#d7ddeb 4.2px 7px)!important;box-shadow:none!important}
 .gb21-ui .percent-wrap{position:relative!important;padding:8px 0 30px!important;margin-top:2px!important}.gb21-ui .pct-dots{left:2px!important;right:2px!important;top:14px!important;height:10px!important;align-items:center!important}.gb21-ui .pct-dots button{position:relative!important;width:10px!important;height:10px!important;padding:0!important;border:2px solid #141517!important;border-radius:50%!important;background:#343842!important;box-shadow:none!important;transform:none!important}.gb21-ui .pct-dots button.passed{background:#0173e5!important}.gb21-ui .pct-dots button:hover{background:#2a8df0!important;transform:none!important}.gb21-ui .pct-value{display:none!important}
 
-@media(max-width:1100px){
-  .gb21-ui .trade-page .layout,.gb21-ui .layout.contract-info-mode{grid-template-columns:minmax(420px,1fr) 4px 250px 4px 330px!important}
-}
+/* Compact HTX-scale overview/data pages. */
+.gb21-ui .overview-subnav{height:38px!important;min-height:38px!important;padding:0 12px!important;gap:18px!important;background:#141517!important;border-bottom:1px solid rgba(33,38,50,.72)!important;position:sticky!important;top:0!important;z-index:3!important}.gb21-ui .overview-subnav button{height:38px!important;padding:0 2px!important;border:0!important;border-radius:0!important;background:transparent!important;color:#7e8697!important;font-size:12px!important;line-height:38px!important}.gb21-ui .overview-subnav button.active{color:#f1f4f9!important}
+.gb21-ui .overview-grid{grid-template-columns:minmax(0,1.3fr) minmax(220px,.7fr)!important;gap:24px!important;padding:18px 18px 22px!important;min-height:0!important}.gb21-ui .overview-main h2{font-size:18px!important;line-height:24px!important;margin:0!important}.gb21-ui .overview-main h3,.gb21-ui .overview-side h3{font-size:12px!important;line-height:18px!important;margin:16px 0 8px!important;color:#aab2c0!important}.gb21-ui .coin-intro{max-width:none!important;font-size:12px!important;line-height:1.65!important;color:#8c95a5!important;margin:14px 0!important}.gb21-ui .kv-list{margin-top:12px!important;max-width:none!important}.gb21-ui .kv-list div{padding:7px 0!important;border-bottom:0!important}.gb21-ui .kv-list span{font-size:11px!important;color:#626b7b!important}.gb21-ui .kv-list b{font-size:12px!important;font-weight:500!important;color:#d7ddeb!important}.gb21-ui .score-card{padding:12px!important;margin:0 0 14px!important;border-radius:4px!important;border-color:#272b34!important;background:#111214!important}.gb21-ui .score-card span,.gb21-ui .score-card small{font-size:10px!important}.gb21-ui .score-card b{font-size:13px!important;line-height:18px!important}.gb21-ui .resource-links{gap:8px!important}.gb21-ui .resource-links a{padding:6px 9px!important;border-radius:4px!important;font-size:11px!important;border-color:#303542!important;text-decoration:none!important}
+.gb23-detail-head{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid #202329}.gb23-detail-icon{width:32px;height:32px;display:grid;place-items:center;flex:0 0 32px;border-radius:50%;overflow:hidden;background:#1b1e24}.gb23-detail-icon img{width:100%;height:100%;object-fit:contain}.gb23-detail-head>div:nth-child(2){min-width:0}.gb23-detail-head h2{font-size:18px!important}.gb23-detail-head small{display:block;margin-top:2px;color:#697384;font-size:10px}.gb23-detail-head em{margin-left:auto;font-style:normal;padding:3px 6px;border:1px solid #303542;border-radius:3px;color:#8993a4;font-size:9px}.gb23-kv b.green{color:#3dbb83!important}.gb23-kv b.red{color:#ff6b78!important}.gb23-source-card b{overflow-wrap:anywhere}.gb23-resource-links{display:flex;flex-wrap:wrap}.gb23-unverified{display:block;color:#626b7b;font-size:10px;line-height:1.5}
+.gb23-data-shell{padding:16px 18px 22px}.gb23-data-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:#202329;border:1px solid #202329}.gb23-data-grid>div{min-height:70px;background:#121315;padding:12px}.gb23-data-grid span{display:block;color:#626b7b;font-size:10px}.gb23-data-grid b{display:block;margin-top:8px;font-size:14px;font-weight:600}.gb23-data-grid b.green{color:#3dbb83}.gb23-data-grid b.red{color:#ff6b78}.gb23-data-lines{margin-top:12px;border-top:1px solid #202329}.gb23-data-lines>div{display:grid;grid-template-columns:160px minmax(0,1fr);gap:18px;align-items:center;min-height:34px}.gb23-data-lines span{color:#626b7b;font-size:10px}.gb23-data-lines b{font-size:11px;font-weight:500;color:#c9d0db;text-align:right;overflow-wrap:anywhere}.gb21-ui .analytics-note{padding:12px 0 0!important;margin:0!important;font-size:10px!important;color:#626b7b!important}
+
+/* Futures amount field: one clean outer field, no nested input ring; selectable USDT/base-asset unit. */
+.gb21-ui .gb23-amount-field{position:relative!important;overflow:visible!important}.gb21-ui .gb23-native-margin{display:none!important}.gb21-ui #gbOrderAmountInput{flex:1!important;min-width:0!important;height:100%!important;padding:0!important;border:0!important;border-radius:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;color:#d7ddeb!important;text-align:right!important;font-family:var(--font-mono,ui-monospace,Consolas,monospace)!important;font-size:14px!important}.gb21-ui #gbOrderAmountInput:hover,.gb21-ui #gbOrderAmountInput:focus,.gb21-ui #gbOrderAmountInput:focus-visible{border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important}.gb21-ui .gb23-amount-field:focus-within{border-color:#0173e5!important;box-shadow:0 0 0 1px rgba(1,115,229,.22)!important}.gb23-unit-picker{position:relative;flex:0 0 auto;margin-left:12px;height:100%;display:flex;align-items:center}.gb23-unit-button{height:30px!important;display:flex!important;align-items:center!important;gap:5px!important;padding:0 2px 0 4px!important;border:0!important;background:transparent!important;color:#d7ddeb!important;box-shadow:none!important;font-size:12px!important}.gb23-unit-button:hover{color:#fff!important;background:transparent!important;box-shadow:none!important}.gb23-unit-button svg{width:12px;height:12px;fill:currentColor;transition:transform .12s ease}.gb23-unit-picker:has(.gb23-unit-menu:not(.hidden)) .gb23-unit-button svg{transform:rotate(180deg)}.gb23-unit-menu{position:absolute;right:-6px;top:36px;z-index:180;min-width:92px;padding:4px;background:#1a1b1f;border:1px solid #303542;border-radius:4px;box-shadow:0 12px 28px rgba(0,0,0,.5)}.gb23-unit-menu button{width:100%;height:30px;border:0;background:transparent;color:#9aa3b1;text-align:left;padding:0 9px;border-radius:2px}.gb23-unit-menu button:hover,.gb23-unit-menu button.active{background:#24262c!important;color:#fff!important;box-shadow:none!important}
+
+/* Home headline punctuation/wrapping and language-safe line. */
+.gb21-ui .home-title-v13{max-width:min(760px,49vw)!important}.gb21-ui .home-title-v13 span{display:block!important;white-space:nowrap!important;word-break:keep-all!important;font-size:clamp(36px,3.7vw,64px)!important;letter-spacing:-.045em!important}
+
+@media(max-width:1200px){.gb21-ui .overview-grid{grid-template-columns:1fr!important;gap:12px!important}.gb23-data-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gb21-ui .home-title-v13{max-width:58vw!important}.gb21-ui .home-title-v13 span{font-size:clamp(34px,4vw,56px)!important}}
+@media(max-width:1100px){.gb21-ui .trade-page .layout,.gb21-ui .layout.contract-info-mode{grid-template-columns:minmax(420px,1fr) 4px 250px 4px 330px!important}}
+@media(max-width:850px){.gb21-ui .home-title-v13{max-width:100%!important}.gb21-ui .home-title-v13 span{font-size:clamp(32px,7.2vw,52px)!important}.gb23-data-grid{grid-template-columns:1fr 1fr}}
