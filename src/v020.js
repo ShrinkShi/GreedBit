@@ -43,10 +43,15 @@ function installRangeSync(){
   }
 }
 function removeLegacyScrollbarOverride(){document.getElementById('gb19ScrollbarPolish')?.remove()}
+function loadV21(){
+  if(document.querySelector('script[src="src/v021.js"]'))return;
+  const n=document.createElement('script');n.src='src/v021.js';document.body.appendChild(n);
+}
 function boot(){
   installStyle();removeLegacyScrollbarOverride();document.body.classList.add('gb20-ui');installLeverageDots();installRangeSync();updateVersion();
   const modal=document.getElementById('leverageModal');if(modal)new MutationObserver(()=>{if(modal.classList.contains('show')){installLeverageDots();syncRange(document.getElementById('levRange'))}}).observe(modal,{attributes:true,attributeFilter:['class']});
   window.GreedBitV20={VERSION,syncRange};
+  loadV21();
 }
 boot();
 })();
