@@ -19,3 +19,11 @@ jobs:
             echo "Checking $file"
             node --check "$file"
           done < <(find src -type f -name '*.js' -print0 | sort -z)
+      - name: Report legacy runtime references
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '--- version-script path references ---'
+          grep -R -n -E 'src/v[0-9]{3}[^"'"'"' ]*\.js' src index.html || true
+          echo '--- legacy shared-UI pollers ---'
+          grep -R -n -E 'syncPairLabel|syncExternalLabel|syncPairHeader' src || true
