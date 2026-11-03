@@ -43,9 +43,14 @@ function installRangeSync(){
   }
 }
 function removeLegacyScrollbarOverride(){document.getElementById('gb19ScrollbarPolish')?.remove()}
+function loadV25(){
+  if(document.querySelector('script[src="src/v025.js"]'))return;
+  const s=document.createElement('script');s.src='src/v025.js';document.body.appendChild(s);
+}
 function loadV24(){
-  if(document.querySelector('script[src="src/v024.js"]'))return;
-  const s=document.createElement('script');s.src='src/v024.js';document.body.appendChild(s);
+  const existing=document.querySelector('script[src="src/v024.js"]');
+  if(existing){existing.addEventListener('load',loadV25,{once:true});if(existing.dataset.gbLoaded==='1')loadV25();return}
+  const s=document.createElement('script');s.src='src/v024.js';s.addEventListener('load',()=>{s.dataset.gbLoaded='1';loadV25()},{once:true});document.body.appendChild(s);
 }
 function loadV21(){
   const existing=document.querySelector('script[src="src/v021.js"]');
