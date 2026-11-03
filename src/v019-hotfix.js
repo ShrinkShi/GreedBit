@@ -2,26 +2,41 @@
 (function(){
 'use strict';
 
-function meta(){return window.GreedBitV13?.META?.[window.symbol]||null}
+function currentSymbol(){
+  try{if(typeof symbol==='string'&&symbol)return symbol}catch{}
+  const sel=document.getElementById('symbol');
+  return typeof sel?.value==='string'?sel.value:'';
+}
+function currentMode(){
+  try{if(typeof tradingMode==='string'&&tradingMode)return tradingMode}catch{}
+  return 'futures';
+}
+function currentMeta(sym){return window.GreedBitV13?.META?.[sym]||null}
 function desiredPairLabel(){
-  const sym=window.symbol;if(!sym)return'';
-  const m=meta(),market=m?.market||m?.category||'';
-  const code=String(sym).replace('/','');
-  if(window.tradingMode==='futures'&&market!=='commodity'&&market!=='forex')return `${code}永续合约`;
-  if(window.tradingMode==='spot')return m?.ticker||(typeof window.base==='function'?window.base():String(sym).split('/')[0]);
+  const sym=currentSymbol();if(!sym)return'';
+  const mode=currentMode(),m=currentMeta(sym),market=m?.market||m?.category||'';
+  const code=String(sym).replaceAll('/','');
+  if(mode==='futures'&&market!=='commodity'&&market!=='forex')return `${code}永续合约`;
+  if(mode==='spot')return m?.ticker||String(sym).split('/')[0];
   if(market==='forex')return m?.ticker||sym;
   return sym;
 }
-function enforcePairLabel(){
-  const el=document.getElementById('pairName'),wanted=desiredPairLabel();
-  if(el&&wanted&&el.textContent!==wanted)el.textContent=wanted;
-}
 function installPairLabelGuard(){
   const el=document.getElementById('pairName');if(!el)return;
-  enforcePairLabel();
-  const observer=new MutationObserver(()=>enforcePairLabel());
-  observer.observe(el,{childList:true,characterData:true,subtree:true});
-  window.GreedBitPairLabelGuard={observer,enforce:enforcePairLabel};
+  const native=Object.getOwnPropertyDescriptor(Node.prototype,'textContent');
+  if(!native?.get||!native?.set)return;
+  try{
+    Object.defineProperty(el,'textContent',{
+      configurable:true,
+      get(){return native.get.call(this)},
+      set(v){
+        const wanted=desiredPairLabel();
+        native.set.call(this,wanted||String(v??''));
+      }
+    });
+  }catch{}
+  const wanted=desiredPairLabel();if(wanted)native.set.call(el,wanted);
+  window.GreedBitPairLabelGuard={enforce(){const next=desiredPairLabel();if(next)native.set.call(el,next)}};
 }
 function installScrollbarPolish(){
   if(document.getElementById('gb19ScrollbarPolish'))return;
@@ -39,5 +54,4 @@ function installScrollbarPolish(){
 
 installScrollbarPolish();
 installPairLabelGuard();
-window.addEventListener('load',enforcePairLabel,{once:true});
 })();
