@@ -48,38 +48,18 @@ function niceGridStep(raw){
 }
 function buildPriceTicks(lo,hi,target=5){
   const range=Math.max(hi-lo,Number.EPSILON),step=niceGridStep(range/target),first=Math.ceil((lo-step*1e-10)/step)*step,ticks=[];
-  for(let value=first,guard=0;value<=hi+step*1e-8&&guard<32;value+=step,guard++){
-    if(value>=lo-step*1e-8)ticks.push(Number(value.toPrecision(15)));
-  }
+  for(let value=first,guard=0;value<=hi+step*1e-8&&guard<32;value+=step,guard++)if(value>=lo-step*1e-8)ticks.push(Number(value.toPrecision(15)));
   return ticks;
 }
-function niceTimeStep(raw){
-  const steps=[1,5,10,15,30,60,120,180,300,600,900,1800,3600,7200,14400,21600,28800,43200,86400,172800,259200,604800,1209600,2592000,7776000,15552000,31536000,63072000,157680000];
-  const wanted=Math.max(1,Math.abs(raw)||1);return steps.find(x=>x>=wanted)||steps.at(-1);
+function niceIndexStep(raw){
+  const v=Math.max(1,Math.abs(raw)||1),p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;
+  const m=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;return Math.max(1,Math.round(m*p));
 }
-function timeAxisOffset(ts){
-  const mode=chartSettings.timezone||'utc8';
-  if(mode==='utc8')return 8*3600;
-  if(mode==='local')return-new Date(ts*1000).getTimezoneOffset()*60;
-  return 0;
-}
-function indexAtTimestamp(ts,all){
-  if(!all.length)return 0;
-  const info=tfInfo();
-  if(!info.calendarMonth)return(ts-all[0].t)/Math.max(1,info.sec||tf||60);
-  if(all.length===1)return 0;
-  if(ts<=all[0].t){const d=Math.max(1,all[1].t-all[0].t);return(ts-all[0].t)/d}
-  const last=all.length-1;
-  if(ts>=all[last].t){const d=Math.max(1,all[last].t-all[last-1].t);return last+(ts-all[last].t)/d}
-  let lo=0,hi=last;
-  while(lo+1<hi){const mid=(lo+hi)>>1;if(all[mid].t<=ts)lo=mid;else hi=mid}
-  const span=Math.max(1,all[hi].t-all[lo].t);return lo+(ts-all[lo].t)/span;
-}
-function buildTimeTicks(geom,target=8){
-  const startTs=timestampAtIndex(geom.start,geom.all),endTs=timestampAtIndex(geom.right,geom.all),minTs=Math.min(startTs,endTs),maxTs=Math.max(startTs,endTs),span=Math.max(1,maxTs-minTs),step=niceTimeStep(span/target),offset=timeAxisOffset(minTs),first=Math.ceil((minTs+offset-step*1e-10)/step)*step-offset,ticks=[];
-  for(let ts=first,guard=0;ts<=maxTs+step*1e-8&&guard<40;ts+=step,guard++){
-    if(ts<minTs-step*1e-8)continue;
-    ticks.push({ts,index:indexAtTimestamp(ts,geom.all)});
+function buildIndexTicks(geom,target=8){
+  const span=Math.max(1,geom.right-geom.start),step=niceIndexStep(span/target),first=Math.ceil((geom.start-step*1e-10)/step)*step,ticks=[];
+  for(let index=first,guard=0;index<=geom.right+step*1e-8&&guard<64;index+=step,guard++){
+    if(index<geom.start-step*1e-8)continue;
+    ticks.push({index,ts:timestampAtIndex(index,geom.all)});
   }
   return ticks;
 }
@@ -88,7 +68,7 @@ function draw(){
   ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,y=p=>pad.t+(hi-p)/range*plotH;
   ctx.font='10px sans-serif';ctx.fillStyle='#6f7a8b';
 
-  /* Y axis owns horizontal grid lines: one price tick -> one line + one label. */
+  /* Price ticks are the Y axis. The horizontal grid is only an extension of these exact ticks. */
   const priceTicks=buildPriceTicks(lo,hi,5);
   ctx.textAlign='left';
   for(const pv of priceTicks){
@@ -96,10 +76,10 @@ function draw(){
     const lineY=Math.round(yy)+.5;ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.beginPath();ctx.moveTo(pad.l,lineY);ctx.lineTo(W-pad.r,lineY);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(fmt(Math.max(0,pv),chartDecimals()),W-pad.r+5,yy+3);
   }
 
-  /* X axis owns vertical grid lines: one real-time tick -> one line + one label. */
-  const timeTicks=buildTimeTicks(geom,8);
+  /* Candle-index ticks are the X axis. Grid and labels use the same xForIndex() as the candles. */
+  const indexTicks=buildIndexTicks(geom,8);
   ctx.textAlign='center';
-  for(const tick of timeTicks){
+  for(const tick of indexTicks){
     const x=xForIndex(tick.index,geom,pad,plotW);if(x<pad.l-1||x>W-pad.r+1)continue;
     const lineX=Math.round(x)+.5;ctx.strokeStyle=chartSettings.grid||'#171c22';ctx.beginPath();ctx.moveTo(lineX,pad.t);ctx.lineTo(lineX,H-pad.b);ctx.stroke();
     const label=formatTime(tick.ts),labelW=ctx.measureText(label).width;
@@ -114,4 +94,5 @@ function draw(){
   const ch=crosshairLocked&&lockedCrosshair?lockedCrosshair:(hoverIndex>=0?{idx:hoverIndex,price:hoverPrice}:null);if(ch&&chartSettings.crosshair){const x=xForIndex(ch.idx,geom,pad,plotW);if(x>=pad.l&&x<=W-pad.r){ctx.strokeStyle='#697386';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();if(Number.isFinite(ch.price)){const yy=y(ch.price);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke()}ctx.setLineDash([])}}
   ctx.strokeStyle='#303741';ctx.beginPath();ctx.moveTo(W-pad.r,pad.t);ctx.lineTo(W-pad.r,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,H-pad.b);ctx.lineTo(W-pad.r,H-pad.b);ctx.stroke();
 }
+window.GreedBitChartRenderer={viewGeometry,calcPriceBounds,buildPriceTicks,buildIndexTicks,draw};
 draw();
