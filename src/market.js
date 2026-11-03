@@ -169,3 +169,12 @@ function futuresEquity(){const w=futuresWallet();return w.usdt+w.frozen+usedMarg
 function spotCoinValue(){const w=spotWallet();return coinKeys.reduce((a,c)=>a+(w.coins[c]||0)*markFor(c+'/USDT'),0)}
 function totalAsset(){return walletUsdt('fiat')+walletUsdt('earn')+walletUsdt('strategy')+walletUsdt('spot')+spotWallet().frozenUsdt+spotCoinValue()+futuresEquity()}
 function liqPrice(side,entry,mode,margin,notional){let cushion=margin;if(mode==='cross')cushion+=Math.max(0,futuresWallet().usdt);const ratio=Math.min(.95,cushion/Math.max(1,notional));return side==='long'?Math.max(.0000001,entry*(1-ratio+MMR)):entry*(1+ratio-MMR)}
+function previewLiq(side){const m=+$('marginInput').value||0;if(!m)return null;const entry=orderType==='limit'?(+$('limitPriceInput').value||price):price;return liqPrice(side,entry,$('marginMode').value,m,m*leverage)}
+function updatePreview(){const m=+$('marginInput').value||0,n=m*leverage;$('notionalPreview').textContent=fmt(n);$('feePreview').textContent=fmt(n*FEE);const l=previewLiq('long'),s=previewLiq('short');$('longLiq').textContent=l?fmt(l,cfg.dec):'--';$('shortLiq').textContent=s?fmt(s,cfg.dec):'--'}
+function stats(){
+  const m=marketSnapshots[symbol]||{},arr=currentSeries(),fallback=arr.length?arr.at(-1):null;
+  const ch=Number.isFinite(m.change)?m.change:0,hi=Number.isFinite(m.high)?m.high:(fallback?.h||price),lo=Number.isFinite(m.low)?m.low:(fallback?.l||price),vol=Number.isFinite(m.quoteVolume)?m.quoteVolume:0;
+  $('lastPrice').textContent=fmt(price,cfg.dec);$('lastPrice').className='pricebig '+(ch>=0?'green':'red');$('midPrice').textContent=fmt(price,cfg.dec);$('midPrice').className='mid '+(ch>=0?'green':'red');
+  $('change24').textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';$('change24').className=ch>=0?'green':'red';$('high24').textContent=fmt(hi,cfg.dec);$('low24').textContent=fmt(lo,cfg.dec);$('vol24').textContent=fmt(vol,0);
+  updateAssets();updatePreview();updateFundingUI();updateSpotPanel();renderCoinList();
+}
