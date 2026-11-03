@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import os
 import re
-import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -26,25 +25,19 @@ class GreedBitHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         path = urlsplit(self.path).path
         if LEGACY_SCRIPT.match(path):
-            target = f"/?legacy-recover=1&t={int(time.time() * 1000)}"
             body = (
-                "console.warn('GreedBit: retired legacy runtime requested: "
+                "throw new Error('GreedBit retired legacy runtime requested: "
                 + path.replace("'", "\\'")
                 + "');"
-                + "if (window.location.pathname !== '/') { window.location.replace('"
-                + target
-                + "'); } else { window.location.replace('"
-                + target
-                + "'); }"
             ).encode("utf-8")
-            self.send_response(200)
+            self.send_response(410)
             self.send_header("Content-Type", "application/javascript; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-            self.send_header("X-GreedBit-Legacy-Recovery", path)
+            self.send_header("X-GreedBit-Legacy-Runtime", path)
             self.end_headers()
             self.wfile.write(body)
-            print(f"[legacy-recovery] {path} -> {target}")
+            print(f"[legacy-blocked] {path}")
             return
         super().do_GET()
 
@@ -60,7 +53,7 @@ def main() -> None:
     print(f"GreedBit dev server: http://{args.host}:{args.port}/")
     print(f"Root: {ROOT}")
     print("Cache policy: no-store for HTML/JS/CSS/JSON")
-    print("Legacy /src/v*.js requests: self-heal to the canonical runtime")
+    print("Legacy /src/v*.js requests: blocked with HTTP 410; no automatic navigation")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
