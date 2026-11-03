@@ -3,6 +3,8 @@
  */
 (function(){
 'use strict';
+const BUILD='0026-20261103a';
+const MODULE_TIMEOUT_MS=8000;
 const MODULES=[
   'src/market/preload.js',
   'src/chart/renderer.js',
@@ -26,6 +28,9 @@ const MODULES=[
   'src/strategy/grid.js',
   'src/app/runtime.js'
 ];
+const bootState={build:BUILD,modules:[...MODULES],loaded:[],current:null,ready:false,error:null,compatibilityAliases:['GreedBitV18','GreedBitV21']};
+window.GreedBitBootstrap=bootState;
+
 function applyCompatibilityAlias(path){
   if(path==='src/trading/contracts.js'&&window.GreedBitContracts){
     window.GreedBitV18=window.GreedBitContracts;
@@ -36,33 +41,65 @@ function applyCompatibilityAlias(path){
     document.documentElement.classList.remove('gb-runtime-ready');
   }
 }
+function versioned(path){
+  const join=path.includes('?')?'&':'?';
+  return `${path}${join}gb=${encodeURIComponent(BUILD)}`;
+}
 function loadModule(path){
   return new Promise((resolve,reject)=>{
-    if(document.querySelector(`script[data-gb-module="${path}"]`)){applyCompatibilityAlias(path);resolve();return}
+    const existing=document.querySelector(`script[data-gb-module="${path}"]`);
+    if(existing&&existing.dataset.gbLoaded==='1'){
+      applyCompatibilityAlias(path);resolve();return;
+    }
+    if(existing)existing.remove();
     const script=document.createElement('script');
-    script.src=path;script.async=false;script.dataset.gbModule=path;
-    script.onload=()=>{applyCompatibilityAlias(path);resolve()};
-    script.onerror=()=>reject(new Error(`模块加载失败: ${path}`));
+    let settled=false;
+    const finish=(error)=>{
+      if(settled)return;
+      settled=true;clearTimeout(timer);
+      script.onload=null;script.onerror=null;
+      if(error){script.remove();reject(error);return}
+      script.dataset.gbLoaded='1';applyCompatibilityAlias(path);resolve();
+    };
+    const timer=setTimeout(()=>finish(new Error(`模块加载超时（${MODULE_TIMEOUT_MS/1000}秒）: ${path}`)),MODULE_TIMEOUT_MS);
+    script.src=versioned(path);script.async=false;script.dataset.gbModule=path;
+    script.onload=()=>finish();
+    script.onerror=()=>finish(new Error(`模块加载失败: ${path}`));
     document.body.appendChild(script);
   });
+}
+function showBootError(error){
+  const old=document.getElementById('gbBootError');if(old)old.remove();
+  const panel=document.createElement('div');panel.id='gbBootError';
+  panel.style.cssText='position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:#0b0e12;color:#e7edf7;font-family:Inter,system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;padding:24px';
+  const card=document.createElement('div');card.style.cssText='width:min(680px,92vw);border:1px solid #303846;background:#11151b;border-radius:12px;padding:24px;box-shadow:0 20px 70px #0008';
+  const title=document.createElement('h2');title.textContent='GreedBit 启动失败';title.style.cssText='margin:0 0 12px;font-size:20px';
+  const msg=document.createElement('div');msg.textContent=error?.message||String(error);msg.style.cssText='color:#ff7a86;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;word-break:break-all;margin:0 0 14px';
+  const hint=document.createElement('p');hint.textContent='请确认本地已拉取最新 main 并重启 8080 服务。若仍失败，把上面的具体模块名发给我即可继续定位。';hint.style.cssText='color:#98a4b7;line-height:1.7;margin:0 0 18px';
+  const btn=document.createElement('button');btn.type='button';btn.textContent='重新加载';btn.style.cssText='border:0;border-radius:7px;background:#4f7df3;color:white;padding:9px 18px;cursor:pointer;font-weight:700';btn.onclick=()=>location.reload();
+  card.append(title,msg,hint,btn);panel.appendChild(card);document.body.appendChild(panel);
 }
 async function boot(){
   const root=document.documentElement;
   root.dataset.gbBoot='loading';
   root.classList.remove('gb-runtime-ready');
   try{
-    for(const path of MODULES)await loadModule(path);
+    for(const path of MODULES){
+      bootState.current=path;
+      await loadModule(path);
+      bootState.loaded.push(path);
+    }
+    bootState.current=null;bootState.ready=true;
     root.dataset.gbBoot='ready';
     root.classList.add('gb-runtime-ready');
-    window.GreedBitBootstrap={modules:[...MODULES],ready:true,compatibilityAliases:['GreedBitV18','GreedBitV21']};
     document.dispatchEvent(new CustomEvent('greedbit:ready'));
   }catch(error){
+    bootState.error={message:error?.message||String(error),module:bootState.current};
     root.dataset.gbBoot='error';
-    root.classList.remove('gb-runtime-ready');
-    console.error('[GreedBit] bootstrap failed',error);
-    const loading=document.getElementById('gbBootLoader');
-    if(loading)loading.innerHTML='<strong>GreedBit 启动失败</strong><small>请打开开发者工具查看具体模块错误。</small>';
-    throw error;
+    /* Never leave the CSS boot curtain spinning forever. Reveal the diagnostic panel instead. */
+    root.classList.add('gb-runtime-ready');
+    console.error('[GreedBit] bootstrap failed',error,bootState);
+    showBootError(error);
   }
 }
 boot();
