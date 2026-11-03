@@ -91,9 +91,10 @@ $required = @(
   'src\v017.js',
   'src\v018.js',
   'src\v019.js',
-  'src\v019-hotfix.js',
   'src\v020.js',
   'src\v021.js',
+  'src\v024.js',
+  'src\v025.js',
   'styles\base.css',
   'styles\trading.css',
   'styles\v011.css',
@@ -104,7 +105,8 @@ $required = @(
   'styles\v018.css',
   'styles\v019.css',
   'styles\v020.css',
-  'styles\v021.css'
+  'styles\v021.css',
+  'styles\v024.css'
 )
 foreach ($relative in $required) {
   if (-not (Test-Path (Join-Path $out $relative))) {
