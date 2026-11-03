@@ -1,0 +1,45 @@
+/* v0.0.21 HTX layout/selection fixes */
+
+/* Whole-page scrolling: terminal content may exceed viewport, like HTX classic layout. */
+html.gb21-ui,html.gb21-ui body{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important}
+.gb21-ui .topnav{position:sticky!important;top:0!important;z-index:120!important}
+.gb21-ui .page{height:auto!important;min-height:calc(100vh - 72px)!important;overflow:visible!important}
+.gb21-ui .trade-page{min-height:calc(100vh + 120px)!important}
+.gb21-ui .trade-page.hidden{display:none!important}
+.gb21-ui .trade-page .layout{height:auto!important;min-height:900px!important;grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;grid-template-rows:minmax(500px,58vh) 4px minmax(320px,1fr)!important}
+
+/* Overview/data replace only the chart body. Orderbook, trade panel and bottom records stay visible. */
+.gb21-ui .layout.contract-info-mode{grid-template-columns:minmax(500px,1fr) 4px var(--book-w) 4px var(--trade-w)!important;grid-template-rows:minmax(500px,58vh) 4px minmax(320px,1fr)!important}
+.gb21-ui .contract-info-mode .chartpanel{display:flex!important;grid-column:1!important;grid-row:1!important;border-bottom:1px solid var(--gb20-border)!important}
+.gb21-ui .contract-info-mode .orderbook{display:flex!important;grid-column:3!important;grid-row:1!important}
+.gb21-ui .contract-info-mode .trade{display:grid!important;grid-column:5!important;grid-row:1/4!important}
+.gb21-ui .contract-info-mode .bottom{display:flex!important;grid-column:1/4!important;grid-row:3!important}
+.gb21-ui .contract-info-mode .splitter{display:block!important}
+.gb21-ui .contract-info-mode #splitChartBook{grid-column:2!important;grid-row:1!important}
+.gb21-ui .contract-info-mode #splitBookTrade{grid-column:4!important;grid-row:1/4!important}
+.gb21-ui .contract-info-mode #splitChartBottom{grid-column:1/4!important;grid-row:2!important}
+.gb21-ui .contract-info{min-height:0!important;max-height:none!important;overflow:auto!important}
+.gb21-ui .overview-grid,.gb21-ui .analytics-grid{min-height:100%!important}
+
+/* Selected/preselected states: highlight text/icon only. No pill, border box or glow. */
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button).active{
+  color:#f1f4f9!important;background:transparent!important;border-color:transparent!important;box-shadow:none!important;outline:none!important;filter:none!important
+}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.gb19-kind-tabs button).active::after{display:none!important}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):hover{
+  color:#f1f4f9!important;background:transparent!important;box-shadow:none!important;filter:none!important
+}
+.gb21-ui :is(.navbtn,.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button,.asset-subnav button,.coin-tabs button,.overview-subnav button,.period-switch button,.gb19-kind-tabs button):focus-visible{
+  outline:none!important;box-shadow:none!important
+}
+.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):hover,
+.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):focus-visible{background:transparent!important;box-shadow:none!important;filter:none!important;color:#f1f4f9!important;outline:none!important}
+.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):hover svg,
+.gb21-ui :is(.settingsbtn,.icon-btn,.bell-btn,.lang-btn,.gb19-copy,.coin-star-v14):focus-visible svg{color:#f1f4f9!important;fill:currentColor!important}
+
+/* Neutral time-frame selection remains text-only as requested. */
+.gb21-ui .timebar button.active{background:transparent!important;color:#f1f4f9!important}
+
+@media(max-width:1100px){
+  .gb21-ui .trade-page .layout,.gb21-ui .layout.contract-info-mode{grid-template-columns:minmax(420px,1fr) 4px 250px 4px 330px!important}
+}
