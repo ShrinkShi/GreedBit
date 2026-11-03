@@ -62,7 +62,8 @@ bridgeObserver.observe(document.body,{childList:true,subtree:false});
 /* Persist hourly Earn settlement even when the passive UI refresh was the first caller at an hour boundary. */
 setInterval(()=>{if(user){try{saveState()}catch{}}},60000);
 
-/* v0.0.14 runs last so it can safely override draw/notify/picker behavior. */
-if(!document.querySelector('script[src="src/v014.js"]')){const s=document.createElement('script');s.src='src/v014.js';document.body.appendChild(s)}
+function loadV15(){if(document.querySelector('script[src="src/v015.js"]'))return;const n=document.createElement('script');n.src='src/v015.js';document.body.appendChild(n)}
+/* v0.0.14 then v0.0.15: later layers deliberately override draw/notify/table/socket behavior. */
+if(!document.querySelector('script[src="src/v014.js"]')){const s=document.createElement('script');s.src='src/v014.js';s.onload=loadV15;document.body.appendChild(s)}else loadV15();
 
 })();
