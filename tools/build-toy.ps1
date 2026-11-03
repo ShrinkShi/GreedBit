@@ -91,7 +91,7 @@ if (-not $NoZip) {
   }
   Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zip -CompressionLevel Optimal
   $zipItem = Get-Item $zip
-  Write-Host ("ZIP: {0} ({1:N2} MB)" -f ($zipItem.FullName, ($zipItem.Length / 1MB))
+  Write-Host ("ZIP: {0} ({1:N2} MB)" -f $zipItem.FullName, ($zipItem.Length / 1MB))
 }
 
 Write-Host 'Build complete.'
