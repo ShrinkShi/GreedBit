@@ -1,0 +1,164 @@
+/* v0.0.20 HTX-inspired trading visual system
+   Reimplemented from observed layout/geometry patterns; no upstream stylesheet is embedded. */
+:root{
+  --gb20-bg-0:#0b0c0e;
+  --gb20-bg-1:#111214;
+  --gb20-bg-2:#161719;
+  --gb20-bg-3:#1c1d20;
+  --gb20-border:#26272b;
+  --gb20-border-strong:#303238;
+  --gb20-text-1:#f3f4f6;
+  --gb20-text-2:#b8bcc5;
+  --gb20-text-3:#828791;
+  --gb20-text-4:#5f6570;
+  --gb20-radius:4px;
+  --gb20-green:#3dbb83;
+  --gb20-red:#ff6b78;
+}
+
+/* Trading workspace: neutral charcoal instead of navy-card styling. */
+.trade-page{background:var(--gb20-bg-0)!important}
+.marketbar{height:56px!important;background:var(--gb20-bg-0)!important;border-color:var(--gb20-border)!important;gap:18px!important;padding:0 16px!important}
+.marketbar .stat small{color:var(--gb20-text-3)!important;font-size:10px!important}
+.marketbar .stat strong{color:var(--gb20-text-1);font-weight:600!important}
+.pricebig{font-size:22px!important;letter-spacing:-.02em!important}
+.chartpanel,.orderbook,.tradebox,.assetbox,.bottom{background:var(--gb20-bg-1)!important}
+.chartpanel,.orderbook,.tradebox,.assetbox,.bottom,.tabs,.panelhead,.charttabs,.timebar{border-color:var(--gb20-border)!important}
+.splitter{background:#18191c!important}.splitter:hover,.splitter.dragging{background:#3c4048!important}
+
+/* Compact tabs: active state is text + 2px underline, no pill. */
+.charttabs,.tabs,.bottomtabs{background:var(--gb20-bg-1)!important}
+.charttabs span,.tabs button,.bottomtabs button,.subtabs button,.timebar button{color:var(--gb20-text-3)!important;font-weight:600!important}
+.charttabs span:hover,.tabs button:hover,.bottomtabs button:hover,.subtabs button:hover,.timebar button:hover{color:var(--gb20-text-2)!important}
+.charttabs span.active,.tabs button.active,.bottomtabs button.active,.subtabs button.active,.timebar button.active{color:var(--gb20-text-1)!important;background:transparent!important;box-shadow:none!important}
+.charttabs span.active,.bottomtabs button.active{border-bottom-color:#f1f3f5!important}
+.timebar button{border-radius:3px!important;padding:5px 8px!important}
+.timebar button.active{background:var(--gb20-bg-3)!important}
+
+/* Orderbook density and typography. */
+.panelhead{height:36px!important;padding:0 12px!important;font-size:12px!important}
+.obhead{height:26px!important;color:var(--gb20-text-4)!important}
+.obrow{height:21px!important;font-size:11px!important}
+.mid{height:34px!important;background:var(--gb20-bg-1)!important;border-color:var(--gb20-border)!important}
+
+/* Trade panel controls: 36px, 4px radius, restrained borders. */
+.form{padding:12px 14px!important}
+.open-close-switch,.spot-side-switch{gap:0!important;margin-bottom:12px!important;border:1px solid var(--gb20-border)!important;border-radius:var(--gb20-radius)!important;overflow:hidden}
+.open-close-switch button,.spot-side-switch button{height:36px!important;border-radius:0!important;background:var(--gb20-bg-3)!important;color:var(--gb20-text-3)!important;border:0!important}
+.open-close-switch button+button,.spot-side-switch button+button{border-left:1px solid var(--gb20-border)!important}
+.open-close-switch button.active,.spot-side-switch button.active{background:#1f6e54!important;color:#fff!important;box-shadow:none!important}
+.spot-side-switch button.sell-soft.active{background:#8e3f49!important}
+.futures-controls{gap:8px!important;margin-bottom:12px!important}
+.selectlike,.field{height:36px!important;background:var(--gb20-bg-3)!important;border:1px solid var(--gb20-border)!important;border-radius:var(--gb20-radius)!important;color:var(--gb20-text-1)!important}
+.selectlike:hover,.field:hover{border-color:#3a3c42!important;background:#1d1e21!important}
+.selectlike:focus,.field:focus-within{border-color:#717780!important;box-shadow:0 0 0 1px #717780!important}
+.field{padding:0 10px!important;margin-bottom:8px!important}
+.field label{color:var(--gb20-text-3)!important;min-width:58px!important;font-size:11px!important}
+.field input{color:var(--gb20-text-1)!important;font-weight:600!important}
+.ordertype{margin:12px 0 10px!important;gap:16px!important}
+.order-type,.spot-order-type,.maker-label{font-size:11px!important;color:var(--gb20-text-3)!important}
+.order-type:hover,.spot-order-type:hover,.maker-label:hover{color:var(--gb20-text-2)!important}
+.order-type.active,.spot-order-type.active{color:var(--gb20-text-1)!important}
+.balance-line{margin:9px 0!important;color:var(--gb20-text-3)!important;font-size:10px!important}
+
+/* HTX-like slider geometry: 22px interaction box, 1px rail, 14px ring handle, 10px stops. */
+#pct,#spotPct,#levRange{
+  --gb18-range-pct:0%;
+  -webkit-appearance:none!important;appearance:none!important;
+  width:100%!important;height:22px!important;margin:0!important;padding:0!important;
+  background:transparent!important;outline:none!important;cursor:pointer!important;
+}
+#pct::-webkit-slider-runnable-track,#spotPct::-webkit-slider-runnable-track,#levRange::-webkit-slider-runnable-track{
+  height:1px!important;border:0!important;border-radius:0!important;
+  background:linear-gradient(90deg,#f3f4f6 0 var(--gb18-range-pct),#2a2b2f var(--gb18-range-pct) 100%)!important;
+  box-shadow:none!important;
+}
+#pct::-moz-range-track,#spotPct::-moz-range-track,#levRange::-moz-range-track{
+  height:1px!important;border:0!important;border-radius:0!important;background:#2a2b2f!important;
+}
+#pct::-moz-range-progress,#spotPct::-moz-range-progress,#levRange::-moz-range-progress{height:1px!important;background:#f3f4f6!important}
+#pct::-webkit-slider-thumb,#spotPct::-webkit-slider-thumb,#levRange::-webkit-slider-thumb{
+  -webkit-appearance:none!important;appearance:none!important;width:14px!important;height:14px!important;margin-top:-6.5px!important;
+  border:0!important;border-radius:50%!important;
+  background:radial-gradient(circle at center,var(--gb20-bg-1) 0 4px,#f3f4f6 4.2px 7px)!important;
+  box-shadow:none!important;transition:transform .12s ease!important;
+}
+#pct::-moz-range-thumb,#spotPct::-moz-range-thumb,#levRange::-moz-range-thumb{
+  width:14px!important;height:14px!important;border:0!important;border-radius:50%!important;
+  background:radial-gradient(circle at center,var(--gb20-bg-1) 0 4px,#f3f4f6 4.2px 7px)!important;box-shadow:none!important;
+}
+#pct:hover::-webkit-slider-thumb,#spotPct:hover::-webkit-slider-thumb,#levRange:hover::-webkit-slider-thumb{transform:scale(1.04)!important}
+#pct:focus-visible::-webkit-slider-thumb,#spotPct:focus-visible::-webkit-slider-thumb,#levRange:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px rgba(255,255,255,.09)!important}
+
+.percent-wrap{position:relative!important;padding:8px 0 30px!important;margin-top:2px!important}
+.pct-dots{left:2px!important;right:2px!important;top:14px!important;height:10px!important;align-items:center!important}
+.pct-dots button{
+  position:relative!important;width:10px!important;height:10px!important;padding:0!important;border:2px solid var(--gb20-bg-1)!important;
+  border-radius:50%!important;background:#2a2b2f!important;box-shadow:none!important;transform:none!important;
+}
+.pct-dots button.passed{background:#f3f4f6!important;border-color:var(--gb20-bg-1)!important}
+.pct-dots button:hover{background:#f3f4f6!important;transform:none!important}
+.pct-dots button::after{
+  content:attr(data-pct) '%';position:absolute;top:14px;left:50%;transform:translateX(-50%);color:var(--gb20-text-4);
+  font-size:9px;font-weight:500;line-height:12px;white-space:nowrap;pointer-events:none;
+}
+.pct-dots button:first-child::after{left:0;transform:none}.pct-dots button:last-child::after{left:auto;right:0;transform:none}
+.pct-value{display:none!important}
+
+/* Leverage modal follows the same counter + slider rhythm found in HTX. */
+.leverage-card{border-radius:6px!important;background:var(--gb20-bg-2)!important;border:1px solid var(--gb20-border)!important;box-shadow:0 18px 56px rgba(0,0,0,.56)!important}
+.leverage-card h2{margin-bottom:18px!important}
+.lev-display{
+  height:36px!important;display:flex!important;align-items:center!important;justify-content:space-between!important;
+  padding:0 10px!important;margin-bottom:16px!important;border:1px solid var(--gb20-border)!important;
+  border-radius:var(--gb20-radius)!important;background:transparent!important;
+}
+.lev-display button{width:24px!important;height:24px!important;border:0!important;border-radius:4px!important;background:var(--gb20-bg-3)!important;color:var(--gb20-text-2)!important;padding:0!important;font-size:16px!important}
+.lev-display button:hover{background:#24262a!important;color:#fff!important}
+.lev-display strong{flex:1;text-align:center;font-size:16px!important;line-height:20px!important;color:#fff!important}
+.lev-range-wrap{position:relative!important;height:34px!important;padding:0 7px!important;margin:0!important}
+.gb20-lev-dots{position:absolute;left:7px;right:7px;top:6px;height:10px;pointer-events:none}
+.gb20-lev-dots i{position:absolute;top:0;width:10px;height:10px;border:2px solid var(--gb20-bg-2);border-radius:50%;background:#2a2b2f;transform:translateX(-50%)}
+.gb20-lev-dots i.passed{background:#f3f4f6}
+.lev-marks{display:flex!important;justify-content:space-between!important;margin-top:0!important;padding:0 2px!important;color:var(--gb20-text-4)!important;font-size:10px!important}
+.lev-info{border-color:var(--gb20-border)!important}
+
+/* Action buttons and metric block: less consumer-app, more terminal. */
+.buySell{gap:8px!important;margin-top:10px!important}
+.buySell button,.spot-action,.logintrade{height:42px!important;border-radius:var(--gb20-radius)!important;box-shadow:none!important}
+.buySell .buy,.spot-action.buy{background:#2f916c!important}.buySell .sell,.spot-action.sell{background:#b94f5b!important}
+.buySell .buy:hover,.spot-action.buy:hover{background:#35a279!important;filter:none!important}.buySell .sell:hover,.spot-action.sell:hover{background:#c55a66!important;filter:none!important}
+.buySell button:active,.spot-action:active{transform:translateY(1px)!important;box-shadow:inset 0 1px 3px rgba(0,0,0,.45)!important}
+.metric-grid{border-top-color:var(--gb20-border)!important;color:var(--gb20-text-3)!important;gap:7px 12px!important}
+.metric-grid span:nth-child(even){color:var(--gb20-text-2)!important}
+
+/* Pair picker and market picker: flatter, denser, HTX-like. */
+.pair-picker-btn{font-size:18px!important;color:var(--gb20-text-1)!important}
+.coin-picker{background:var(--gb20-bg-1)!important;border:1px solid var(--gb20-border)!important;border-radius:6px!important;box-shadow:0 18px 50px rgba(0,0,0,.5)!important}
+.coin-picker .search,#coinSearch{background:var(--gb20-bg-3)!important;border-color:var(--gb20-border)!important;border-radius:4px!important}
+.coin-row{border-bottom:0!important}
+.coin-row:hover{background:#17181b!important}
+.coin-row.active{background:#1b1c1f!important;box-shadow:inset 2px 0 0 #d9dce1!important}
+.coin-tabs button.active{color:#fff!important}
+
+/* Bottom tables are flat terminal surfaces, not cards. */
+.bottom,.bottom .tablewrap{background:var(--gb20-bg-1)!important}
+.bottom th{color:var(--gb20-text-4)!important}.bottom td{color:#d7dae0!important}
+.bottom tbody tr:hover{background:#151619!important}
+.gb19-table-toolbar{background:var(--gb20-bg-1)!important}
+
+/* HTX-style low-profile scrollbars: no visible track, thumb appears by context. */
+:is(.tradebox,.assetbox,.tablewrap,.coin-picker,.news-timeline,.earn-page,.assets-page,.modal .card){scrollbar-width:thin;scrollbar-color:rgba(153,153,153,.24) transparent}
+:is(.tradebox,.assetbox,.tablewrap,.coin-picker,.news-timeline,.earn-page,.assets-page,.modal .card)::-webkit-scrollbar{width:4px!important;height:4px!important}
+:is(.tradebox,.assetbox,.tablewrap,.coin-picker,.news-timeline,.earn-page,.assets-page,.modal .card)::-webkit-scrollbar-track{background:transparent!important}
+:is(.tradebox,.assetbox,.tablewrap,.coin-picker,.news-timeline,.earn-page,.assets-page,.modal .card)::-webkit-scrollbar-thumb{background:rgba(153,153,153,.18)!important;border:0!important;border-radius:4px!important}
+:is(.tradebox,.assetbox,.tablewrap,.coin-picker,.news-timeline,.earn-page,.assets-page,.modal .card):hover::-webkit-scrollbar-thumb{background:rgba(153,153,153,.34)!important}
+:is(.tradebox,.assetbox,.tablewrap,.coin-picker,.news-timeline,.earn-page,.assets-page,.modal .card)::-webkit-scrollbar-button{display:none!important;width:0!important;height:0!important}
+
+/* Remove the earlier injected global scrollbar look if it is still present. */
+html,body{scrollbar-color:rgba(153,153,153,.18) transparent!important}
+
+@media(max-width:900px){
+  .marketbar{gap:12px!important;padding:0 10px!important}.form{padding:10px!important}
+  .pct-dots button::after{font-size:8px}.coin-picker{border-radius:4px!important}
+}
