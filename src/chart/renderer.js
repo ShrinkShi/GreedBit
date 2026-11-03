@@ -1,4 +1,4 @@
-/* v0.0.9 chart rendering overrides */
+/* Canonical chart renderer. Grid lines and axis labels share the same axis ticks. */
 function viewGeometry(){
   const all=currentSeries(),defaultFuture=Number(chartSettings.rightBars)||0,right=all.length+defaultFuture+viewShift,start=right-visibleCount;
   const from=Math.max(0,Math.floor(Math.min(start,right))-2),to=Math.min(all.length,Math.ceil(Math.max(start,right))+2),visible=[];
@@ -46,24 +46,66 @@ function niceGridStep(raw){
   const v=Math.max(Math.abs(raw)||0,Number.EPSILON),p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;
   const m=n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;return m*p;
 }
+function buildPriceTicks(lo,hi,target=5){
+  const range=Math.max(hi-lo,Number.EPSILON),step=niceGridStep(range/target),first=Math.ceil((lo-step*1e-10)/step)*step,ticks=[];
+  for(let value=first,guard=0;value<=hi+step*1e-8&&guard<32;value+=step,guard++){
+    if(value>=lo-step*1e-8)ticks.push(Number(value.toPrecision(15)));
+  }
+  return ticks;
+}
+function niceTimeStep(raw){
+  const steps=[1,5,10,15,30,60,120,180,300,600,900,1800,3600,7200,14400,21600,28800,43200,86400,172800,259200,604800,1209600,2592000,7776000,15552000,31536000,63072000,157680000];
+  const wanted=Math.max(1,Math.abs(raw)||1);return steps.find(x=>x>=wanted)||steps.at(-1);
+}
+function timeAxisOffset(ts){
+  const mode=chartSettings.timezone||'utc8';
+  if(mode==='utc8')return 8*3600;
+  if(mode==='local')return-new Date(ts*1000).getTimezoneOffset()*60;
+  return 0;
+}
+function indexAtTimestamp(ts,all){
+  if(!all.length)return 0;
+  const info=tfInfo();
+  if(!info.calendarMonth)return(ts-all[0].t)/Math.max(1,info.sec||tf||60);
+  if(all.length===1)return 0;
+  if(ts<=all[0].t){const d=Math.max(1,all[1].t-all[0].t);return(ts-all[0].t)/d}
+  const last=all.length-1;
+  if(ts>=all[last].t){const d=Math.max(1,all[last].t-all[last-1].t);return last+(ts-all[last].t)/d}
+  let lo=0,hi=last;
+  while(lo+1<hi){const mid=(lo+hi)>>1;if(all[mid].t<=ts)lo=mid;else hi=mid}
+  const span=Math.max(1,all[hi].t-all[lo].t);return lo+(ts-all[lo].t)/span;
+}
+function buildTimeTicks(geom,target=8){
+  const startTs=timestampAtIndex(geom.start,geom.all),endTs=timestampAtIndex(geom.right,geom.all),minTs=Math.min(startTs,endTs),maxTs=Math.max(startTs,endTs),span=Math.max(1,maxTs-minTs),step=niceTimeStep(span/target),offset=timeAxisOffset(minTs),first=Math.ceil((minTs+offset-step*1e-10)/step)*step-offset,ticks=[];
+  for(let ts=first,guard=0;ts<=maxTs+step*1e-8&&guard<40;ts+=step,guard++){
+    if(ts<minTs-step*1e-8)continue;
+    ticks.push({ts,index:indexAtTimestamp(ts,geom.all)});
+  }
+  return ticks;
+}
 function draw(){
   if(currentPage!=='trade'&&currentPage!=='futures')return;const W=canvas.clientWidth,H=canvas.clientHeight;if(!W||!H)return;const pad={l:8,r:82,t:28,b:42},plotW=W-pad.l-pad.r,plotH=H-pad.t-pad.b;
   ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,y=p=>pad.t+(hi-p)/range*plotH;
   ctx.font='10px sans-serif';ctx.fillStyle='#6f7a8b';
 
-  /* Price grid is anchored to real price levels, so vertical pan/zoom moves the grey grid too. */
-  const priceStep=niceGridStep(range/5),firstPrice=Math.ceil(lo/priceStep)*priceStep;
-  for(let pv=firstPrice,guard=0;pv<=hi+priceStep*.25&&guard<16;pv+=priceStep,guard++){
+  /* Y axis owns horizontal grid lines: one price tick -> one line + one label. */
+  const priceTicks=buildPriceTicks(lo,hi,5);
+  ctx.textAlign='left';
+  for(const pv of priceTicks){
     const yy=y(pv);if(yy<pad.t-1||yy>H-pad.b+1)continue;
-    ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.beginPath();ctx.moveTo(pad.l,Math.round(yy)+.5);ctx.lineTo(W-pad.r,Math.round(yy)+.5);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(fmt(Math.max(0,pv),chartDecimals()),W-pad.r+5,yy+3);
+    const lineY=Math.round(yy)+.5;ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.beginPath();ctx.moveTo(pad.l,lineY);ctx.lineTo(W-pad.r,lineY);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(fmt(Math.max(0,pv),chartDecimals()),W-pad.r+5,yy+3);
   }
 
-  /* Time grid is anchored to candle indices, so horizontal drag moves grid lines with candles. */
-  const tickTarget=8,indexStep=Math.max(1,Math.ceil(visibleCount/tickTarget)),firstIndex=Math.ceil(geom.start/indexStep)*indexStep;
-  for(let idx=firstIndex,guard=0;idx<=geom.right+indexStep*.25&&guard<24;idx+=indexStep,guard++){
-    const x=xForIndex(idx,geom,pad,plotW);if(x<pad.l-1||x>W-pad.r+1)continue;
-    const ts=timestampAtIndex(idx,geom.all);ctx.strokeStyle=chartSettings.grid||'#171c22';ctx.beginPath();ctx.moveTo(Math.round(x)+.5,pad.t);ctx.lineTo(Math.round(x)+.5,H-pad.b);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(formatTime(ts),Math.max(2,Math.min(W-pad.r-115,x-48)),H-11);
+  /* X axis owns vertical grid lines: one real-time tick -> one line + one label. */
+  const timeTicks=buildTimeTicks(geom,8);
+  ctx.textAlign='center';
+  for(const tick of timeTicks){
+    const x=xForIndex(tick.index,geom,pad,plotW);if(x<pad.l-1||x>W-pad.r+1)continue;
+    const lineX=Math.round(x)+.5;ctx.strokeStyle=chartSettings.grid||'#171c22';ctx.beginPath();ctx.moveTo(lineX,pad.t);ctx.lineTo(lineX,H-pad.b);ctx.stroke();
+    const label=formatTime(tick.ts),labelW=ctx.measureText(label).width;
+    if(x-labelW/2>=pad.l&&x+labelW/2<=W-pad.r){ctx.fillStyle='#6f7a8b';ctx.fillText(label,x,H-11)}
   }
+  ctx.textAlign='left';
 
   for(const {idx,c} of geom.visible){const x=xForIndex(idx,geom,pad,plotW),cw=plotW/visibleCount;if(x<-Math.abs(cw)*2||x>W-pad.r+Math.abs(cw)*2)continue;const col=c.c>=c.o?chartSettings.bull:chartSettings.bear,yo=y(c.o),yc=y(c.c),top=Math.min(yo,yc),bh=Math.max(1,Math.abs(yc-yo)),bodyW=Math.max(1,Math.min(40,Math.abs(cw)*.62));if(chartSettings.wick){ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke()}if(chartSettings.body){ctx.fillStyle=col;ctx.fillRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(chartSettings.border){ctx.strokeStyle=col;ctx.strokeRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(c.live){ctx.strokeStyle='#5d8cff';ctx.strokeRect(Math.round(x-bodyW/2-2),Math.round(top-2),bodyW+4,bh+4)}}
   drawTradeMarkers(geom,pad,plotW,y,lo,hi);drawHighLow(geom,pad,plotW,y,lo,hi);
