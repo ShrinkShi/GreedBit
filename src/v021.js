@@ -2,10 +2,18 @@
 (function(){
 'use strict';
 const VERSION='0.0.21';
+let finalized=false;
 
-function installStyle(){
-  if(document.querySelector('link[href="styles/v021.css"]'))return;
-  const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v021.css';document.head.appendChild(l);
+function installStyle(done){
+  let l=document.querySelector('link[href="styles/v021.css"]');
+  if(l){
+    if(l.sheet){done();return}
+    l.addEventListener('load',done,{once:true});
+    l.addEventListener('error',done,{once:true});
+    return;
+  }
+  l=document.createElement('link');l.rel='stylesheet';l.href='styles/v021.css';
+  l.addEventListener('load',done,{once:true});l.addEventListener('error',done,{once:true});document.head.appendChild(l);
 }
 function currentSymbol(){
   try{if(typeof symbol==='string'&&symbol)return symbol}catch{}
@@ -54,11 +62,19 @@ function updateVersion(){
   const el=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));
   if(el)el.textContent=`GreedBit v${VERSION}`;
 }
+function finalize(){
+  if(finalized)return;finalized=true;
+  installSourceLabelGuard();installFavicon();updateVersion();
+  requestAnimationFrame(()=>{
+    installSourceLabelGuard();window.GreedBitPairLabelGuard?.enforce?.();updateVersion();
+    document.documentElement.classList.add('gb-runtime-ready');
+  });
+  window.GreedBitV21={VERSION,sourceLabel};
+}
 function boot(){
   document.documentElement.classList.add('gb21-ui');
-  installStyle();installSourceLabelGuard();installFavicon();updateVersion();
-  requestAnimationFrame(()=>{installSourceLabelGuard();window.GreedBitPairLabelGuard?.enforce?.()});
-  window.GreedBitV21={VERSION,sourceLabel};
+  installStyle(finalize);
+  setTimeout(finalize,1500);
 }
 boot();
 })();
