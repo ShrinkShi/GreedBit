@@ -88,6 +88,7 @@ $required = @(
   'src\v017-manifest-preload.js',
   'src\v017.js',
   'src\v018.js',
+  'src\v019.js',
   'styles\base.css',
   'styles\trading.css',
   'styles\v011.css',
@@ -95,7 +96,8 @@ $required = @(
   'styles\v015.css',
   'styles\v016.css',
   'styles\v017.css',
-  'styles\v018.css'
+  'styles\v018.css',
+  'styles\v019.css'
 )
 foreach ($relative in $required) {
   if (-not (Test-Path (Join-Path $out $relative))) {
