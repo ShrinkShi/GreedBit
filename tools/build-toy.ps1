@@ -65,6 +65,14 @@ $required = @(
   'assets\bitcoinicon\usoil.png',
   'assets\bitcoinicon\brentoil.png',
   'assets\bitcoinicon\natgas.png',
+  'assets\forex\eurusd.png',
+  'assets\forex\gbpusd.png',
+  'assets\forex\usdjpy.png',
+  'assets\stocksicon\aapl.png',
+  'assets\stocksicon\msft.png',
+  'assets\stocksicon\nvda.png',
+  'assets\stocksicon\openai.png',
+  'assets\stocksicon\anthropic.png',
   'src\core.js',
   'src\market.js',
   'src\v011-preload.js',
@@ -76,12 +84,14 @@ $required = @(
   'src\v015.js',
   'src\v015-market-worker.js',
   'src\v016.js',
+  'src\v017.js',
   'styles\base.css',
   'styles\trading.css',
   'styles\v011.css',
   'styles\v014.css',
   'styles\v015.css',
-  'styles\v016.css'
+  'styles\v016.css',
+  'styles\v017.css'
 )
 foreach ($relative in $required) {
   if (-not (Test-Path (Join-Path $out $relative))) {
@@ -102,7 +112,7 @@ if (-not $NoZip) {
   }
   Compress-Archive -Path (Join-Path $out '*') -DestinationPath $zip -CompressionLevel Optimal
   $zipItem = Get-Item $zip
-  Write-Host ("ZIP: {0} ({1:N2} MB)" -f $zipItem.FullName, ($zipItem.Length / 1MB))
+  Write-Host ("ZIP: {0} ({1:N2} MB" -f $zipItem.FullName, ($zipItem.Length / 1MB))
 }
 
 Write-Host 'Build complete.'
