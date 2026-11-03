@@ -3,69 +3,45 @@
  */
 (function(){
 'use strict';
-
-/* Transitional path adapter for the old performance module. This is intentionally centralized here so no
- * version-named worker file has to remain in the runtime tree. Remove once performance/runtime.js is rewritten. */
-if(window.Worker&&!window.__gbCanonicalWorkerPath){
-  const NativeWorker=window.Worker;
-  window.Worker=new Proxy(NativeWorker,{construct(Target,args){
-    let url=String(args?.[0]||'');
-    if(url.startsWith('src/v015-market-worker.js'))url='src/performance/market-worker.js';
-    return Reflect.construct(Target,[url,...args.slice(1)]);
-  }});
-  window.__gbCanonicalWorkerPath=true;
-}
-
 const MODULES=[
-  {path:'src/market/preload.js'},
-  {path:'src/chart/renderer.js'},
-  {path:'src/app/events.js'},
-  {path:'src/trading/advanced-orders.js'},
-  {path:'src/ui/preferences.js'},
-  {path:'src/ui/home.js'},
-  {path:'src/news/feeds.js'},
-  {path:'src/market/model.js'},
-  {path:'src/ui/shell.js'},
-  {path:'src/app/compatibility.js'},
-  {path:'src/ui/trading-experience.js'},
-  {path:'src/performance/runtime.js'},
-  {path:'src/market/extended.js',blockIntervals:['syncPairLabel']},
-  {path:'src/market/stock-manifest-preload.js'},
-  {path:'src/market/external.js',blockIntervals:['syncExternalLabel']},
-  {path:'src/trading/contracts.js',blockIntervals:['syncPairHeader']},
-  {path:'src/trading/records.js'},
-  {path:'src/ui/terminal-theme.js'},
-  {path:'src/ui/runtime.js'},
-  {path:'src/strategy/grid.js'},
-  {path:'src/app/runtime.js'}
+  'src/market/preload.js',
+  'src/chart/renderer.js',
+  'src/app/events.js',
+  'src/trading/advanced-orders.js',
+  'src/ui/preferences.js',
+  'src/ui/home.js',
+  'src/news/feeds.js',
+  'src/market/model.js',
+  'src/ui/shell.js',
+  'src/app/compatibility.js',
+  'src/ui/trading-experience.js',
+  'src/performance/runtime.js',
+  'src/market/extended.js',
+  'src/market/stock-manifest-preload.js',
+  'src/market/external.js',
+  'src/trading/contracts.js',
+  'src/trading/records.js',
+  'src/ui/terminal-theme.js',
+  'src/ui/runtime.js',
+  'src/strategy/grid.js',
+  'src/app/runtime.js'
 ];
-
-function scriptExists(path){return !!document.querySelector(`script[data-gb-module="${path}"]`)}
-function loadModule(spec){
+function loadModule(path){
   return new Promise((resolve,reject)=>{
-    if(scriptExists(spec.path)){resolve();return}
-    const nativeSetInterval=window.setInterval;
-    if(spec.blockIntervals?.length){
-      window.setInterval=function(fn,delay,...args){
-        const source=typeof fn==='function'?Function.prototype.toString.call(fn):'';
-        if(spec.blockIntervals.some(name=>source.includes(name)))return 0;
-        return nativeSetInterval(fn,delay,...args);
-      };
-    }
-    const restore=()=>{window.setInterval=nativeSetInterval};
+    if(document.querySelector(`script[data-gb-module="${path}"]`)){resolve();return}
     const script=document.createElement('script');
-    script.src=spec.path;script.async=false;script.dataset.gbModule=spec.path;
-    script.onload=()=>{restore();resolve()};
-    script.onerror=()=>{restore();reject(new Error(`模块加载失败: ${spec.path}`))};
+    script.src=path;script.async=false;script.dataset.gbModule=path;
+    script.onload=resolve;
+    script.onerror=()=>reject(new Error(`模块加载失败: ${path}`));
     document.body.appendChild(script);
   });
 }
 async function boot(){
   document.documentElement.dataset.gbBoot='loading';
   try{
-    for(const spec of MODULES)await loadModule(spec);
+    for(const path of MODULES)await loadModule(path);
     document.documentElement.dataset.gbBoot='ready';
-    window.GreedBitBootstrap={modules:MODULES.map(x=>x.path),ready:true};
+    window.GreedBitBootstrap={modules:[...MODULES],ready:true};
     document.dispatchEvent(new CustomEvent('greedbit:ready'));
   }catch(error){
     document.documentElement.dataset.gbBoot='error';
