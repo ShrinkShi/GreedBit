@@ -2,7 +2,7 @@
 
 GreedBit 是一个面向 **Bilibili Toy** 的纯前端虚拟货币交易模拟器。项目使用公开市场行情驱动模拟交易，同时保留原创平台币、赚币、手续费抵扣、杠杆、强平等游戏化交易机制。
 
-当前版本：**v0.0.13**
+当前版本：**v0.0.15**
 
 ## 项目边界
 
@@ -129,11 +129,27 @@ USDT 与现金类余额
 - 成交量独立窗格或叠加主图。
 - 成交量窗格高度拖动。
 - 成交标记、十字光标、高低点、倒计时与图表设置。
+- 当前合约持仓线直接叠加到 K 线；浮盈绿、浮亏红。
 - 实时价格自适应心跳动画。
 - 现货市价 / 限价交易。
-- U 本位模拟合约、全仓 / 逐仓、1X–200X 杠杆、止盈止损与强平。
+- U 本位模拟永续合约、全仓 / 逐仓、1X–200X 杠杆、止盈止损与强平。
 
 BTC / ETH 的概况与衍生品数据页继续使用已有真实公开数据。其他新增币种当前重点支持 K 线、交易和账户资产，不伪造缺失的项目/衍生品统计数据。
+
+## 设计与性能
+
+v0.0.15 开始建立统一的界面设计 Token：8px 间距网格、统一圆角、表单 Focus Ring、错误状态、暗色滚动条和金融数字等宽字体。
+
+关键性能策略：
+
+- 历史委托、成交记录、财务记录等长表格超过阈值后启用原生虚拟滚动，只渲染可视区域附近 DOM。
+- Binance WebSocket 消息优先在 `Web Worker` 中解析并按批次发送给主线程。
+- 主线程行情 DOM 更新使用节流 + `requestAnimationFrame`，避免逐笔成交直接触发完整重绘。
+- Worker 不可用时自动退回主线程批处理，不中断行情。
+- 切换交易对及本地页面首次进入使用与最终布局一致的深色 Skeleton，而非全屏 Loading。
+- 保证金、强平价、标记价、资金费率等术语提供延迟 Tooltip。
+
+图表深色背景下，默认上涨色保持 `#3dbb83`；默认下跌色调整为 `#ff6b78`，用于提升关键红色数据与 K 线的对比度。
 
 ## 主页视觉
 
@@ -143,11 +159,11 @@ BTC / ETH 的概况与衍生品数据页继续使用已有真实公开数据。�
 
 ## 浏览器图标
 
-导航栏仍使用高清 `assets/greedbit-logo.png`；浏览器标签页 favicon 使用单独生成的带透明留白的小尺寸版本，避免 1024×1024 Logo 在标签页中被裁切或显得过大。
+导航栏仍使用高清 `assets/greedbit-logo.png`；浏览器标签页 favicon 使用独立多尺寸 `assets/favicon.ico`，避免高清 Logo 在标签页中被裁切或显得过大。
 
 ## Bilibili Toy
 
-GreedBit 使用单入口 `index.html`，CSS / JavaScript / 图片 / WebM 全部使用相对路径，不依赖自建服务端路由。
+GreedBit 使用单入口 `index.html`，CSS / JavaScript / 图片 / WebM / Worker 全部使用相对路径，不依赖自建服务端路由。
 
 Windows PowerShell 打包：
 
@@ -162,7 +178,7 @@ dist-toy/
 GreedBit-toy.zip
 ```
 
-Toy 正式发布前仍需在真实 Preview 环境验证 Binance REST / WebSocket、HTX 公共接口、RSS/CORS 通道和 WebM 播放兼容性。
+Toy 正式发布前仍需在真实 Preview 环境验证 Binance REST / WebSocket、HTX 公共接口、RSS/CORS 通道、WebM 播放和 Web Worker 兼容性。
 
 ## 本地运行
 
