@@ -137,7 +137,8 @@ function drawPositionOverlay(y,lo,hi,pad,W,H){
 }
 function draw(){
   if(currentPage!=='trade'&&currentPage!=='futures')return;const W=canvas.clientWidth,H=canvas.clientHeight;if(!W||!H)return;const pad={l:8,r:82,t:28,b:42},plotW=W-pad.l-pad.r,plotH=H-pad.t-pad.b;
-  ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,y=p=>pad.t+(hi-p)/range*plotH;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,axis={lo,hi,top:pad.t,height:plotH};
+  const y=p=>window.GreedBitPositionBook.priceY(p,axis);
   ctx.font='10px sans-serif';ctx.fillStyle='#6f7a8b';
 
   const priceTicks=buildPriceTicks(lo,hi,5);
