@@ -175,43 +175,74 @@ placeSpotOrder=function(){
 };
 if($('spotActionBtn'))$('spotActionBtn').onclick=placeSpotOrder;
 
-executeOpen=function(side,margin,entry,mode,lev,tp,sl,source='市价开仓',fromReserved=false){
+executeOpen=function(side,margin,entry,mode,lev,tp,sl,source='市价开仓',fromReserved=false,targetSymbol=symbol){
+  const book=window.GreedBitPositionBook;
+  if(!(margin>0&&entry>0&&lev>0)||!book?.canOpen(positions,{symbol:targetSymbol,mode,leverage:lev}))return null;
   const w=futuresWallet(),notional=margin*lev,liquidity=/限价|maker/i.test(source)?'maker':'taker',q=feeQuote(notional,liquidity),usdtFee=q.asset==='USDT'?q.usdt:0,qty=notional/entry;
-  if(!fromReserved){if(margin+usdtFee>w.usdt+1e-10)return null;w.usdt-=margin+usdtFee}else{const reserved=margin+notional*(liquidity==='maker'?MAKER_RATE:TAKER_RATE);if(w.frozen+1e-10<reserved)return null;w.frozen=Math.max(0,w.frozen-reserved);const need=margin+usdtFee;if(need<reserved)w.usdt+=reserved-need;else if(need>reserved){if(need-reserved>w.usdt)return null;w.usdt-=need-reserved}}
-  consumeFee(q,symbol,source,'futures');const p={id:nextId++,symbol,side,mode,leverage:lev,margin,notional,qty,entry,fee:q.usdt,feeAsset:q.asset,tp:tp||null,sl:sl||null,openedAt:nowText(),openedTs:Date.now()/1000};p.liq=liqPrice(side,entry,mode,margin,notional);positions.unshift(p);trades.unshift({time:p.openedAt,ts:p.openedTs,symbol,side,qty,price:entry,type:source,fee:q.usdt,feeAsset:q.asset});accountStats.trades++;playFillSound();saveState();return p;
+  if(!fromReserved){
+    if(margin+usdtFee>w.usdt+1e-10)return null;
+    w.usdt-=margin+usdtFee;
+  }else{
+    const reserved=margin+notional*(liquidity==='maker'?MAKER_RATE:TAKER_RATE);
+    if(w.frozen+1e-10<reserved)return null;
+    const need=margin+usdtFee;
+    if(need>reserved&&need-reserved>w.usdt+1e-10)return null;
+    w.frozen=Math.max(0,w.frozen-reserved);
+    w.usdt+=reserved-need;
+  }
+  consumeFee(q,targetSymbol,source,'futures');
+  const at=Date.now(),lot={id:nextId++,symbol:targetSymbol,side,mode,leverage:lev,margin,notional,qty,entry,fee:q.usdt,feeAsset:q.asset,tp:tp||null,sl:sl||null,openedAt:nowText(),openedTs:at/1000};
+  const position=book.add(positions,lot);
+  position.liq=liqPrice(position.side,position.entry,position.mode,position.margin,position.notional,position.id,position.symbol);
+  trades.unshift({time:lot.openedAt,ts:lot.openedTs,symbol:targetSymbol,side,qty,price:entry,type:source,fee:q.usdt,feeAsset:q.asset});
+  accountStats.trades++;
+  playFillSound();saveState();return position;
 };
 placeOrder=function(side){
-  if(!user)return openAuth('login');if(!ensureStateFresh())return;if(!marketReady||!price)return notify('下单失败','当前行情尚未连接','error');const w=futuresWallet(),margin=+$('marginInput').value,mode=$('marginMode').value,tpsl=$('tpslEnable').checked,tp=tpsl?(+$('tpInput').value||0):0,sl=tpsl?(+$('slInput').value||0):0;if(!margin||margin<=0)return notify('下单失败','请输入有效保证金','error');const notional=margin*leverage,liq=orderType==='limit'?'maker':'taker',q=feeQuote(notional,liq),feeUsdt=q.asset==='USDT'?q.usdt:0,total=margin+feeUsdt;if(total>w.usdt)return notify('下单失败','合约账户可用保证金不足','error');
+  if(!user)return openAuth('login');if(!ensureStateFresh())return;if(!marketReady||!price)return notify('下单失败','当前行情尚未连接','error');const w=futuresWallet(),margin=+$('marginInput').value,mode=$('marginMode').value,tpsl=$('tpslEnable').checked,tp=tpsl?(+$('tpInput').value||0):0,sl=tpsl?(+$('slInput').value||0):0;if(!margin||margin<=0)return notify('下单失败','请输入有效保证金','error');
+  const book=window.GreedBitPositionBook;
+  if(!book?.canOpen(positions,{symbol,mode,leverage})){
+    const locked=book.lockedLeverage(positions,symbol);
+    syncCrossLeverage();
+    return notify('杠杆已锁定',`${symbol} 全仓持仓使用 ${locked}X，需按该杠杆开仓`,'warning');
+  }
+  const notional=margin*leverage,liq=orderType==='limit'?'maker':'taker',q=feeQuote(notional,liq),feeUsdt=q.asset==='USDT'?q.usdt:0,total=margin+feeUsdt;if(total>w.usdt)return notify('下单失败','合约账户可用保证金不足','error');
   if(orderType==='market'){const entry=price*(1+(side==='long'?1:-1)*cfg.vol*.025),err=validateTPSL(side,entry,tp,sl);if(err)return notify('下单失败',err,'error');if(!executeOpen(side,margin,entry,mode,leverage,tp,sl))return;notify('下单成功',`${side==='long'?'开多':'开空'} ${base()} @ ${fmt(entry,cfg.dec)}`)}
   else{const limit=+$('limitPriceInput').value;if(!limit||limit<=0)return notify('挂单失败','请输入有效委托价','error');const err=validateTPSL(side,limit,tp,sl);if(err)return notify('挂单失败',err,'error');const reserve=margin+notional*MAKER_RATE;if(reserve>w.usdt)return notify('挂单失败','合约账户可用保证金不足','error');w.usdt-=reserve;w.frozen+=reserve;orders.unshift({id:nextId++,createdAt:nowText(),symbol,side,mode,leverage,margin,limit,tp:tp||null,sl:sl||null,reserved:reserve,status:'open'});notify('限价委托已提交',`${side==='long'?'开多':'开空'} ${base()} @ ${fmt(limit,cfg.dec)}`,'info');matchOrders()}
   $('marginInput').value='';$('tpInput').value='';$('slInput').value='';$('pct').value=0;$('pctValue').textContent='0%';updatePreview();renderTable();updateAssets();saveState();draw();
 };
-closePosition=function(id,reason='手动平仓',fill=price,fraction=1){
-  const w=futuresWallet(),idx=positions.findIndex(p=>p.id===id);if(idx<0)return;
-  const p=positions[idx],f=clamp(fraction,.01,1),qty=p.qty*f,margin=p.margin*f;
-  const gross=(fill-p.entry)*qty*(p.side==='long'?1:-1),q=feeQuote(Math.abs(qty*fill),'taker'),usdtFee=q.asset==='USDT'?q.usdt:0;
-  /* Net realised result = gross PnL - closing fee - the share of the fee already paid at open.
-   * accountStats.fees only aggregates fees for reporting and must never be subtracted again. */
+closePosition=function(id,reason='手动平仓',fill=price,fraction=1,liquidity='taker'){
+  const w=futuresWallet(),idx=positions.findIndex(p=>p.id===id);
+  if(idx<0||!Number.isFinite(+fill)||!(+fill>0)||!(fraction>0&&fraction<=1))return null;
+  const p=positions[idx],f=fraction,qty=p.qty*f,margin=p.margin*f;
+  const gross=(fill-p.entry)*qty*(p.side==='long'?1:-1),q=feeQuote(Math.abs(qty*fill),liquidity),usdtFee=q.asset==='USDT'?q.usdt:0;
   const openFeeShare=(+p.fee||0)*f;
   const domain=window.GreedBitDomain;
-  const settled=domain&&domain.settleClose?domain.settleClose({side:p.side,entry:p.entry,fill,qty,openFee:openFeeShare,closeFee:usdtFee}):null;
+  const settled=domain?.settleClose?.({side:p.side,entry:p.entry,fill,qty,openFee:openFeeShare,closeFee:usdtFee});
   const realized=settled?settled.realized:gross-usdtFee-openFeeShare;
-  /* No clamp: a loss larger than the margin must surface as a negative balance, not disappear. */
   w.usdt+=margin+(settled?settled.cashDelta:gross-usdtFee);
   consumeFee(q,p.symbol,reason,'futures');
   if(realized>=0)accountStats.realizedProfit+=realized;else accountStats.realizedLoss+=Math.abs(realized);
   if(reason==='强制平仓')accountStats.liquidations++;
   addLedger(realized>=0?'已实现盈利':'已实现亏损',realized,p.symbol,reason,'futures');
   trades.unshift({time:nowText(),ts:Date.now()/1000,symbol:p.symbol,side:p.side==='long'?'sell':'buy',qty,price:fill,type:reason,fee:q.usdt,feeAsset:q.asset});
-  closedPositions.unshift({...p,qty,margin,close:fill,realized,gross,fee:openFeeShare,closeFee:q.usdt,feeAsset:q.asset,reason,closedAt:nowText(),partial:f<1});
-  if(f>=.999)positions.splice(idx,1);else{p.qty-=qty;p.margin-=margin;p.notional-=p.notional*f;p.liq=liqPrice(p.side,p.entry,p.mode,p.margin,p.notional,p.id,p.symbol)}
-  playFillSound();notify(reason,`${p.symbol} ${realized>=0?'+':''}${fmt(realized)} USDT`,realized>=0?'success':'warning');renderTable();updateAssets();saveState();return realized;
+  closedPositions.unshift({...p,qty,margin,notional:p.notional*f,close:fill,realized,gross,fee:openFeeShare,closeFee:q.usdt,feeAsset:q.asset,reason,closedAt:nowText(),partial:f<1});
+  if(f>=1-1e-9){
+    positions.splice(idx,1);
+    closeOrders=closeOrders.filter(o=>o.positionId!==id);
+  }else{
+    p.qty-=qty;p.margin-=margin;p.notional*=1-f;
+    p.fee=Math.max(0,(+p.fee||0)-openFeeShare);
+    p.liq=liqPrice(p.side,p.entry,p.mode,p.margin,p.notional,p.id,p.symbol);
+  }
+  playFillSound();notify(reason,`${p.symbol} ${realized>=0?'+':''}${fmt(realized)} USDT`,realized>=0?'success':'warning');
+  renderTable();updateAssets();saveState();draw();return realized;
 };
 const baseUpdatePreviewV13=updatePreview;
 updatePreview=function(){
   const m=+$('marginInput')?.value||0,n=m*leverage;if($('notionalPreview'))$('notionalPreview').textContent=fmt(n);if($('feePreview')){const q=feeQuote(n,orderType==='limit'?'maker':'taker');$('feePreview').textContent=feeText(q)}const l=previewLiq('long'),s=previewLiq('short');if($('longLiq'))$('longLiq').textContent=l?fmt(l,cfg.dec):'--';if($('shortLiq'))$('shortLiq').textContent=s?fmt(s,cfg.dec):'--';if(!Number.isFinite(n))baseUpdatePreviewV13()
 };
-if($('marginInput'))$('marginInput').oninput=updatePreview;if($('limitPriceInput'))$('limitPriceInput').oninput=updatePreview;if($('marginMode'))$('marginMode').onchange=updatePreview;
+if($('marginInput'))$('marginInput').oninput=updatePreview;if($('limitPriceInput'))$('limitPriceInput').oninput=updatePreview;if($('marginMode'))$('marginMode').onchange=()=>{syncCrossLeverage();updatePreview()};
 
 function earnApr(ticker){if(ticker==='USDT')return .04;if(ticker==='BTC')return .01;if(ticker==='ETH')return .016;if(ticker==='SOL')return .018;if(ticker==='DOGE')return .03;if(ticker==='GREED')return .04;return .05}
 function earnInterestForHour(ticker,balance){if(balance<=0)return 0;if(ticker==='USDT'){const promo=Math.min(500,balance),rest=Math.max(0,balance-500);return promo*.10/8760+rest*.04/8760}return balance*earnApr(ticker)/8760}
