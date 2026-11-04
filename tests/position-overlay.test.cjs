@@ -9,10 +9,15 @@ const book=require('../src/domain/position-book.js');
  * the boot/hydration event path without requiring a network or graphical browser.
  */
 function scene(){
-  const handlers=new Map(),strokes=[],labels=[];
+  const handlers=new Map(),strokes=[],labels=[],rects=[];
+  const dom={
+    chartwrap:{classList:{toggle(){}}},
+    volumeDividerHint:{style:{}},
+    maLegend:{innerHTML:''}
+  };
   const ctx={
     dash:[],strokeStyle:'',fillStyle:'',
-    clearRect(){},fillRect(){},strokeRect(){},beginPath(){},save(){},restore(){},
+    clearRect(){},fillRect(x,y,w,h){rects.push({x,y,w,h,color:this.fillStyle})},strokeRect(){},beginPath(){},save(){},restore(){},closePath(){},fill(){},
     moveTo(x,y){this.from=[x,y]},
     lineTo(x,y){this.to=[x,y]},
     setLineDash(items){this.dash=items.slice()},
@@ -31,7 +36,8 @@ function scene(){
       GreedBitContracts:{supportsPerpBasis:()=>false}},
     document:{addEventListener(name,fn){handlers.set(name,fn)}},
     requestAnimationFrame(fn){fn()},
-    canvas:{clientWidth:1000,clientHeight:600},
+    canvas:{clientWidth:1000,clientHeight:600,getBoundingClientRect(){return{top:0,left:0,width:1000,height:600}}},
+    $:id=>dom[id]||null,
     ctx,user:{username:'test'},currentPage:'futures',tradingMode:'futures',positions:[],
     orders:[],trades:[],spotOrders:[],spotTrades:[],
     symbol:'ETH/USDT',price:2317,cfg:{dec:2},
@@ -51,7 +57,7 @@ function scene(){
   };
   const source=fs.readFileSync(path.resolve(__dirname,'../src/chart/renderer.js'),'utf8');
   vm.runInNewContext(source,sandbox,{filename:'renderer.js'});
-  return {sandbox,labels,strokes,emit(name){assert.ok(handlers.has(name),'missing event '+name);handlers.get(name)()}};
+  return {sandbox,dom,labels,strokes,rects,emit(name){assert.ok(handlers.has(name),'missing event '+name);handlers.get(name)()}};
 }
 const restoredPosition={id:11,symbol:'ETH/USDT',side:'short',mode:'cross',
   leverage:10,entry:2301.62,qty:2.63,margin:60,notional:6042.67};
@@ -83,4 +89,39 @@ test('futures positions render on a shared trade route and disappear on logout',
   s.emit('greedbit:positions-changed');
   const after=s.strokes.filter(x=>x.dash.join(',')==='5,3').length;
   assert.equal(after,before,'logout must not draw stale position overlays');
+});
+
+test('position overlay survives MA and separate-volume rendering in the same canvas pass',()=>{
+  const s=scene();
+  s.sandbox.chartSettings.volumeEnabled=true;
+  s.sandbox.chartSettings.volumeMode='separate';
+  s.sandbox.chartSettings.volumeRatio=.25;
+  s.sandbox.chartSettings.maEnabled=true;
+  s.sandbox.chartSettings.ma5=true;
+  s.sandbox.chartSettings.maDisplay='line-values';
+  s.sandbox.window.GreedBitBootstrap.ready=true;
+  s.sandbox.positions=[restoredPosition];
+  s.emit('greedbit:positions-changed');
+  const L=s.sandbox.window.GreedBitChartRenderer.chartLayout();
+  assert.equal(L.sep,true);
+  assert.ok(L.mainH<530);
+  assert.equal(s.dom.chartwrap.classList.toggle instanceof Function,true);
+  assert.ok(s.rects.length>0,'separate volume must render bars');
+  const line=s.strokes.find(x=>x.color==='#ec5d68'&&x.dash.join(',')==='5,3');
+  assert.ok(line,'position line must not disappear when separate volume is on');
+  const priceY=book.priceY(restoredPosition.entry,{lo:2240,hi:2340,top:L.pad.t,height:L.mainH});
+  assert.equal(line.from[1],Math.round(priceY)+.5);
+  assert.equal(line.to[1],line.from[1]);
+  const inverse=s.sandbox.window.GreedBitChartRenderer.chartPriceAtClientY(priceY);
+  assert.ok(Math.abs(inverse-restoredPosition.entry)<1e-6);
+});
+test('UI preferences cannot replace the canonical chart renderer',()=>{
+  const source=fs.readFileSync(path.resolve(__dirname,'../src/ui/preferences.js'),'utf8');
+  assert.doesNotMatch(source,/window\\.draw\\s*=/);
+  assert.doesNotMatch(source,/function\\s+draw\\s*\\(/);
+  assert.doesNotMatch(source,/ctx\\.(?:clearRect|fillRect|stroke|beginPath)/);
+  const renderer=fs.readFileSync(path.resolve(__dirname,'../src/chart/renderer.js'),'utf8');
+  assert.match(renderer,/drawPositionOverlay\\(y,lo,hi,pad,W,L\\.mainBottom\\)/);
+  assert.match(renderer,/drawVolumes\\(geom,L\\)/);
+  assert.match(renderer,/drawMAs\\(geom,L,y\\)/);
 });
