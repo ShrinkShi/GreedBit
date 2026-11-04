@@ -39,7 +39,7 @@ test('legacy snapshots normalize cross lots but preserve isolated ids',()=>{
   const out=book.normalize(legacy);
   assert.equal(out.length,2);
   assert.equal(out.filter(x=>x.mode==='cross').length,1);
-  assert.equal(out.find(x=>x.mode==='cross').qty,.3);
+  assert.ok(Math.abs(out.find(x=>x.mode==='cross').qty-.3)<1e-10);
   assert.equal(out.find(x=>x.mode==='isolated').id,3);
   assert.equal(legacy.length,3);
   assert.equal(legacy[0].qty,.2);
