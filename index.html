@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -23,7 +23,7 @@
     <button class="navbtn active" data-page="futures">合约</button>
     <button class="navbtn" data-page="assets">资产</button>
   </nav>
-  <input class="search" id="globalSearch" placeholder="搜索币种"/>
+  <input class="search" id="globalSearch" placeholder="搜索币种" aria-label="搜索交易对"/>
   <div class="authbar" id="authbar"><button class="ghost" id="loginBtn">登录</button><button class="primary" id="registerBtn">注册</button></div>
   <div class="userchip" id="userchip"><span id="usernameTop"></span><button class="ghost" id="logoutBtn">退出</button></div>
 </header>
@@ -173,18 +173,20 @@
   <div id="coinList"></div>
 </div>
 
-<div class="modal" id="authModal"><div class="card auth-card"><button class="close" data-close="authModal">×</button><h1 id="authTitle">欢迎登录 GreedBit</h1><label id="authLabel">请输入您的账号</label><input id="authInput" placeholder="请输入用户名 / 邮箱"/><label>密码</label><input id="passInput" type="password" placeholder="请输入密码"/><button class="next" id="authSubmit">下一步</button><div class="switch"><span id="switchText">新用户？</span><button id="switchMode">注册</button></div><div class="legal">本地演示登录：账号信息仅保存在当前浏览器 localStorage 中，请勿使用真实密码。</div></div></div>
+<div class="modal" id="authModal" role="dialog" aria-modal="true" aria-label="登录与注册"><div class="card auth-card"><button class="close" data-close="authModal">×</button><h1 id="authTitle">欢迎登录 GreedBit</h1><label id="authLabel">请输入您的账号</label><input id="authInput" placeholder="请输入用户名 / 邮箱"/><label>密码</label><input id="passInput" type="password" placeholder="请输入密码"/><button class="next" id="authSubmit">下一步</button><div class="switch"><span id="switchText">新用户？</span><button id="switchMode">注册</button></div><div class="legal">本地演示登录：账号只保存在当前浏览器，密码以加盐哈希存储；请勿使用真实密码。</div></div></div>
 
-<div class="modal" id="leverageModal"><div class="card dark-card leverage-card"><button class="close dark-close" data-close="leverageModal">×</button><h2>调整杠杆</h2><div class="lev-display"><button id="levMinus">−</button><strong id="levDraftText">10X</strong><button id="levPlus">＋</button></div><div class="lev-range-wrap"><input id="levRange" type="range" min="1" max="200" step="1" value="10"/></div><div class="lev-marks"><span>1X</span><span>40X</span><span>80X</span><span>120X</span><span>160X</span><span>200X</span></div><div class="lev-info"><span>当前杠杆倍数持仓限额</span><b id="levLimit">-- USDT</b><span>当前杠杆倍数最大可开</span><b id="levMaxOpen">-- USDT</b></div><p class="risk-text">高杠杆会显著提高强制平仓风险。本模拟器的风险限额与真实交易所不同。</p><div class="modal-actions"><button class="ghostbtn" data-close="leverageModal">取消</button><button class="confirmbtn" id="levConfirm">确定</button></div></div></div>
+<div class="modal" id="leverageModal" role="dialog" aria-modal="true" aria-label="调整杠杆"><div class="card dark-card leverage-card"><button class="close dark-close" data-close="leverageModal">×</button><h2>调整杠杆</h2><div class="lev-display"><button id="levMinus">−</button><strong id="levDraftText">10X</strong><button id="levPlus">＋</button></div><div class="lev-range-wrap"><input id="levRange" type="range" min="1" max="100" step="1" value="10"/></div><div class="lev-marks"><span>1X</span><span>20X</span><span>40X</span><span>60X</span><span>80X</span><span>100X</span></div><div class="lev-info"><span>当前杠杆倍数持仓限额</span><b id="levLimit">-- USDT</b><span>当前杠杆倍数最大可开</span><b id="levMaxOpen">-- USDT</b></div><p class="risk-text">高杠杆会显著提高强制平仓风险。本模拟器的风险限额与真实交易所不同。</p><div class="modal-actions"><button class="ghostbtn" data-close="leverageModal">取消</button><button class="confirmbtn" id="levConfirm">确定</button></div></div></div>
 
-<div class="modal" id="fundModal"><div class="card dark-card small-card"><button class="close dark-close" data-close="fundModal">×</button><h2 id="fundTitle">模拟入金</h2><p class="muted" id="fundDesc">资金进入法币账户，再通过划转进入其他账户。</p><div class="field modal-field"><label>金额</label><input id="fundAmount" type="number" min="1" step="1" placeholder="1000"/><span>USDT</span></div><div class="modal-actions"><button class="ghostbtn" data-close="fundModal">取消</button><button class="confirmbtn" id="fundConfirm">确认</button></div></div></div>
+<div class="modal" id="fundModal" role="dialog" aria-modal="true" aria-label="模拟出入金"><div class="card dark-card small-card"><button class="close dark-close" data-close="fundModal">×</button><h2 id="fundTitle">模拟入金</h2><p class="muted" id="fundDesc">资金进入法币账户，再通过划转进入其他账户。</p><div class="field modal-field"><label>金额</label><input id="fundAmount" type="number" min="1" step="1" placeholder="1000"/><span>USDT</span></div><div class="modal-actions"><button class="ghostbtn" data-close="fundModal">取消</button><button class="confirmbtn" id="fundConfirm">确认</button></div></div></div>
 
-<div class="modal" id="transferModal"><div class="card dark-card small-card"><button class="close dark-close" data-close="transferModal">×</button><h2>账户划转</h2><div class="transfer-grid"><label>从<select id="transferFrom"></select></label><button class="swapbtn" id="swapTransfer">⇅</button><label>到<select id="transferTo"></select></label></div><div class="muted transfer-available" id="transferAvailable">可用：-- USDT</div><div class="field modal-field"><label>金额</label><input id="transferAmount" type="number" min="0" step="1" placeholder="0.00"/><span>USDT</span></div><div class="modal-actions"><button class="ghostbtn" data-close="transferModal">取消</button><button class="confirmbtn" id="transferConfirm">确认划转</button></div></div></div>
+<div class="modal" id="transferModal" role="dialog" aria-modal="true" aria-label="账户划转"><div class="card dark-card small-card"><button class="close dark-close" data-close="transferModal">×</button><h2>账户划转</h2><div class="transfer-grid"><label>从<select id="transferFrom"></select></label><button class="swapbtn" id="swapTransfer">⇅</button><label>到<select id="transferTo"></select></label></div><div class="muted transfer-available" id="transferAvailable">可用：-- USDT</div><div class="field modal-field"><label>金额</label><input id="transferAmount" type="number" min="0" step="1" placeholder="0.00"/><span>USDT</span></div><div class="modal-actions"><button class="ghostbtn" data-close="transferModal">取消</button><button class="confirmbtn" id="transferConfirm">确认划转</button></div></div></div>
 
-<div class="modal" id="statsModal"><div class="card dark-card stats-card"><button class="close dark-close" data-close="statsModal">×</button><h2>账户统计</h2><div class="stat-grid" id="statGrid"></div><div class="modal-actions"><button class="confirmbtn" data-close="statsModal">关闭</button></div></div></div>
+<div class="modal" id="statsModal" role="dialog" aria-modal="true" aria-label="账户统计"><div class="card dark-card stats-card"><button class="close dark-close" data-close="statsModal">×</button><h2>账户统计</h2><div class="stat-grid" id="statGrid"></div><div class="modal-actions"><button class="confirmbtn" data-close="statsModal">关闭</button></div></div></div>
 
 <div class="notifications" id="notifications"></div>
 <footer class="statusbar"><span><i class="dot" id="marketStatusDot"></i><span id="marketStatusText">连接真实行情…</span></span><span id="footerTickers"></span><span class="ticker up">GreedBit</span><span class="footer-right">真实市场数据 · 模拟交易 · 无真实资金</span></footer>
+<script src="src/domain/trading.js?build=0026d"></script>
+<script src="src/domain/hash.js?build=0026d"></script>
 <script src="src/core.js?build=0026d"></script>
 <script src="src/market.js?build=0026d"></script>
 <script src="src/futures.js?build=0026d"></script>

@@ -19,7 +19,6 @@ const MODULES=[
   'src/ui/trading-experience.js',
   'src/performance/runtime.js',
   'src/market/extended.js',
-  'src/market/stock-manifest-preload.js',
   'src/market/external.js',
   'src/trading/contracts.js',
   'src/trading/records.js',
@@ -111,17 +110,23 @@ async function boot(){
   installFavicon();
   root.dataset.gbBoot='loading';
   root.classList.remove('gb-runtime-ready');
+  /* 21 modules load serially with an 8s per-module timeout; cap the total wait so a slow or
+   * blocked network surfaces one clear error instead of an endless loading screen. */
+  const deadline=setTimeout(()=>{if(bootState.ready||bootState.error)return;bootState.timedOut=true;bootState.error={message:'启动超时（20 秒），请检查网络后刷新',module:bootState.current};root.dataset.gbBoot='error';root.classList.add('gb-runtime-ready');showBootError(new Error(bootState.error.message))},20000);
   try{
     for(const path of MODULES){
+      if(bootState.timedOut)throw new Error('启动超时（20 秒）');
       bootState.current=path;
       await loadModule(path);
       bootState.loaded.push(path);
     }
+    clearTimeout(deadline);
     bootState.current=null;bootState.ready=true;
     root.dataset.gbBoot='ready';
     root.classList.add('gb-runtime-ready');
     document.dispatchEvent(new CustomEvent('greedbit:ready'));
   }catch(error){
+    clearTimeout(deadline);
     bootState.error={message:error?.message||String(error),module:bootState.current};
     root.dataset.gbBoot='error';
     root.classList.add('gb-runtime-ready');

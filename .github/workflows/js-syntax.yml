@@ -21,6 +21,12 @@ jobs:
           done < <(find src -type f -name '*.js' -print0 | sort -z)
       - name: Check development server syntax
         run: python -m py_compile tools/serve.py
+      - name: Domain unit tests
+        run: node --test
+      - name: Runtime ownership audit
+        run: node tools/runtime-ownership.mjs
+      - name: Version consistency
+        run: node tools/check-version.mjs
       - name: Enforce runtime architecture
         shell: bash
         run: |
