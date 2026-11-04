@@ -95,6 +95,46 @@ function buildIndexTicks(geom,target=8){
   }
   return ticks;
 }
+/* Position entries are price-axis objects, not free-floating labels.
+ * Always use the SAME y() transform as grid, candles and price ticks.
+ */
+function drawPositionOverlay(y,lo,hi,pad,W,H){
+  if(currentPage!=='futures'||tradingMode!=='futures'||!Array.isArray(positions))return;
+  const rows=positions.filter(p=>p.symbol===symbol&&Number.isFinite(+p.entry)&&p.entry>=lo&&p.entry<=hi);
+  if(!rows.length)return;
+  const usedLabels=[];
+  ctx.save();ctx.font='600 10px system-ui,sans-serif';ctx.textBaseline='middle';
+  for(const p of rows){
+    const entry=+p.entry;
+    const contracts=window.GreedBitContracts;
+    const mark=contracts?.supportsPerpBasis?.(p.symbol)?contracts.contractPriceFor(p.symbol):markFor(p.symbol);
+    const pnl=(mark-entry)*(+p.qty||0)*(p.side==='long'?1:-1);
+    const positive=pnl>1e-8,negative=pnl<-1e-8;
+    const color=positive?'#3dbb83':negative?'#ec5d68':'#7b8798';
+    const backdrop=positive?'rgba(31,87,66,.92)':negative?'rgba(91,37,45,.94)':'rgba(50,58,70,.94)';
+    const lineY=y(entry);
+    // Only the label may shift to avoid overlapping; the line stays at its actual price.
+    let labelY=lineY;
+    for(let i=0;i<usedLabels.length&&i<rows.length;i++){
+      if(usedLabels.some(other=>Math.abs(other-labelY)<20))labelY+=20;
+    }
+    labelY=clamp(labelY,pad.t+10,H-pad.b-10);
+    usedLabels.push(labelY);
+    ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([5,3]);ctx.beginPath();
+    ctx.moveTo(pad.l,Math.round(lineY)+.5);ctx.lineTo(W-pad.r,Math.round(lineY)+.5);ctx.stroke();ctx.setLineDash([]);
+    const side=p.side==='long'?'多':'空',lev=`${Number(p.leverage).toFixed(2).replace(/\\.?0+$/,'')}X`,state=positive?'浮盈':negative?'浮亏':'持平';
+    const nominal=(+p.qty||0)*entry;
+    const label=`${side} ${lev}  ${state} ${pnl>0?'+':''}${fmt(pnl,4)} USDT  ${fmt(nominal,2)} USDT`;
+    const width=Math.min(W-pad.r-pad.l-30,ctx.measureText(label).width+18),x=pad.l+10;
+    ctx.fillStyle=backdrop;ctx.fillRect(x,labelY-9,width,18);
+    ctx.strokeStyle=color;ctx.strokeRect(x+.5,labelY-8.5,width-1,17);
+    ctx.fillStyle=color;ctx.fillText(label,x+7,labelY);
+    ctx.fillStyle=color;ctx.fillRect(W-pad.r-20,lineY-9,20,18);
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(p.side==='long'?'L':'S',W-pad.r-10,lineY);
+    ctx.textAlign='left';
+  }
+  ctx.restore();
+}
 function draw(){
   if(currentPage!=='trade'&&currentPage!=='futures')return;const W=canvas.clientWidth,H=canvas.clientHeight;if(!W||!H)return;const pad={l:8,r:82,t:28,b:42},plotW=W-pad.l-pad.r,plotH=H-pad.t-pad.b;
   ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,y=p=>pad.t+(hi-p)/range*plotH;
@@ -119,6 +159,7 @@ function draw(){
 
   for(const {idx,c} of geom.visible){const x=xForIndex(idx,geom,pad,plotW),cw=plotW/visibleCount;if(x<-Math.abs(cw)*2||x>W-pad.r+Math.abs(cw)*2)continue;const col=c.c>=c.o?chartSettings.bull:chartSettings.bear,yo=y(c.o),yc=y(c.c),top=Math.min(yo,yc),bh=Math.max(1,Math.abs(yc-yo)),bodyW=Math.max(1,Math.min(40,Math.abs(cw)*.62));if(chartSettings.wick){ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke()}if(chartSettings.body){ctx.fillStyle=col;ctx.fillRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(chartSettings.border){ctx.strokeStyle=col;ctx.strokeRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(c.live){ctx.strokeStyle='#5d8cff';ctx.strokeRect(Math.round(x-bodyW/2-2),Math.round(top-2),bodyW+4,bh+4)}}
   drawTradeMarkers(geom,pad,plotW,y,lo,hi);drawHighLow(geom,pad,plotW,y,lo,hi);
+  drawPositionOverlay(y,lo,hi,pad,W,H);
   if(price>=lo&&price<=hi){const py=y(price),up=!current||current.c>=current.o,col=up?chartSettings.bull:chartSettings.bear;ctx.setLineDash([2,3]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(W-pad.r,py);ctx.stroke();ctx.setLineDash([]);const h=chartSettings.countdown?36:22,boxY=clamp(py-h/2,pad.t,H-pad.b-h);ctx.fillStyle=col;ctx.fillRect(W-pad.r,boxY,pad.r,h);ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText(fmt(price,chartDecimals()),W-pad.r+5,boxY+14);if(chartSettings.countdown){ctx.font='10px sans-serif';ctx.fillText(candleRemain(),W-pad.r+5,boxY+29)}if(chartSettings.symbolLabel){const lab=apiSymbol().replace('USDT','-USDT'),tw=ctx.measureText(lab).width+10;ctx.fillStyle=col;ctx.fillRect(W-pad.r-tw,boxY,tw,22);ctx.fillStyle='#fff';ctx.fillText(lab,W-pad.r-tw+5,boxY+14)}}
   for(const o of activeChartOrders()){if(o.limit<lo||o.limit>hi)continue;const oy=y(o.limit),col=o.side==='buy'?chartSettings.bull:chartSettings.bear;ctx.setLineDash([6,4]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,oy);ctx.lineTo(W-pad.r,oy);ctx.stroke();ctx.setLineDash([]);const tw=ctx.measureText(o.label).width+12;ctx.fillStyle=o.side==='buy'?'#14251f':'#2a171b';ctx.fillRect(pad.l+8,oy-10,tw,20);ctx.fillStyle=col;ctx.fillText(o.label,pad.l+14,oy+3)}
   const ch=crosshairLocked&&lockedCrosshair?lockedCrosshair:(hoverIndex>=0?{idx:hoverIndex,price:hoverPrice}:null);if(ch&&chartSettings.crosshair){const x=xForIndex(ch.idx,geom,pad,plotW);if(x>=pad.l&&x<=W-pad.r){ctx.strokeStyle='#697386';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();if(Number.isFinite(ch.price)){const yy=y(ch.price);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke()}ctx.setLineDash([])}}
