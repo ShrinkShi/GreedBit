@@ -85,10 +85,6 @@ function openChartSettings(){
   syncChartSettingsForm();$$('[data-cstab]').forEach((b,i)=>b.classList.toggle('active',i===0));$$('[data-cspanel]').forEach((b,i)=>b.classList.toggle('active',i===0));$('chartSettingsModal').classList.add('show');
 }
 function resetChartView(){visibleCount=72;viewShift=0;yZoom=1;yPan=0;hoverIndex=-1;hoverPrice=null;crosshairLocked=false;lockedCrosshair=null;draw()}
-function chartPriceAtClientY(clientY){
-  const r=canvas.getBoundingClientRect(),padT=28,padB=42,plotH=Math.max(1,r.height-padT-padB),{hi,lo}=calcPriceBounds(),y=clamp(clientY-r.top,padT,r.height-padB);
-  return hi-(y-padT)/plotH*(hi-lo);
-}
 function updateOhlcText(c){
   if(!c){$('ohlc').textContent='未来/历史空白区域';return}
   const parts=[];if(chartSettings.statusTitle)parts.push(`${symbol} · ${tfInfo().label}`);
