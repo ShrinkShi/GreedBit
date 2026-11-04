@@ -11,7 +11,7 @@
 })();
 
 $$('.navbtn[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));$$('[data-goto]').forEach(b=>b.onclick=()=>showPage(b.dataset.goto));
-$('loginBtn').onclick=()=>openAuth('login');$('registerBtn').onclick=()=>openAuth('register');$('tradeLoginBtn').onclick=()=>openAuth('login');$('spotLoginBtn').onclick=()=>openAuth('login');$('assetLoginBtn').onclick=()=>openAuth('login');$('switchMode').onclick=()=>{authMode=authMode==='login'?'register':'login';syncAuthModal()};$('authSubmit').onclick=submitAuth;$('logoutBtn').onclick=()=>{saveState();localStorage.removeItem('greedbit_session');user=null;syncAuth();notify('已退出登录','','info')};
+$('loginBtn').onclick=()=>openAuth('login');$('registerBtn').onclick=()=>openAuth('register');$('tradeLoginBtn').onclick=()=>openAuth('login');$('spotLoginBtn').onclick=()=>openAuth('login');$('assetLoginBtn').onclick=()=>openAuth('login');$('switchMode').onclick=()=>{authMode=authMode==='login'?'register':'login';syncAuthModal()};$('authSubmit').onclick=submitAuth;$('logoutBtn').onclick=()=>{saveState();localStorage.removeItem('greedbit_session');user=null;syncAuth();notifyPositionBookChanged();notify('已退出登录','','info')};
 $$('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).classList.remove('show'));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'))});
 $('marginInput').oninput=updatePreview;$('limitPriceInput').oninput=updatePreview;$('marginMode').onchange=()=>{syncCrossLeverage();updatePreview()};
