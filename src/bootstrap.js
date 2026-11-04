@@ -3,7 +3,7 @@
  */
 (function(){
 'use strict';
-const BUILD='0102-20261104a';
+const BUILD='0103-20261104a';
 const MODULE_TIMEOUT_MS=20000;
 const BOOT_TIMEOUT_MS=90000;
 const MODULE_RETRY_LIMIT=1;
