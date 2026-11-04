@@ -66,3 +66,16 @@ test('position line uses the exact same price-space transformation as axis',()=>
   assert.equal(book.priceY(2000,axis),428);
   assert.ok(Number.isNaN(book.priceY(2200,{...axis,hi:2000})));
 });
+
+test('legacy mixed-leverage hedge cannot accept any additional cross order',()=>{
+  const positions=[short(1,{leverage:10}),short(2,{side:'long',leverage:20,notional:460})];
+  assert.equal(book.canOpen(positions,{symbol:'ETH/USDT',mode:'cross',leverage:10}),false);
+  assert.equal(book.canOpen(positions,{symbol:'ETH/USDT',mode:'cross',leverage:20}),false);
+  assert.equal(book.canOpen(positions,{symbol:'ETH/USDT',mode:'isolated',leverage:30}),true);
+});
+test('legacy normalization does not drop positions with malformed quantities',()=>{
+  const raw=[short(1,{qty:0}),short(2,{qty:1}),short(3,{mode:'isolated'})];
+  const out=book.normalize(raw);
+  assert.equal(out.length,3);
+  assert.deepEqual(out.map(p=>p.id).sort(),[1,2,3]);
+});
