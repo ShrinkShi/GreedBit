@@ -33,6 +33,15 @@ CI 现在执行该脚本：输出覆盖链，并在「赋值了但从未声明�
 
 **已知限制**：`localStorage` 依然不提供跨设备或真正原子事务；行情依赖浏览器和公开接口，关页时不执行离线委托。UI 的实际网络/尺寸验收需要在 GitHub Pages 浏览器中完成。
 
+## v0.1.2 图表仓位可见性与刷新契约（2026-11-04）
+
+- 主图仓位线仍由 `src/chart/renderer.js` 的同一 Canvas 绘制 pass 完成。仓位筛选属于 `src/domain/position-book.js` 中可测试的纯函数 `visibleChartPositions`，不通过 DOM 表格反推状态。
+- `src/core.js` 的账户状态恢复会发出 `greedbit:positions-changed` 事件，开平仓及退出登录也发出该事件；图表模块在 `greedbit:ready` 之后执行一次合并重绘。启动器未 ready 时不提前重画。
+- 同一帧重复触发的重画请求由 `requestAnimationFrame` 合并，**不增加轮询，也不创建第二个画布**。
+- 图表仓位显示由 `tradingMode === 'futures'` 决定，并支持共用交易页的 `trade/futures` 路由；未登录不显示前一个账户的仓位线。
+- 持仓行交易对跳转由 `src/trading/positions-ui.js` 通过既有 `showPage` 和 `setSymbol` 完成，不绕过全局切换与行情请求令牌。
+- 新增 `tests/position-overlay.test.cjs`：真实主渲染器在隔离 Canvas 模拟环境中执行，检查仓位恢复后的事件重绘与价格到像素的映射。
+
 ## 当前运行时结构
 
 - `src/app/`：启动事件、兼容桥、共享 UI 最终所有权。

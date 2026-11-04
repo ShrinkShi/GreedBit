@@ -2,6 +2,9 @@
 #tbody .gb-pos-profit{color:#3dbb83!important;font-weight:650}
 #tbody .gb-pos-loss{color:#ff6b78!important;font-weight:650}
 #tbody .gb-pos-neutral{color:#a6b1c3!important}
+#tbody .gb-pos-symbol{padding:0;border:0;background:transparent;color:#a5bcf5;font:inherit;font-weight:650;text-align:left;cursor:pointer;white-space:nowrap}
+#tbody .gb-pos-symbol:hover{color:#e2ebff;text-decoration:underline;text-underline-offset:3px}
+#tbody .gb-pos-symbol:focus-visible{outline:2px solid #688af4;outline-offset:3px;border-radius:2px}
 #tbody .gb-pos-actions{white-space:nowrap;text-align:right}
 #tbody .gb-pos-actions button{border:1px solid #344257;border-radius:6px;background:#1b2637;color:#c2d3f5;padding:5px 9px;margin:2px;cursor:pointer;font-size:12px}
 #tbody .gb-pos-actions button:hover{background:#293c5b;border-color:#4f7df3}

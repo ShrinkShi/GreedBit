@@ -64,10 +64,24 @@
     fraction=Math.min(1,fraction);
     return {fraction,qty:qty*fraction,notional:qty*fraction*p};
   }
+  /* Select chart overlay records from the authoritative position book.
+   * Do not depend on the current account's latest write time or UI tab internals.
+   * Entries outside the visible price interval stay in storage but are not drawn.
+   */
+  function visibleChartPositions(book,{symbol,lo,hi}){
+    if(!Array.isArray(book)||typeof symbol!=='string')return[];
+    const lower=number(lo),upper=number(hi);
+    if(!valid(lower)||!valid(upper)||!(upper>lower))return[];
+    return book.filter(p=>{
+      if(!p||p.symbol!==symbol)return false;
+      const entry=number(p.entry),qty=number(p.qty);
+      return valid(entry)&&entry>0&&valid(qty)&&qty>EPS&&entry>=lower&&entry<=upper;
+    });
+  }
   function priceY(value,{lo,hi,top,height}){
     const p=number(value),a=number(lo),b=number(hi),h=number(height);
     if(!valid(p)||!(b>a)||!(h>0))return NaN;
     return number(top)+(b-p)/(b-a)*h;
   }
-  return {EPS,lockedLeverage,canOpen,mergeCross,add,normalize,closeSize,priceY};
+  return {EPS,lockedLeverage,canOpen,mergeCross,add,normalize,closeSize,priceY,visibleChartPositions};
 });

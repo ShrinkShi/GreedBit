@@ -1,6 +1,6 @@
 'use strict';
 /* Single version source; tools/check-version.mjs keeps it in sync with VERSION/README/index.html. */
-window.GB_VERSION='0.1.1';
+window.GB_VERSION='0.1.2';
 /* Append the build id to dynamically injected stylesheets so a deploy cannot keep stale CSS. */
 /* Periodic task helper: skips work while the tab is hidden. */
 function every(a,b){let ms=b,fn=a;if(typeof a!=='function'){ms=a;fn=b}return setInterval(()=>{if(typeof document!=='undefined'&&document.hidden)return;fn()},ms)}
@@ -139,10 +139,12 @@ function saveState(){
   }
   return true;
 }
+/* Position book changes invalidate chart overlays, independently of candle updates. */
+function notifyPositionBookChanged(){document.dispatchEvent(new Event('greedbit:positions-changed'))}
 function loadState(){
   if(!user)return;
   const raw=localStorage.getItem(stateKey());
-  if(!raw){wallets=freshWallets();accountStats=freshStats();positions=[];orders=[];closeOrders=[];orderHistory=[];trades=[];closedPositions=[];ledger=[];spotOrders=[];spotOrderHistory=[];spotTrades=[];nextId=1;stateRev=readStoredRev();return}
+  if(!raw){wallets=freshWallets();accountStats=freshStats();positions=[];orders=[];closeOrders=[];orderHistory=[];trades=[];closedPositions=[];ledger=[];spotOrders=[];spotOrderHistory=[];spotTrades=[];nextId=1;stateRev=readStoredRev();notifyPositionBookChanged();return}
   try{
     const s=JSON.parse(raw);
     if(s.wallets)wallets=s.wallets;
@@ -164,6 +166,7 @@ function loadState(){
      * otherwise the previous account's positions leak into the next login. */
     wallets=freshWallets();positions=[];orders=[];closeOrders=[];orderHistory=[];trades=[];closedPositions=[];ledger=[];spotOrders=[];spotOrderHistory=[];spotTrades=[];nextId=1;stateRev=readStoredRev();
   }
+  notifyPositionBookChanged();
 }
 function addLedger(type,amount,sym='',note='',wallet='futures'){ledger.unshift({time:nowText(),type,symbol:sym,amount,wallet,note});ledger=ledger.slice(0,600)}
 
