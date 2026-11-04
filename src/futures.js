@@ -31,8 +31,13 @@ function matchCloseOrders(){
     if(!hit)continue;
     const qty=Math.min(o.qty,p.qty);
     closeOrders.splice(i,1);
-    if(qty>0)closePosition(p.id,'限价平仓',o.limit,Math.min(1,qty/p.qty),'maker');
-    else saveState();
+    if(qty>0){
+      const realized=closePosition(p.id,'限价平仓',o.limit,Math.min(1,qty/p.qty),'maker');
+      if(realized!==null){
+        orderHistory.unshift({...o,qty,leverage:p.leverage,status:'已成交',type:'限价平仓',realized,finishedAt:nowText(),finishedTs:Date.now()});
+        saveState();renderTable();
+      }
+    }else saveState();
   }
 }
 function matchOrders(){
