@@ -84,7 +84,7 @@ test('visible chart positions include restored in-range ETH cross holdings',()=>
   const saved=[
     short(1,{entry:2301.62,qty:2.63,margin:60,notional:6042.67}),
     short(2,{symbol:'BTC/USDT',entry:65000}),
-    short(3,{entry:2100}),
+    short(3,{entry:2100,mode:'isolated'}),
     short(4,{entry:2300,qty:0})
   ];
   const restored=book.normalize(saved);
