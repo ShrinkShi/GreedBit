@@ -1,0 +1,31 @@
+/* v0.1.1 futures positions / closing workflow */
+#tbody .gb-pos-profit{color:#3dbb83!important;font-weight:650}
+#tbody .gb-pos-loss{color:#ff6b78!important;font-weight:650}
+#tbody .gb-pos-neutral{color:#a6b1c3!important}
+#tbody .gb-pos-actions{white-space:nowrap;text-align:right}
+#tbody .gb-pos-actions button{border:1px solid #344257;border-radius:6px;background:#1b2637;color:#c2d3f5;padding:5px 9px;margin:2px;cursor:pointer;font-size:12px}
+#tbody .gb-pos-actions button:hover{background:#293c5b;border-color:#4f7df3}
+#tbody .gb-pos-actions [data-gb-pos-action="reverse"]{color:#e2c8a2;border-color:#66533a}
+#gbCloseModal.hidden{display:none!important}
+#gbCloseModal.gb-pos-modal{position:fixed;inset:0;z-index:100002;background:rgba(3,8,15,.76);display:flex;align-items:center;justify-content:center;padding:20px}
+.gb-pos-panel{width:min(440px,96vw);max-height:90vh;overflow-y:auto;padding:22px;border:1px solid #303c4c;border-radius:12px;background:#121820;color:#dce5f2;box-shadow:0 25px 85px #000b}
+.gb-pos-modal-head{display:flex;align-items:center;justify-content:space-between}
+.gb-pos-modal-head h3{font-size:20px;margin:0}
+.gb-pos-modal-head button{border:0;background:transparent;color:#9cabba;font-size:28px;cursor:pointer}
+.gb-pos-summary{margin:12px 0 18px;font-size:12px;color:#a4b0c2;line-height:1.6}
+.gb-pos-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+.gb-pos-tabs button{padding:10px;background:#19212d;border:1px solid #2c3847;border-radius:7px;color:#aebbd0;cursor:pointer}
+.gb-pos-tabs button.active{border-color:#5879c9;color:#f3f6ff;background:#233658}
+.gb-pos-field{display:flex;flex-direction:column;gap:8px;font-size:13px;color:#b0bfd3;margin:12px 0}
+.gb-pos-field input,.gb-pos-field select{height:38px;background:#0e141c;border:1px solid #354255;border-radius:6px;color:#e7eefb;padding:7px 10px;min-width:0}
+.gb-pos-field input:focus,.gb-pos-field select:focus{outline:2px solid #5279d9;outline-offset:0}
+.gb-pos-presets{display:flex;gap:8px;margin:10px 0}
+.gb-pos-presets button{flex:1;padding:8px 0;border:1px solid #344255;border-radius:5px;background:#1a2430;color:#c4d0e2;cursor:pointer}
+.gb-pos-presets button:hover{border-color:#6187db}
+.gb-pos-estimate{min-height:40px;line-height:1.6;color:#9eacbf;font-size:12px}
+.gb-pos-error{min-height:17px;color:#ff6b78;font-size:12px}
+.gb-pos-modal-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:16px}
+.gb-pos-modal-actions button{border:1px solid #39465c;border-radius:6px;background:#242f3c;color:#d5e0ef;padding:9px 18px;cursor:pointer}
+.gb-pos-modal-actions .gb-pos-submit{background:#4e76da;border-color:#4e76da;color:white}
+.gb-pos-modal-actions .gb-pos-submit:disabled{opacity:.35;cursor:not-allowed}
+@media(max-width:720px){#tbody .gb-pos-actions button{display:block;width:100%;margin:3px 0}.gb-pos-panel{padding:16px}}
