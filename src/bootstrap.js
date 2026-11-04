@@ -4,7 +4,9 @@
 (function(){
 'use strict';
 const BUILD='0100-20261104a';
-const MODULE_TIMEOUT_MS=8000;
+const MODULE_TIMEOUT_MS=20000;
+const BOOT_TIMEOUT_MS=90000;
+const MODULE_RETRY_LIMIT=1;
 const MODULES=[
   'src/market/preload.js',
   'src/chart/renderer.js',
@@ -51,9 +53,17 @@ function validateModulePostcondition(path){
   if(path==='src/market/model.js'&&!window.GreedBitV13)throw new Error('模块初始化不完整: src/market/model.js 未导出 GreedBitV13');
   if(path==='src/trading/contracts.js'&&!window.GreedBitContracts)throw new Error('模块初始化不完整: src/trading/contracts.js 未导出 GreedBitContracts');
 }
-function versioned(path){
+function versioned(path,attempt=0){
   const join=path.includes('?')?'&':'?';
-  return `${path}${join}gb=${encodeURIComponent(BUILD)}`;
+  return `${path}${join}gb=${encodeURIComponent(BUILD)}${attempt?`&retry=${attempt}`:''}`;
+}
+// Start the independent network requests early, but execute modules in dependency order.
+function preloadModules(){
+  for(const path of MODULES){
+    const link=document.createElement('link');
+    link.rel='preload';link.as='script';link.href=versioned(path);
+    document.head.appendChild(link);
+  }
 }
 function moduleError(path,event){
   const filename=String(event?.filename||'');
@@ -61,7 +71,7 @@ function moduleError(path,event){
   const detail=event?.error?.stack||event?.error?.message||event?.message||'未知运行时错误';
   return new Error(`模块执行失败: ${path}\n${detail}`);
 }
-function loadModule(path){
+function loadModule(path,attempt=0){
   return new Promise((resolve,reject)=>{
     const existing=document.querySelector(`script[data-gb-module="${path}"]`);
     if(existing&&existing.dataset.gbLoaded==='1'){
@@ -88,11 +98,23 @@ function loadModule(path){
     };
     window.addEventListener('error',onRuntimeError,true);
     const timer=setTimeout(()=>finish(new Error(`模块加载超时（${MODULE_TIMEOUT_MS/1000}秒）: ${path}`)),MODULE_TIMEOUT_MS);
-    script.src=versioned(path);script.async=false;script.dataset.gbModule=path;
+    script.src=versioned(path,attempt);script.async=false;script.dataset.gbModule=path;
     script.onload=()=>finish();
     script.onerror=()=>finish(new Error(`模块加载失败: ${path}`));
     document.body.appendChild(script);
   });
+}
+async function loadWithRetry(path){
+  for(let attempt=0;attempt<=MODULE_RETRY_LIMIT;attempt++){
+    try{
+      bootState.attempt=attempt+1;
+      return await loadModule(path,attempt);
+    }catch(error){
+      // Retry only transport failures. An execution or postcondition error is a code defect.
+      if(attempt>=MODULE_RETRY_LIMIT||!/^模块加载(?:失败|超时)/.test(error?.message||''))throw error;
+      console.warn('[GreedBit] retrying script load',path,error);
+    }
+  }
 }
 function showBootError(error){
   const old=document.getElementById('gbBootError');if(old)old.remove();
@@ -108,18 +130,19 @@ function showBootError(error){
 async function boot(){
   const root=document.documentElement;
   installFavicon();
+  preloadModules();
   root.dataset.gbBoot='loading';
   root.classList.remove('gb-runtime-ready');
-  /* 21 modules load serially with an 8s per-module timeout; cap the total wait so a slow or
-   * blocked network surfaces one clear error instead of an endless loading screen. */
-  const deadline=setTimeout(()=>{if(bootState.ready||bootState.error)return;bootState.timedOut=true;bootState.error={message:'启动超时（20 秒），请检查网络后刷新',module:bootState.current};root.dataset.gbBoot='error';root.classList.add('gb-runtime-ready');showBootError(new Error(bootState.error.message))},20000);
+  /* Preloaded resources still execute serially; allow cold CDN loads before failing. */
+  const deadline=setTimeout(()=>{if(bootState.ready||bootState.error)return;bootState.timedOut=true;bootState.error={message:`启动超时（${BOOT_TIMEOUT_MS/1000} 秒），正在加载 ${bootState.current||'未知模块'}`,module:bootState.current};root.dataset.gbBoot='error';root.classList.add('gb-runtime-ready');showBootError(new Error(bootState.error.message))},BOOT_TIMEOUT_MS);
   try{
     for(const path of MODULES){
       if(bootState.timedOut)throw new Error('启动超时（20 秒）');
       bootState.current=path;
-      await loadModule(path);
+      await loadWithRetry(path);
       bootState.loaded.push(path);
     }
+    if(bootState.timedOut)throw new Error('启动已超过全局超时限制');
     clearTimeout(deadline);
     bootState.current=null;bootState.ready=true;
     root.dataset.gbBoot='ready';
