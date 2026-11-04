@@ -131,7 +131,7 @@ function reverse(id){
 }
 function cancelCloseOrder(id){
   const i=closeOrders.findIndex(o=>String(o.id)===String(id));if(i<0)return;
-  closeOrders.splice(i,1);saveState();renderTable();notify('限价平仓已撤销','','info');
+  const order=closeOrders[i];closeOrders.splice(i,1);orderHistory.unshift({...order,type:'限价平仓',status:'已撤销',finishedAt:nowText(),finishedTs:Date.now()});saveState();renderTable();notify('限价平仓已撤销','','info');
 }
 function handleAction(e){
   const cancel=e.target.closest('[data-gb-pos-cancel-close]');if(cancel){cancelCloseOrder(cancel.dataset.gbPosCancelClose);return true}
