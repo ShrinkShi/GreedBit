@@ -45,7 +45,11 @@
     if(!Array.isArray(book))return[];
     const result=[];
     // Feed oldest first; the surviving id remains stable and the most recent row is first.
-    for(let i=book.length-1;i>=0;i--)add(result,{...book[i]});
+    for(let i=book.length-1;i>=0;i--){
+      const row=book[i];if(!row||typeof row!=='object')continue;
+      try{add(result,{...row});}
+      catch{result.unshift({...row});} // preserve malformed legacy lots instead of discarding the entire account
+    }
     return result;
   }
   function closeSize(position,kind,value,mark){
