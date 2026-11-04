@@ -35,6 +35,26 @@ function saveV10State(){
   localStorage.setItem(v10Key('advanced'),JSON.stringify(advancedOrders.slice(0,100)));
   localStorage.setItem(v10Key('strategies'),JSON.stringify(strategyRecords.slice(0,100)));
 }
+/* Single source of truth for advanced orders: memory is canonical, localStorage is only a mirror.
+ * All cancel paths must go through cancelAdvancedOrder(), otherwise a cancelled order is resurrected
+ * by the next saveV10State() and its reserved funds can be refunded twice. */
+function cancelAdvancedOrder(id){
+  if(!ensureStateFresh())return false;
+  const i=advancedOrders.findIndex(x=>String(x.id)===String(id));
+  if(i<0)return false;
+  const o=advancedOrders[i],w=futuresWallet(),reserved=+o.reserved||0;
+  w.frozen=Math.max(0,w.frozen-reserved);
+  w.usdt+=reserved;
+  advancedOrders.splice(i,1);
+  saveV10State();saveState();renderTable();updateAssets();
+  notify('高级委托已撤销',o.symbol,'info');
+  return true;
+}
+window.GreedBitAdvancedOrders={
+  list:()=>advancedOrders.map(o=>({...o})),
+  cancel:cancelAdvancedOrder,
+  save:saveV10State
+};
 async function fapi(path){
   const c=new AbortController(),t=setTimeout(()=>c.abort(),7000);
   try{
@@ -56,8 +76,8 @@ function timeLabel(ms){const d=new Date(ms);return d.toLocaleTimeString([],{hour
 function htmlEsc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 /* ---------- inject DOM ---------- */
-if(!document.querySelector('link[href="styles/v010.css"]')){
-  const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v010.css';document.head.appendChild(l);
+if(!document.querySelector('link[href^="styles/v010.css"]')){
+  const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v010.css');document.head.appendChild(l);
 }
 document.querySelector('.statusbar .ticker.up')?.replaceChildren(document.createTextNode('GreedBit v0.0.10'));
 
@@ -112,7 +132,7 @@ if(!$('advancedOrderFields')){
 }
 if(!$('strategyModal')){
   document.body.insertAdjacentHTML('beforeend',`
-  <div class="modal" id="strategyModal"><div class="card dark-card strategy-modal-card">
+  <div class="modal" id="strategyModal" role="dialog" aria-modal="true" aria-label="创建策略"><div class="card dark-card strategy-modal-card">
     <button class="close dark-close" data-close="strategyModal">×</button><h2 id="strategyModalTitle">创建策略</h2>
     <p class="muted">当前版本记录策略配置并使用真实市场价格估值；自动网格成交引擎仍处于本地测试阶段。</p>
     <div class="field modal-field"><label>投入</label><input id="strategyAmount" type="number" min="1" step="1" value="1000"/><span>USDT</span></div>
@@ -302,9 +322,10 @@ document.addEventListener('click',e=>{if(!$('advancedOrderMenu').contains(e.targ
 
 function reserveAdvanced(side){
   if(!user)return openAuth('login');
+  if(!ensureStateFresh())return;
   const margin=+$('marginInput').value,mode=$('marginMode').value,tp=$('tpslEnable').checked?(+$('tpInput').value||0):0,sl=$('tpslEnable').checked?(+$('slInput').value||0):0;
   if(!margin||margin<=0)return notify('委托失败','请输入保证金','error');
-  const w=futuresWallet(),fee=margin*leverage*FEE,total=margin+fee;if(total>w.usdt)return notify('委托失败','合约账户余额不足','error');
+  const w=futuresWallet(),rate=window.GreedBitV13?.TAKER_RATE||.0006,fee=margin*leverage*rate,total=margin+fee;if(total>w.usdt)return notify('委托失败','合约账户余额不足','error');
   const o={id:Date.now()+Math.random(),kind:advancedKind,side,margin,mode,leverage,tp,sl,symbol,reserved:total,createdAt:Date.now(),status:'open'};
   if(advancedKind==='plan'){o.trigger=+$('planTriggerInput').value;if(!o.trigger)return notify('委托失败','请输入触发价','error')}
   if(advancedKind==='trailing'){o.activation=+$('trailActivationInput').value||null;o.callback=Math.max(.001,(+$('trailCallbackInput').value||1)/100);o.extreme=null;o.active=!o.activation}
@@ -316,41 +337,40 @@ $('buyBtn').onclick=()=>advancedKind?reserveAdvanced('long'):baseBuy();
 $('sellBtn').onclick=()=>advancedKind?reserveAdvanced('short'):baseSell();
 
 function fireAdvanced(o,margin){
-  const w=futuresWallet(),sliceFee=margin*o.leverage*FEE;
-  const p=executeOpen(o.side,margin,price,o.mode,o.leverage,o.tp,o.sl,`${{plan:'计划',trailing:'跟踪',twap:'分时'}[o.kind]}开仓`,true);
+  const rate=window.GreedBitV13?.TAKER_RATE||.0006,sliceFee=margin*o.leverage*rate;
+  const contracts=window.GreedBitContracts;
+  const perp=!!contracts?.supportsPerpBasis?.(o.symbol);
+  const entry=perp&&contracts.contractPriceFor?(contracts.contractPriceFor(o.symbol)||price):price;
+  const p=executeOpen(o.side,margin,entry,o.mode,o.leverage,o.tp,o.sl,`${{plan:'计划',trailing:'跟踪',twap:'分时'}[o.kind]}开仓`,true);
   if(!p)return false;
   o.reserved=Math.max(0,o.reserved-(margin+sliceFee));return true;
 }
 function processAdvancedOrders(){
-  const now=Date.now()/1000;
+  const now=Date.now()/1000;let changed=false;
   for(let i=advancedOrders.length-1;i>=0;i--){
     const o=advancedOrders[i];if(o.symbol!==symbol||o.status!=='open')continue;
     let done=false;
     if(o.kind==='plan'){
-      const hit=o.side==='long'?price>=o.trigger:price<=o.trigger;if(hit){fireAdvanced(o,o.margin);done=true}
+      const hit=o.side==='long'?price>=o.trigger:price<=o.trigger;if(hit&&fireAdvanced(o,o.margin))done=true
     }else if(o.kind==='trailing'){
-      if(!o.active){const activated=o.side==='long'?price<=o.activation:price>=o.activation;if(activated){o.active=true;o.extreme=price}}
-      if(o.active){o.extreme=o.extreme==null?price:(o.side==='long'?Math.min(o.extreme,price):Math.max(o.extreme,price));const hit=o.side==='long'?price>=o.extreme*(1+o.callback):price<=o.extreme*(1-o.callback);if(hit){fireAdvanced(o,o.margin);done=true}}
+      if(!o.active){const activated=o.side==='long'?price<=o.activation:price>=o.activation;if(activated){o.active=true;o.extreme=price;changed=true}}
+      if(o.active){o.extreme=o.extreme==null?price:(o.side==='long'?Math.min(o.extreme,price):Math.max(o.extreme,price));const hit=o.side==='long'?price>=o.extreme*(1+o.callback):price<=o.extreme*(1-o.callback);if(hit&&fireAdvanced(o,o.margin))done=true}
     }else if(o.kind==='twap'&&now>=o.nextTs&&o.done<o.slices){
-      const remaining=o.slices-o.done,margin=o.margin/o.slices;if(fireAdvanced(o,margin)){o.done++;o.nextTs=o.startedAt+o.duration*(o.done/o.slices);if(o.done>=o.slices)done=true}
+      const remaining=o.slices-o.done,margin=o.margin/o.slices;if(fireAdvanced(o,margin)){o.done++;changed=true;o.nextTs=o.startedAt+o.duration*(o.done/o.slices);if(o.done>=o.slices)done=true}
     }
-    if(done){const w=futuresWallet();if(o.reserved>0){w.frozen=Math.max(0,w.frozen-o.reserved);w.usdt+=o.reserved}advancedOrders.splice(i,1);notify('高级委托完成',o.symbol,'success')}
+    if(done){changed=true;const w=futuresWallet();if(o.reserved>0){w.frozen=Math.max(0,w.frozen-o.reserved);w.usdt+=o.reserved}advancedOrders.splice(i,1);notify('高级委托完成',o.symbol,'success')}
   }
-  saveV10State();saveState();
+  /* Idle ticks must not write: with multi-tab revision guards, a no-op save would look like
+   * an edit and force the other tab to reload. */
+  if(changed){saveV10State();saveState()}
 }
 const oldApplyRealtimeTrade=applyRealtimeTrade;
 applyRealtimeTrade=function(p,t,v){oldApplyRealtimeTrade(p,t,v);processAdvancedOrders()};
 
-const oldRenderTable=renderTable;
-renderTable=function(){
-  oldRenderTable();
-  if(tableMode==='open'&&advancedOrders.length){
-    const body=$('tbody');if(body.querySelector('.empty'))body.innerHTML='';
-    body.insertAdjacentHTML('beforeend',advancedOrders.map(o=>`<tr><td>${new Date(o.createdAt).toLocaleTimeString()}</td><td>${o.symbol}</td><td>${o.side==='long'?'开多':'开空'}</td><td>${{plan:'计划',trailing:'跟踪',twap:'分时'}[o.kind]}</td><td>${fmt(o.margin)}</td><td>${o.leverage}X</td><td><button class="cancel" data-canceladv="${o.id}">撤单</button></td></tr>`).join(''));
-  }
-};
+/* The open-orders table is rendered once by trading/records.js from window.GreedBitAdvancedOrders.list();
+ * this module must not append a second copy of the same rows. */
 $('tbody').addEventListener('click',e=>{
-  const b=e.target.closest('[data-canceladv]');if(!b)return;const id=+b.dataset.canceladv,i=advancedOrders.findIndex(x=>x.id===id);if(i<0)return;const o=advancedOrders[i],w=futuresWallet();w.frozen=Math.max(0,w.frozen-o.reserved);w.usdt+=o.reserved;advancedOrders.splice(i,1);saveV10State();saveState();renderTable();notify('高级委托已撤销',o.symbol,'info');
+  const b=e.target.closest('[data-canceladv]');if(!b)return;cancelAdvancedOrder(b.dataset.canceladv);
 });
 
 /* ---------- symbol/auth integration ---------- */

@@ -10,8 +10,8 @@ function updateAssets(){
 }
 function renderFuturesTable(){
   $('positionFilters').classList.toggle('hidden',tableMode!=='positions');
-  if(tableMode==='positions'){const rows=positions.filter(p=>posFilter==='all'||p.mode===posFilter).map(p=>({...p,mark:markFor(p.symbol),pnl:pnlOf(p),roe:p.margin?pnlOf(p)/p.margin*100:0}));$('thead').innerHTML='<tr><th>合约</th><th>方向</th><th>模式</th><th>杠杆</th><th>开仓价</th><th>标记价</th><th>保证金</th><th>未实现盈亏</th><th>ROE</th><th>强平价</th><th>操作</th></tr>';$('tbody').innerHTML=rows.length?rows.map(r=>`<tr><td>${r.symbol} 永续</td><td class="${r.side==='long'?'green':'red'}">${r.side==='long'?'多':'空'}</td><td>${r.mode==='cross'?'全仓':'逐仓'}</td><td>${r.leverage}X</td><td>${fmt(r.entry,configs[r.symbol].dec)}</td><td>${fmt(r.mark,configs[r.symbol].dec)}</td><td>${fmt(r.margin)}</td><td class="${r.pnl>=0?'green':'red'}">${r.pnl>=0?'+':''}${fmt(r.pnl)}</td><td class="${r.roe>=0?'green':'red'}">${r.roe.toFixed(2)}%</td><td>${fmt(r.liq||0,configs[r.symbol].dec)}</td><td><button class="reducepos" data-reduce="${r.id}">减仓50%</button><button class="closepos" data-closepos="${r.id}">全平</button></td></tr>`).join(''):'<tr><td colspan="11" class="empty">暂无持仓</td></tr>';return}
-  if(tableMode==='open'){$('thead').innerHTML='<tr><th>时间</th><th>合约</th><th>方向</th><th>限价</th><th>保证金</th><th>杠杆</th><th>操作</th></tr>';$('tbody').innerHTML=orders.length?orders.map(o=>`<tr><td>${o.createdAt}</td><td>${o.symbol}</td><td>${o.side==='long'?'开多':'开空'}</td><td>${fmt(o.limit,configs[o.symbol].dec)}</td><td>${fmt(o.margin)}</td><td>${o.leverage}X</td><td><button class="cancel" data-cancel="${o.id}">撤单</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">暂无委托</td></tr>';return}
+  if(tableMode==='positions'){const rows=positions.filter(p=>posFilter==='all'||p.mode===posFilter).map(p=>({...p,mark:markFor(p.symbol),pnl:pnlOf(p),roe:p.margin?pnlOf(p)/p.margin*100:0}));$('thead').innerHTML='<tr><th>合约</th><th>方向</th><th>模式</th><th>杠杆</th><th>开仓价</th><th>标记价</th><th>保证金</th><th>未实现盈亏</th><th>ROE</th><th>强平价</th><th>操作</th></tr>';$('tbody').innerHTML=rows.length?rows.map(r=>`<tr><td>${r.symbol} 永续</td><td class="${r.side==='long'?'green':'red'}">${r.side==='long'?'多':'空'}</td><td>${r.mode==='cross'?'全仓':'逐仓'}</td><td>${r.leverage}X</td><td>${fmt(r.entry,(configs[r.symbol]?.dec ?? 2))}</td><td>${fmt(r.mark,(configs[r.symbol]?.dec ?? 2))}</td><td>${fmt(r.margin)}</td><td class="${r.pnl>=0?'green':'red'}">${r.pnl>=0?'+':''}${fmt(r.pnl)}</td><td class="${r.roe>=0?'green':'red'}">${r.roe.toFixed(2)}%</td><td>${fmt(r.liq||0,(configs[r.symbol]?.dec ?? 2))}</td><td><button class="reducepos" data-reduce="${r.id}">减仓50%</button><button class="closepos" data-closepos="${r.id}">全平</button></td></tr>`).join(''):'<tr><td colspan="11" class="empty">暂无持仓</td></tr>';return}
+  if(tableMode==='open'){$('thead').innerHTML='<tr><th>时间</th><th>合约</th><th>方向</th><th>限价</th><th>保证金</th><th>杠杆</th><th>操作</th></tr>';$('tbody').innerHTML=orders.length?orders.map(o=>`<tr><td>${o.createdAt}</td><td>${o.symbol}</td><td>${o.side==='long'?'开多':'开空'}</td><td>${fmt(o.limit,(configs[o.symbol]?.dec ?? 2))}</td><td>${fmt(o.margin)}</td><td>${o.leverage}X</td><td><button class="cancel" data-cancel="${o.id}">撤单</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">暂无委托</td></tr>';return}
   const maps={orders:[orderHistory,'历史委托'],history:[trades,'成交记录'],closed:[closedPositions,'历史仓位'],ledger:[ledger.filter(x=>x.wallet==='futures'),'财务记录']},m=maps[tableMode]||maps.history,arr=m[0];
   $('thead').innerHTML='<tr><th>时间</th><th>项目</th><th>交易对</th><th>详情</th><th>金额/价格</th></tr>';
   $('tbody').innerHTML=arr.length?arr.map(x=>`<tr><td>${x.finishedAt||x.closedAt||x.time||'-'}</td><td>${x.status||x.reason||x.type||m[1]}</td><td>${x.symbol||'-'}</td><td>${x.note||x.side||'-'}</td><td>${x.amount!=null?fmt(x.amount):x.price!=null?fmt(x.price,configs[x.symbol]?.dec||2):x.realized!=null?fmt(x.realized):'-'}</td></tr>`).join(''):`<tr><td colspan="5" class="empty">暂无${m[1]}</td></tr>`;
@@ -19,8 +19,8 @@ function renderFuturesTable(){
 function renderSpotTable(){
   $('positionFilters').classList.add('hidden');const sw=spotWallet();
   if(tableMode==='spotAssets'){$('thead').innerHTML='<tr><th>资产</th><th>可用</th><th>冻结</th><th>估值(USDT)</th></tr>';$('tbody').innerHTML=`<tr><td>USDT</td><td>${fmt(sw.usdt)}</td><td>${fmt(sw.frozenUsdt)}</td><td>${fmt(sw.usdt+sw.frozenUsdt)}</td></tr>`+coinKeys.map(c=>`<tr><td>${c}</td><td>${fmt(spotAvailableCoin(c),6)}</td><td>${fmt(sw.frozenCoins[c]||0,6)}</td><td>${fmt((sw.coins[c]||0)*markFor(c+'/USDT'))}</td></tr>`).join('');return}
-  if(tableMode==='spotOpen'){$('thead').innerHTML='<tr><th>时间</th><th>交易对</th><th>方向</th><th>限价</th><th>数量/金额</th><th>操作</th></tr>';$('tbody').innerHTML=spotOrders.length?spotOrders.map(o=>`<tr><td>${o.createdAt}</td><td>${o.symbol}</td><td class="${o.side==='buy'?'green':'red'}">${o.side==='buy'?'买入':'卖出'}</td><td>${fmt(o.limit,configs[o.symbol].dec)}</td><td>${o.side==='buy'?fmt(o.amount)+' USDT':fmt(o.qty,6)+' '+o.symbol.split('/')[0]}</td><td><button class="cancel" data-cancelspot="${o.id}">撤单</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">暂无现货委托</td></tr>';return}
-  const arr=tableMode==='spotOrders'?spotOrderHistory:spotTrades;$('thead').innerHTML='<tr><th>时间</th><th>交易对</th><th>方向</th><th>价格</th><th>状态/类型</th></tr>';$('tbody').innerHTML=arr.length?arr.map(o=>`<tr><td>${o.finishedAt||o.time}</td><td>${o.symbol}</td><td class="${o.side==='buy'?'green':'red'}">${o.side==='buy'?'买入':'卖出'}</td><td>${fmt(o.limit||o.price,configs[o.symbol].dec)}</td><td>${o.status||o.type}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">暂无记录</td></tr>';
+  if(tableMode==='spotOpen'){$('thead').innerHTML='<tr><th>时间</th><th>交易对</th><th>方向</th><th>限价</th><th>数量/金额</th><th>操作</th></tr>';$('tbody').innerHTML=spotOrders.length?spotOrders.map(o=>`<tr><td>${o.createdAt}</td><td>${o.symbol}</td><td class="${o.side==='buy'?'green':'red'}">${o.side==='buy'?'买入':'卖出'}</td><td>${fmt(o.limit,(configs[o.symbol]?.dec ?? 2))}</td><td>${o.side==='buy'?fmt(o.amount)+' USDT':fmt(o.qty,6)+' '+o.symbol.split('/')[0]}</td><td><button class="cancel" data-cancelspot="${o.id}">撤单</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">暂无现货委托</td></tr>';return}
+  const arr=tableMode==='spotOrders'?spotOrderHistory:spotTrades;$('thead').innerHTML='<tr><th>时间</th><th>交易对</th><th>方向</th><th>价格</th><th>状态/类型</th></tr>';$('tbody').innerHTML=arr.length?arr.map(o=>`<tr><td>${o.finishedAt||o.time}</td><td>${o.symbol}</td><td class="${o.side==='buy'?'green':'red'}">${o.side==='buy'?'买入':'卖出'}</td><td>${fmt(o.limit||o.price,(configs[o.symbol]?.dec ?? 2))}</td><td>${o.status||o.type}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">暂无记录</td></tr>';
 }
 function renderTable(){if(!user){$('positionFilters').classList.add('hidden');$('thead').innerHTML='<tr><th></th></tr>';$('tbody').innerHTML='<tr><td class="empty">登录后查看账户数据</td></tr>';return}tradingMode==='futures'?renderFuturesTable():renderSpotTable()}
 
@@ -33,21 +33,23 @@ function renderAssetPage(){
   const val=walletUsdt(assetTab);$('assetPageBody').innerHTML=`<div class="asset-detail"><h3>${walletNames[assetTab]}账户</h3><div class="asset-overview-total"><small>可用余额</small><strong>${fmt(val)} USDT</strong></div><p class="muted">当前版本仅实现 USDT 子账户余额与账户间划转；${walletNames[assetTab]}业务功能将在后续版本补充。</p></div>`;
 }
 
-function netRealized(){return accountStats.realizedProfit-accountStats.realizedLoss-accountStats.fees+accountStats.fundingReceived-accountStats.fundingPaid}
+/* realisedProfit/Loss are already net of fees (see closePosition / spotFill / grid),
+ * so fees must not be subtracted a second time here. */
+function netRealized(){return accountStats.realizedProfit-accountStats.realizedLoss+accountStats.fundingReceived-accountStats.fundingPaid}
 function openStatsModal(){const s=accountStats,tiles=[['总资产',totalAsset()],['入金',s.inflow],['出金',s.outflow],['已实现盈利',s.realizedProfit],['已实现亏损',s.realizedLoss],['手续费',s.fees],['资金费净额',s.fundingReceived-s.fundingPaid],['净已实现收益',netRealized()],['爆仓次数',s.liquidations],['合约成交',s.trades],['现货成交',s.spotTrades],['账户划转',s.transfers]];$('statGrid').innerHTML=tiles.map(([k,v])=>`<div class="stat-tile"><small>${k}</small><b class="${typeof v==='number'&&v<0?'negative':''}">${k.includes('次数')||k.includes('成交')||k.includes('划转')?v:fmt(v)+' USDT'}</b></div>`).join('');$('statsModal').classList.add('show')}
 
 /* funding/transfer */
 function openFund(mode='deposit'){if(!user)return openAuth('login');fundMode=mode;$('fundTitle').textContent=mode==='deposit'?'模拟入金':'模拟出金';$('fundDesc').textContent=mode==='deposit'?'资金进入法币账户，再通过划转进入现货或合约账户。':'从法币账户扣除 USDT，用于统计模拟出金。';$('fundAmount').value='';$('fundModal').classList.add('show')}
-function confirmFund(){const amt=+$('fundAmount').value;if(!amt||amt<=0)return notify('操作失败','请输入有效金额','error');if(fundMode==='deposit'){wallets.fiat.usdt+=amt;accountStats.inflow+=amt;addLedger('入金',amt,'','模拟入金','fiat');notify('入金成功',`法币账户 +${fmt(amt)} USDT`)}else{if(amt>wallets.fiat.usdt)return notify('出金失败','法币账户余额不足','error');wallets.fiat.usdt-=amt;accountStats.outflow+=amt;addLedger('出金',-amt,'','模拟出金','fiat');notify('出金成功',`法币账户 -${fmt(amt)} USDT`,'info')}$('fundModal').classList.remove('show');saveState();updateAssets();renderAssetPage()}
+function confirmFund(){if(!ensureStateFresh())return;const amt=+$('fundAmount').value;if(!amt||amt<=0)return notify('操作失败','请输入有效金额','error');if(fundMode==='deposit'){wallets.fiat.usdt+=amt;accountStats.inflow+=amt;addLedger('入金',amt,'','模拟入金','fiat');notify('入金成功',`法币账户 +${fmt(amt)} USDT`)}else{if(amt>wallets.fiat.usdt)return notify('出金失败','法币账户余额不足','error');wallets.fiat.usdt-=amt;accountStats.outflow+=amt;addLedger('出金',-amt,'','模拟出金','fiat');notify('出金成功',`法币账户 -${fmt(amt)} USDT`,'info')}$('fundModal').classList.remove('show');saveState();updateAssets();renderAssetPage()}
 function openTransfer(from='fiat',to='futures'){if(!user)return openAuth('login');const opts=Object.entries(walletNames).map(([k,v])=>`<option value="${k}">${v}账户</option>`).join('');$('transferFrom').innerHTML=opts;$('transferTo').innerHTML=opts;$('transferFrom').value=from;$('transferTo').value=to;updateTransferAvailable();$('transferAmount').value='';$('transferModal').classList.add('show')}
 function updateTransferAvailable(){$('transferAvailable').textContent=`可用：${fmt(walletUsdt($('transferFrom').value))} USDT`}
-function confirmTransfer(){const from=$('transferFrom').value,to=$('transferTo').value,amt=+$('transferAmount').value;if(from===to)return notify('划转失败','转出和转入账户不能相同','error');if(!amt||amt<=0)return notify('划转失败','请输入有效金额','error');if(amt>walletUsdt(from))return notify('划转失败',`${walletNames[from]}账户余额不足`,'error');setWalletUsdt(from,walletUsdt(from)-amt);setWalletUsdt(to,walletUsdt(to)+amt);accountStats.transfers++;addLedger('账户划转',amt,'',`${walletNames[from]} → ${walletNames[to]}`,from);$('transferModal').classList.remove('show');notify('划转成功',`${walletNames[from]} → ${walletNames[to]} ${fmt(amt)} USDT`);saveState();updateAssets();renderTable();renderAssetPage()}
+function confirmTransfer(){if(!ensureStateFresh())return;const from=$('transferFrom').value,to=$('transferTo').value,amt=+$('transferAmount').value;if(from===to)return notify('划转失败','转出和转入账户不能相同','error');if(!amt||amt<=0)return notify('划转失败','请输入有效金额','error');if(amt>walletUsdt(from))return notify('划转失败',`${walletNames[from]}账户余额不足`,'error');setWalletUsdt(from,walletUsdt(from)-amt);setWalletUsdt(to,walletUsdt(to)+amt);accountStats.transfers++;addLedger('账户划转',amt,'',`${walletNames[from]} → ${walletNames[to]}`,from);$('transferModal').classList.remove('show');notify('划转成功',`${walletNames[from]} → ${walletNames[to]} ${fmt(amt)} USDT`);saveState();updateAssets();renderTable();renderAssetPage()}
 
 /* admin */
 function renderAdminPage(){
-  if(!user?.isAdmin)return;
-  const users=JSON.parse(localStorage.getItem('greedbit_users')||'{}');
-  const rows=[{username:'admin',role:'管理员',createdAt:null},...Object.values(users).map(u=>({...u,role:'用户'}))];
+  if(!isAdminMode())return;
+  const users=safeParse(localStorage.getItem('greedbit_users'),{});
+  const rows=Object.values(users).map(u=>({...u,role:'用户'}));
   const approxStorage=Object.keys(localStorage).reduce((n,k)=>n+(localStorage.getItem(k)?.length||0)+k.length,0);
   $('adminSummary').innerHTML=`
     <div class="admin-stat"><small>本地账户</small><b>${rows.length}</b></div>
@@ -55,7 +57,7 @@ function renderAdminPage(){
     <div class="admin-stat"><small>真实快讯</small><b>${newsItems.length}</b></div>
     <div class="admin-stat"><small>LocalStorage</small><b>${(approxStorage/1024).toFixed(1)} KB</b></div>`;
   $('adminUserTable').innerHTML=rows.map(u=>{
-    const hasState=u.username==='admin'||!!localStorage.getItem(`greedbit_state_${u.username}`);
+    const hasState=!!localStorage.getItem(`greedbit_state_${u.username}`);
     return `<tr><td>${escapeHtml(u.username)}</td><td>${u.role}</td><td>${u.createdAt?new Date(u.createdAt).toLocaleString():'内置账号'}</td><td>${hasState?'有':'无'}</td></tr>`;
   }).join('');
 }
@@ -112,7 +114,7 @@ async function loadRealNews(showToast=false){
     }
     if(!batches.length)throw new Error('no news source available');
     const unique=new Map();for(const n of batches.sort((a,b)=>b.publishedAt-a.publishedAt))if(!unique.has(n.id))unique.set(n.id,n);
-    newsItems=[...unique.values()].slice(0,80);renderNews();if(showToast)notify('快讯已刷新',`已获取 ${newsItems.length} 条真实资讯`,'success');if(user?.isAdmin)renderAdminPage();
+    newsItems=[...unique.values()].slice(0,80);renderNews();if(showToast)notify('快讯已刷新',`已获取 ${newsItems.length} 条真实资讯`,'success');if(isAdminMode())renderAdminPage();
   }catch(e){
     console.warn('news load failed',e);renderNews();if(showToast)notify('快讯刷新失败','CoinDesk RSS 或跨域代理暂不可用','error',5000);
   }finally{newsLoading=false}

@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 
-const VERSION='0.0.19';
+const VERSION=window.GB_VERSION||'0.0.26';
 const V=window.GreedBitV13;
 const V18=window.GreedBitV18;
 const PAGE_SIZE=20;
@@ -10,8 +10,8 @@ const pageState={orders:1,history:1,closed:1,ledger:1,spotOrders:1,spotTrades:1}
 let openKind='limit';
 
 function installStyle(){
-  if(document.querySelector('link[href="styles/v019.css"]'))return;
-  const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v019.css';document.head.appendChild(l);
+  if(document.querySelector('link[href^="styles/v019.css"]'))return;
+  const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v019.css');document.head.appendChild(l);
 }
 function updateVersion(){
   const el=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));
@@ -68,10 +68,15 @@ function heldSpotAssets(){
 function assetNameCell(a){const name=a.meta?.name&&a.meta.name!==a.ticker?a.meta.name:'';return `<span class="gb19-asset-name">${iconForTicker(a.ticker)}<span><b>${esc(a.ticker)}</b>${name?`<small>${esc(name)}</small>`:''}</span></span>`}
 
 function advancedOrders(){
-  if(!user)return[];try{return JSON.parse(localStorage.getItem(`greedbit_v010_advanced_${user.username}`)||'[]')||[]}catch{return[]}
+  if(!user)return[];
+  const api=window.GreedBitAdvancedOrders;
+  if(api&&typeof api.list==='function')return api.list();
+  try{return JSON.parse(localStorage.getItem(`greedbit_v010_advanced_${user.username}`)||'[]')||[]}catch{return[]}
 }
 function saveAdvancedOrders(arr){if(!user)return;localStorage.setItem(`greedbit_v010_advanced_${user.username}`,JSON.stringify(arr.slice(0,100)))}
 function cancelAdvanced(id){
+  const api=window.GreedBitAdvancedOrders;
+  if(api&&typeof api.cancel==='function'){api.cancel(id);return}
   const arr=advancedOrders(),i=arr.findIndex(x=>String(x.id)===String(id));if(i<0)return;
   const o=arr[i],w=futuresWallet(),reserved=+o.reserved||0;w.frozen=Math.max(0,w.frozen-reserved);w.usdt+=reserved;arr.splice(i,1);saveAdvancedOrders(arr);saveState();notify('撤单成功',`${contractLabel(o.symbol)} 高级委托已撤销`,'info');renderTable();updateAssets();
 }

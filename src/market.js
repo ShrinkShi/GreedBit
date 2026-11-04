@@ -37,6 +37,7 @@ function updateFooterTickers(){
   const box=$('footerTickers');if(!box)return;
   box.innerHTML=Object.entries(configs).map(([sym,c])=>{const m=marketSnapshots[sym]||{},ch=Number(m.change)||0;return`<span class="ticker ${ch>=0?'up':'down'}">${apiSymbol(sym)} ${ch>=0?'+':''}${ch.toFixed(2)}%</span>`}).join('');
 }
+function setBookMode(synthetic){const head=document.querySelector('.orderbook .panelhead');if(head)head.textContent=synthetic?'盘口　GreedBit 参考深度':'盘口　实时成交'}
 function markFor(sym){return sym===symbol?price:(marketSnapshots[sym]?.last||configs[sym]?.anchor||0)}
 
 function bucketStart(ts,info=tfInfo()){
@@ -158,7 +159,7 @@ async function renderBook(){
     if(seq!==depthLoadSeq||expected!==symbol)return;
     const asks=d.asks.slice(0,9).map(x=>[+x[0],+x[1]]).reverse(),bids=d.bids.slice(0,9).map(x=>[+x[0],+x[1]]);
     const mk=(rows,side)=>{let total=rows.reduce((a,r)=>a+r[1],0),cum=0;return rows.map(r=>{cum+=r[1];return`<div class="obrow"><i class="depth" style="width:${total?cum/total*100:0}%;background:${side==='a'?'#ec5d68':'#3dbb83'}"></i><span class="${side==='a'?'red':'green'}">${fmt(r[0],cfg.dec)}</span><span>${fmt(r[1],4)}</span><span>${fmt(cum,4)}</span></div>`}).join('')};
-    $('asks').innerHTML=mk(asks,'a');$('bids').innerHTML=mk(bids,'b');
+    $('asks').innerHTML=mk(asks,'a');$('bids').innerHTML=mk(bids,'b');setBookMode(false);
   }catch(e){console.warn('depth refresh failed',e)}
 }
 
@@ -168,13 +169,27 @@ function totalUnrealized(){return positions.reduce((a,p)=>a+pnlOf(p),0)}
 function futuresEquity(){const w=futuresWallet();return w.usdt+w.frozen+usedMargin()+totalUnrealized()}
 function spotCoinValue(){const w=spotWallet();return coinKeys.reduce((a,c)=>a+(w.coins[c]||0)*markFor(c+'/USDT'),0)}
 function totalAsset(){return walletUsdt('fiat')+walletUsdt('earn')+walletUsdt('strategy')+walletUsdt('spot')+spotWallet().frozenUsdt+spotCoinValue()+futuresEquity()}
-function liqPrice(side,entry,mode,margin,notional){let cushion=margin;if(mode==='cross')cushion+=Math.max(0,futuresWallet().usdt);const ratio=Math.min(.95,cushion/Math.max(1,notional));return side==='long'?Math.max(.0000001,entry*(1-ratio+MMR)):entry*(1+ratio-MMR)}
+function liqPrice(side,entry,mode,margin,notional,selfId,sym=symbol){
+  const d=window.GreedBitDomain,c=window.GreedBitContracts;
+  const mark=(c&&c.supportsPerpBasis&&c.supportsPerpBasis(sym)&&c.contractPriceFor?c.contractPriceFor(sym):markFor(sym))||entry;
+  if(mode==='cross'&&d&&d.crossLiqPrice){
+    const qty=entry>0?notional/entry:0;
+    const equity=futuresEquity();
+    const otherNotional=positions.reduce((a,p)=>a+(p.id===selfId?0:(+p.notional||0)),0);
+    return d.crossLiqPrice({side,mark,qty,equity,otherNotional,mmr:MMR});
+  }
+  if(d&&d.liqPrice)return d.liqPrice({side,entry,notional,cushionUsdt:margin,mmr:MMR});
+  const ratio=Math.min(.95,margin/Math.max(1,notional));
+  return side==='long'?Math.max(.0000001,entry*(1-ratio+MMR)):entry*(1+ratio-MMR);
+}
 function previewLiq(side){const m=+$('marginInput').value||0;if(!m)return null;const entry=orderType==='limit'?(+$('limitPriceInput').value||price):price;return liqPrice(side,entry,$('marginMode').value,m,m*leverage)}
 function updatePreview(){const m=+$('marginInput').value||0,n=m*leverage;$('notionalPreview').textContent=fmt(n);$('feePreview').textContent=fmt(n*FEE);const l=previewLiq('long'),s=previewLiq('short');$('longLiq').textContent=l?fmt(l,cfg.dec):'--';$('shortLiq').textContent=s?fmt(s,cfg.dec):'--'}
-function stats(){
+function stats(full=true){
   const m=marketSnapshots[symbol]||{},arr=currentSeries(),fallback=arr.length?arr.at(-1):null;
   const ch=Number.isFinite(m.change)?m.change:0,hi=Number.isFinite(m.high)?m.high:(fallback?.h||price),lo=Number.isFinite(m.low)?m.low:(fallback?.l||price),vol=Number.isFinite(m.quoteVolume)?m.quoteVolume:0;
   $('lastPrice').textContent=fmt(price,cfg.dec);$('lastPrice').className='pricebig '+(ch>=0?'green':'red');$('midPrice').textContent=fmt(price,cfg.dec);$('midPrice').className='mid '+(ch>=0?'green':'red');
   $('change24').textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';$('change24').className=ch>=0?'green':'red';$('high24').textContent=fmt(hi,cfg.dec);$('low24').textContent=fmt(lo,cfg.dec);$('vol24').textContent=fmt(vol,0);
-  updateAssets();updatePreview();updateFundingUI();updateSpotPanel();renderCoinList();
+  /* Price-only repaint runs ~12x/s; the heavier account/list/table renders are driven separately. */
+  updatePreview();updateFundingUI();updateSpotPanel();
+  if(full){updateAssets();renderCoinList();}
 }

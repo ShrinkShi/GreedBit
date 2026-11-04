@@ -19,8 +19,8 @@ const COMPANY_NAMES={
 };
 
 function installStyle(){
-  if(document.querySelector('link[href="styles/v018.css"]'))return;
-  const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v018.css';document.head.appendChild(l);
+  if(document.querySelector('link[href^="styles/v018.css"]'))return;
+  const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v018.css');document.head.appendChild(l);
 }
 function metaFor(sym=symbol){return V?.META?.[sym]||null}
 function isStock(sym=symbol){const m=metaFor(sym);return !!m&&(m.market==='stock'||m.category==='stock')}
@@ -58,7 +58,7 @@ function chevronSvg(cls=''){return`<svg class="gb18-chevron ${cls}" xmlns="http:
 function installChevrons(){
   const btn=$('pairPickerBtn');if(btn&&!btn.querySelector('.gb18-pair-chevron')){const spans=[...btn.querySelectorAll(':scope > span')],old=spans.find(x=>x.id!=='pairName');if(old){old.className='gb18-pair-chevron';old.innerHTML=chevronSvg('gb18-main-chevron')}}
   const maker=document.querySelector('.maker-label');if(maker&&!maker.querySelector('.gb18-chevron'))maker.innerHTML=`只做Maker ${chevronSvg()}`;
-  document.querySelectorAll('button,span').forEach(el=>{if(el.children.length||!el.textContent.includes('⌄'))return;const text=el.textContent.replaceAll('⌄','').trim();el.textContent=text+' ';el.insertAdjacentHTML('beforeend',chevronSvg())});
+  document.querySelectorAll('#tradePage button,#tradePage span').forEach(el=>{if(el.children.length||!el.textContent.includes('⌄'))return;const text=el.textContent.replaceAll('⌄','').trim();el.textContent=text+' ';el.insertAdjacentHTML('beforeend',chevronSvg())});
 }
 function syncChevronState(){const picker=$('coinPicker'),wrap=document.querySelector('#pairPickerBtn .gb18-pair-chevron');if(!picker||!wrap)return;wrap.classList.toggle('is-open',!picker.classList.contains('hidden'))}
 
@@ -70,10 +70,11 @@ function ensureStockModeSwitch(){
 }
 function replaceRowTitle(row,title,sub){const b=row.querySelector('.coin-text-v14 b'),small=row.querySelector('.coin-text-v14 small');if(b&&b.textContent!==title)b.textContent=title;if(small&&small.textContent!==sub)small.textContent=sub}
 function decoratePicker(){
+  if($('coinPicker')?.classList.contains('hidden'))return;
   ensureStockModeSwitch();const stockTabActive=!!document.querySelector('.coin-tabs [data-market-picker="stocks"].active'),head=document.querySelector('.coin-list-head');if(stockTabActive&&head?.children?.[0])head.children[0].textContent=stockPickerMode==='futures'?'股票代币·永续':'股票代币·现货';
   document.querySelectorAll('#coinList .coin-row[data-symbol]').forEach(row=>{const sym=row.dataset.symbol,market=row.dataset.market,m=metaFor(sym);if(!m)return;if(market==='futures'){replaceRowTitle(row,`${String(sym).replace('/','')}永续合约`,`${m.name||m.ticker} · 永续`);const val=row.children?.[1],p=contractPriceFor(sym);if(val&&p)val.textContent=fmt(p,m.dec??configs[sym]?.dec??2);row.classList.toggle('active',sym===symbol&&tradingMode==='futures')}if(market==='stock'){const mode=stockPickerMode,company=companyName(m),sim=m.synthetic?'GreedBit 模拟估值':'追踪公开标的价格',title=mode==='futures'?`${m.ticker}USDT永续合约`:m.ticker;replaceRowTitle(row,title,`${company}股票 · ${mode==='futures'?'永续合约':'现货'} · ${sim}`);const val=row.children?.[1],p=mode==='futures'?contractPriceFor(sym):spotReference(sym);if(val&&p)val.textContent=fmt(p,m.dec??2);row.classList.toggle('active',sym===symbol&&tradingMode===mode);row.dataset.stockMode=mode}})
 }
-function scheduleDecorate(){if(decorateQueued)return;decorateQueued=true;requestAnimationFrame(()=>{decorateQueued=false;decoratePicker();installChevrons();syncChevronState()})}
+function scheduleDecorate(){if(decorateQueued)return;decorateQueued=true;requestAnimationFrame(()=>{decorateQueued=false;decoratePicker();syncChevronState()})}
 async function chooseStock(sym,mode){requestedTradingMode=mode;tradingMode=mode;try{await setSymbol(sym)}finally{requestedTradingMode=null}showPage(mode==='spot'?'trade':'futures');tradingMode=mode;renderTradingMode();draw();renderTable();updateAssets();$('coinPicker')?.classList.add('hidden');syncChevronState()}
 function installPickerFixes(){
   const picker=$('coinPicker'),tabs=picker?.querySelector('.coin-tabs'),list=$('coinList');if(!picker||!tabs||!list)return;
@@ -103,7 +104,14 @@ function withContractPrice(fn){if(tradingMode!=='futures'||!supportsPerpBasis(sy
 const inheritedPlaceOrder=placeOrder;placeOrder=function(side){return withContractPrice(()=>inheritedPlaceOrder.call(this,side))};
 const inheritedMatchOrders=matchOrders;matchOrders=function(){return withContractPrice(()=>inheritedMatchOrders.apply(this,arguments))};
 const inheritedCheckRisk=checkRisk;checkRisk=function(){return withContractPrice(()=>inheritedCheckRisk.apply(this,arguments))};
-const inheritedClosePosition=closePosition;closePosition=function(id,reason='手动平仓',fill,fraction=1){const p=positions.find(x=>x.id===id);if(fill==null&&p&&supportsPerpBasis(p.symbol))fill=contractPriceFor(p.symbol)||spotReference(p.symbol);return inheritedClosePosition.call(this,id,reason,fill,fraction)};
+const inheritedClosePosition=closePosition;closePosition=function(id,reason='手动平仓',fill,fraction=1){
+  const p=positions.find(x=>x.id===id);
+  if(p){
+    const derive=fill==null||reason==='减仓'||reason==='手动平仓';
+    if(derive)fill=supportsPerpBasis(p.symbol)?(contractPriceFor(p.symbol)||spotReference(p.symbol)):(markFor(p.symbol)||spotReference(p.symbol));
+  }
+  return inheritedClosePosition.call(this,id,reason,fill,fraction);
+};
 const inheritedPnlOf=pnlOf;pnlOf=function(p,mark){if(p&&supportsPerpBasis(p.symbol)){const m=mark==null?contractPriceFor(p.symbol):mark;return(m-p.entry)*p.qty*(p.side==='long'?1:-1)}return inheritedPnlOf.apply(this,arguments)};
 const inheritedUpdatePreview=updatePreview;updatePreview=function(){return withContractPrice(()=>{const out=inheritedUpdatePreview.apply(this,arguments);updateFeeMetric();return out})};
 const inheritedRenderBook=renderBook;renderBook=function(){return withContractPrice(()=>inheritedRenderBook.apply(this,arguments))};
@@ -118,20 +126,23 @@ const inheritedStats=stats;
 stats=function(){const out=inheritedStats.apply(this,arguments);if(tradingMode==='futures'&&supportsPerpBasis(symbol)){const p=contractPriceFor(symbol),factor=spotReference(symbol)?p/spotReference(symbol):1,s=marketSnapshots[symbol]||{};if(p){$('lastPrice').textContent=fmt(p,cfg.dec);$('midPrice').textContent=fmt(p,cfg.dec)}if(s.high)$('high24').textContent=fmt(+s.high*factor,cfg.dec);if(s.low)$('low24').textContent=fmt(+s.low*factor,cfg.dec)}scheduleDecorate();return out};
 
 const inheritedSettleFunding=settleFunding;
-settleFunding=function(){const n=Date.now()/1000;if(n<nextFunding)return;let net=0;for(const p of positions){const rate=supportsPerpBasis(p.symbol)?fundingFor(p.symbol):fundingRate,mark=supportsPerpBasis(p.symbol)?contractPriceFor(p.symbol):markFor(p.symbol),pay=p.qty*mark*rate*(p.side==='long'?-1:1);futuresWallet().usdt=Math.max(0,futuresWallet().usdt+pay);net+=pay;addLedger('资金费率',pay,p.symbol,`${rate>=0?'+':''}${(rate*100).toFixed(4)}% · ${rate>0?'多付空收':rate<0?'空付多收':'无费用'}`,'futures')}if(net>=0)accountStats.fundingReceived+=net;else accountStats.fundingPaid+=Math.abs(net);nextFunding=Math.floor(n/FUNDING_INTERVAL+1)*FUNDING_INTERVAL;if(positions.length)notify('资金费率已结算',`${net>=0?'+':''}${fmt(net)} USDT`,net>=0?'success':'warning');saveState()};
+settleFunding=function(){const n=Date.now()/1000;if(n<nextFunding)return;let net=0;for(const p of positions){const rate=supportsPerpBasis(p.symbol)?fundingFor(p.symbol):fundingRate,mark=supportsPerpBasis(p.symbol)?contractPriceFor(p.symbol):markFor(p.symbol),pay=(window.GreedBitDomain?.fundingPayment?.({side:p.side,qty:p.qty,mark,rate}))??(p.qty*mark*rate*(p.side==='long'?-1:1));futuresWallet().usdt+=pay;net+=pay;addLedger('资金费率',pay,p.symbol,`${rate>=0?'+':''}${(rate*100).toFixed(4)}% · ${rate>0?'多付空收':rate<0?'空付多收':'无费用'}`,'futures')}if(net>=0)accountStats.fundingReceived+=net;else accountStats.fundingPaid+=Math.abs(net);nextFunding=Math.floor(n/FUNDING_INTERVAL+1)*FUNDING_INTERVAL;if(positions.length)notify('资金费率已结算',`${net>=0?'+':''}${fmt(net)} USDT`,net>=0?'success':'warning');saveState()};
 const inheritedFundingUi=updateFundingUI;
-updateFundingUI=function(){if(tradingMode!=='futures'||!supportsPerpBasis(symbol))return inheritedFundingUi.apply(this,arguments);const rate=fundingFor(symbol);fundingRate=rate;const r=Math.max(0,Math.ceil(nextFunding-Date.now()/1000)),h=Math.floor(r/3600),m=Math.floor((r%3600)/60),s=r%60,el=$('fundingRate');if(el){el.textContent=`${rate>0?'+':''}${(rate*100).toFixed(4)}%`;el.classList.remove('gb18-funding-positive','gb18-funding-negative');if(rate>0)el.classList.add('gb18-funding-positive');if(rate<0)el.classList.add('gb18-funding-negative')}$('fundingCountdown').textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`};
+updateFundingUI=function(){if(tradingMode!=='futures'||!supportsPerpBasis(symbol))return inheritedFundingUi.apply(this,arguments);const rate=fundingFor(symbol);const r=Math.max(0,Math.ceil(nextFunding-Date.now()/1000)),h=Math.floor(r/3600),m=Math.floor((r%3600)/60),s=r%60,el=$('fundingRate');if(el){el.textContent=`${rate>0?'+':''}${(rate*100).toFixed(4)}%`;el.classList.remove('gb18-funding-positive','gb18-funding-negative');if(rate>0)el.classList.add('gb18-funding-positive');if(rate<0)el.classList.add('gb18-funding-negative')}$('fundingCountdown').textContent=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`};
 
 function updateFeeMetric(){const spans=[...document.querySelectorAll('#futuresPanel .metric-grid span')],label=spans.find(x=>x.textContent.trim()==='开仓手续费');if(!label)return;const value=label.nextElementSibling,rate=orderType==='limit'?(V?.MAKER_RATE??.0002):(V?.TAKER_RATE??.0006),liquidity=orderType==='limit'?'Maker':'Taker';label.classList.add('gb-term-tip');label.tabIndex=0;label.dataset.termTip='普通费率：Maker 0.020%，Taker 0.060%。现货账户持有足够 GREED 时自动使用 GREED 抵扣，Maker 0.001%，Taker 0.002%。市价开仓按 Taker，正常挂入盘口成交的限价开仓按 Maker。';if(value)value.textContent=`${(rate*100).toFixed(3)}% ${liquidity}`}
 function installFeeCleanup(){$('feeStripFutures')?.setAttribute('aria-hidden','true');$('feeStripSpot')?.setAttribute('aria-hidden','true');updateFeeMetric();document.querySelectorAll('.order-type').forEach(b=>b.addEventListener('click',()=>setTimeout(updateFeeMetric,0)))}
 function updateRangeVisual(input){if(!input)return;const min=+input.min||0,max=+input.max||100,val=+input.value||0,p=max>min?(val-min)/(max-min)*100:0;input.style.setProperty('--gb18-range-pct',`${Math.max(0,Math.min(100,p))}%`);const dots=input.id==='spotPct'?$('spotPctDots'):input.id==='pct'?$('pctDots'):null;dots?.querySelectorAll('[data-pct]').forEach(b=>b.classList.toggle('passed',+b.dataset.pct<=val))}
 function installRangePolish(){for(const id of ['pct','spotPct','levRange']){const input=$(id);if(!input)continue;updateRangeVisual(input);input.addEventListener('input',()=>updateRangeVisual(input));input.addEventListener('change',()=>updateRangeVisual(input))}$('pctDots')?.addEventListener('click',()=>setTimeout(()=>updateRangeVisual($('pct')),0));$('spotPctDots')?.addEventListener('click',()=>setTimeout(()=>updateRangeVisual($('spotPct')),0));const baseOpenLeverage=openLeverage;openLeverage=function(){const out=baseOpenLeverage.apply(this,arguments);updateRangeVisual($('levRange'));return out}}
 
+/* Publish synchronously: bootstrap.js validates this module right after its load event,
+ * while bootWhenReady() still waits for external markets to register. */
+window.GreedBitContracts={contractPriceFor,fundingFor,spotReference,basisPct,supportsPerpBasis,get stockPickerMode(){return stockPickerMode}};
+
 function bootWhenReady(){
   if(!window.GreedBitExternalMarkets||!window.GreedBitExternalMarkets.STOCKS?.length){setTimeout(bootWhenReady,80);return}
   installStyle();patchCompanyNames();ensureStockWalletShape();installChevrons();installPickerFixes();installFeeCleanup();installRangePolish();
-  setInterval(()=>{touchBasis(symbol);for(const p of positions)touchBasis(p.symbol)},1500);
-  window.GreedBitContracts={contractPriceFor,fundingFor,spotReference,basisPct,get stockPickerMode(){return stockPickerMode}};
+  every(()=>{touchBasis(symbol);for(const p of positions)touchBasis(p.symbol)},1500);
   stats();draw();renderTable();updateAssets();scheduleDecorate();document.dispatchEvent(new CustomEvent('greedbit:market-context-changed'));
 }
 bootWhenReady();
