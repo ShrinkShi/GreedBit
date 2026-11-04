@@ -223,3 +223,22 @@
 
 
 
+
+## 2026-11-04 13:05 - 图表网格改为坐标锚定 + v0.1.0
+
+### 用户目标
+- 网格线跟随拖动/缩放；发布 v0.1.0 并打 Toy 包。
+
+### 本轮处理
+- 找到真正生效的 draw 在 `ui/preferences.js`（覆盖 renderer），把像素等分网格改为价格/时间刻度。
+- 时间轴标签减为 6 条并居中，修复右侧重叠。
+- 版本号统一到 0.1.0。
+
+### 关键结论
+- `renderer.js` 的 draw 会被 `preferences.js` 覆盖；改图表必须改后者。
+
+### 影响文件
+- `src/ui/preferences.js`、`VERSION`、`src/core.js`、`src/bootstrap.js`、`index.html`、`README.md`、`CHANGELOG.md`、`tools/check-version.mjs`。
+
+### 后续事项
+- Toy 预览环境验证。
