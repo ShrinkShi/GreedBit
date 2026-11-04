@@ -5,9 +5,17 @@
 
 ## 当前结论
 
-v0.0.26 已完成第一阶段运行时收敛：历史 `v009.js ~ v025.js` 版本补丁链不再作为运行时文件存在。功能代码迁移到按职责划分的模块目录，并由唯一的 `src/bootstrap.js` 顺序初始化。
+v0.0.26 已移除历史 `v009.js ~ v025.js` 版本补丁**文件**，运行时由唯一的 `src/bootstrap.js` 按顺序加载 21 个职责模块；版本历史只由 Git 保存。
 
-版本历史由 Git 保存，不再通过 `v026.js`、`v027-fix.js` 之类文件参与运行。
+但必须明确：**函数级覆盖机制仍然存在**。基础模块先声明全局函数，后续模块在严格模式 IIFE 中用赋值重新实现（`renderBook=function(){…}`），最终生效者由加载顺序决定。`tools/runtime-ownership.mjs` 当前统计到 **50 个被覆盖的全局函数、28 条多点覆盖链**。
+
+这与「旧版本代码同时运行」不是同一个问题，但维护成本很高：
+
+- 阅读时必须按加载顺序追踪，源码位置不等于执行位置；
+- 删除被覆盖函数的声明，会让后续严格模式赋值直接抛 `ReferenceError`（本轮修复中真实发生过）；
+- 同一函数的多份实现容易分叉（手续费、取价、风控口径都踩过）。
+
+CI 现在执行该脚本：输出覆盖链，并在「赋值了但从未声明」时报错。
 
 ## 当前运行时结构
 
@@ -61,6 +69,30 @@ v0.0.26 已完成第一阶段运行时收敛：历史 `v009.js ~ v025.js` 版本
 | 委托与历史表格 | `src/trading/records.js` | 交易/页面事件 |
 | 网格策略 | `src/strategy/grid.js` | 策略与行情事件 |
 
+## 已知函数覆盖链
+
+`node tools/runtime-ownership.mjs` 会输出完整清单（按加载顺序）。下表只列最长的链，**最后一项为当前生效实现**：
+
+| 函数 | 覆盖点 | 加载顺序 |
+| --- | ---: | --- |
+| `setSymbol` | 8 | advanced-orders → model → compatibility → performance → extended → external → contracts → ui/runtime |
+| `connectMarketSocket` | 5 | preload → model → performance → extended → external |
+| `renderBook` | 5 | preload → model → extended → external → contracts |
+| `showPage` | 5 | advanced-orders → home → shell → performance → contracts |
+| `syncAuth` | 5 | preload → advanced-orders → preferences → home → grid |
+| `updateMarketSnapshots` | 5 | preload → home → model → extended → external |
+| `loadHistoricalMarket` | 4 | preload → model → extended → external |
+| `placeOrder` | 4 | model → contracts → records → ui/runtime |
+| `renderAssetPage` | 4 | shell → contracts → records → grid |
+| `closePosition` | 3 | model → contracts → records |
+
+**修改规则**：
+
+1. 先跑脚本确认目标函数的最后一个赋值点，改那里才有运行时效果。
+2. 新增覆盖必须先有全局声明；禁止只写 `foo=function(){}`。
+3. 被取代的旧实现不要直接删除，改为抛错 stub 并注明真实实现位置（`futures.js` / `spot.js` 已是此模式）。
+4. 最终目标是逐步消除覆盖链，把状态机收敛到单一模块。
+
 ## 允许的周期任务
 
 周期任务只能维护数据或业务状态，例如：
@@ -82,6 +114,7 @@ v0.0.26 已完成第一阶段运行时收敛：历史 `v009.js ~ v025.js` 版本
 1. 根 `src/` 下重新出现 `vNNN*.js`。
 2. 运行时代码重新引用 `src/vNNN*.js`。
 3. `syncPairLabel / syncExternalLabel / syncPairHeader` 等已退休共享 UI 轮询器回归。
+4. `node tools/runtime-ownership.mjs`：每个被覆盖的全局函数都必须存在声明，并输出覆盖链清单。
 
 Toy 构建脚本也会拒绝根 `src/v*.js` 回归。
 
@@ -101,3 +134,6 @@ Toy 构建脚本也会拒绝根 `src/v*.js` 回归。
 4. 不允许通过更高频率定时器“压住”旧逻辑。
 5. 不允许在主 Canvas 绘制结束后使用另一套价格数据或几何参数补画同一坐标轴。
 6. 历史版本只通过 Git commit / tag 保留。
+7. 不得删除仍被其他模块赋值的函数声明；需要退休时改为抛错 stub。
+8. 新增全局函数必须先声明（`function foo(){}`）再被赋值。
+9. 修改共享函数前先跑 `node tools/runtime-ownership.mjs` 确认最终生效点。
