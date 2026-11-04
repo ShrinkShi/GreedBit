@@ -98,7 +98,7 @@ function submitClose(){
   }else{
     const limit=Number($id('gbCloseLimitPrice').value);
     if(!(limit>0))return updateEstimate();
-    closeOrders.unshift({id:nextId++,positionId:p.id,symbol:p.symbol,side:p.side==='long'?'sell':'buy',qty:size.qty,limit,status:'open',createdAt:nowText(),createdTs:Date.now()});
+    closeOrders.unshift({id:nextId++,positionId:p.id,symbol:p.symbol,side:p.side==='long'?'sell':'buy',qty:size.qty,limit,status:'open',reduceOnly:true,kind:'close',createdAt:nowText(),createdTs:Date.now()});
     saveState();notify('限价平仓已挂单',`${label(p.symbol)} · ${number(size.qty,6)} @ ${number(limit,configs[p.symbol]?.dec??2)}`,'info');
     renderTable();draw();matchCloseOrders();
   }
@@ -162,4 +162,5 @@ function boot(){
 }
 boot();
 window.GreedBitPositionsUI={render,handleAction,showClose,marketMark,reverse};
+renderTable();
 })();
