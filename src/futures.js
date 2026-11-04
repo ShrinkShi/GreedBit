@@ -18,14 +18,15 @@ function settleFunding(){throw new Error('settleFunding: 实现位于 src/tradin
 
 function validateTPSL(side,entry,tp,sl){if(tp&&((side==='long'&&tp<=entry)||(side==='short'&&tp>=entry)))return'止盈价方向不正确';if(sl&&((side==='long'&&sl>=entry)||(side==='short'&&sl<=entry)))return'止损价方向不正确';return''}
 function cancelOrder(id){if(!ensureStateFresh())return;const w=futuresWallet(),i=orders.findIndex(o=>o.id===id);if(i<0)return;const o=orders[i];w.usdt+=o.reserved;w.frozen=Math.max(0,w.frozen-o.reserved);orderHistory.unshift({...o,status:'已撤销',finishedAt:nowText()});orders.splice(i,1);notify('撤单成功',`${o.symbol} @ ${fmt(o.limit,(configs[o.symbol]?.dec ?? 2))}`);renderTable();updateAssets();saveState();draw()}
-function matchOrders(){
-  const book=window.GreedBitPositionBook;
-  const mark=riskMarkFor(symbol)||price;
-  // Reduce-only close orders never reserve or open new exposure.
+function matchCloseOrders(){
+  if(!user||!closeOrders.length)return;
+  if(!ensureStateFresh())return;
+  // Close limits are reduce-only and watch their own market, even when another symbol is selected.
   for(let i=closeOrders.length-1;i>=0;i--){
-    const o=closeOrders[i];if(o.symbol!==symbol)continue;
-    const p=positions.find(p=>p.id===o.positionId);
+    const o=closeOrders[i],p=positions.find(p=>p.id===o.positionId);
     if(!p){closeOrders.splice(i,1);saveState();continue;}
+    const mark=riskMarkFor(o.symbol)||markFor(o.symbol);
+    if(!(mark>0))continue;
     const hit=p.side==='long'?mark>=o.limit:mark<=o.limit;
     if(!hit)continue;
     const qty=Math.min(o.qty,p.qty);
@@ -33,6 +34,10 @@ function matchOrders(){
     if(qty>0)closePosition(p.id,'限价平仓',o.limit,Math.min(1,qty/p.qty),'maker');
     else saveState();
   }
+}
+function matchOrders(){
+  const book=window.GreedBitPositionBook;
+  matchCloseOrders();
   for(let i=orders.length-1;i>=0;i--){
     const o=orders[i];if(o.symbol!==symbol)continue;
     if(!book?.canOpen(positions,{symbol:o.symbol,mode:o.mode,leverage:o.leverage})){
