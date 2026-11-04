@@ -15,7 +15,8 @@ const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 const fail = [];
 
 const version = read('VERSION').trim();
-const compact = version.split('.').join('');
+const [major, minor, patch] = version.split('.').map(Number);
+const compact = String(major * 10000 + minor * 100 + patch).padStart(4, '0');
 if (!/^\d+\.\d+\.\d+$/.test(version)) fail.push(`VERSION has an unexpected format: "${version}"`);
 
 const core = read('src/core.js');

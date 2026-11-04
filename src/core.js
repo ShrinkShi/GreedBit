@@ -1,6 +1,6 @@
 'use strict';
 /* Single version source; tools/check-version.mjs keeps it in sync with VERSION/README/index.html. */
-window.GB_VERSION='0.0.26';
+window.GB_VERSION='0.1.0';
 /* Append the build id to dynamically injected stylesheets so a deploy cannot keep stale CSS. */
 /* Periodic task helper: skips work while the tab is hidden. */
 function every(a,b){let ms=b,fn=a;if(typeof a!=='function'){ms=a;fn=b}return setInterval(()=>{if(typeof document!=='undefined'&&document.hidden)return;fn()},ms)}

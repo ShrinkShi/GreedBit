@@ -3,7 +3,7 @@
  */
 (function(){
 'use strict';
-const BUILD='0026-20261103d';
+const BUILD='0100-20261104a';
 const MODULE_TIMEOUT_MS=8000;
 const MODULES=[
   'src/market/preload.js',
