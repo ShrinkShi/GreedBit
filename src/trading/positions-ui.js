@@ -15,19 +15,25 @@ function marketMark(p){
 }
 function profitClass(value){return value>1e-8?'gb-pos-profit':value<-1e-8?'gb-pos-loss':'gb-pos-neutral'}
 function label(symbol){return String(symbol).replace('/','')+'永续合约'}
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+function positionSymbolCell(sym){
+  const name=escapeHtml(label(sym));
+  if(!configs[sym])return name;
+  return `<button type="button" class="gb-pos-symbol" data-gb-pos-symbol="${escapeHtml(sym)}" title="切换到 ${name} 合约图表" aria-label="查看 ${name} 合约图表">${name}</button>`;
+}
 function number(value,dec=2){return fmt(Number(value)||0,dec)}
 function lev(value){return Number(Number(value).toFixed(4))+'X'}
 
 function render(){
   const list=positions.filter(p=>posFilter==='all'||p.mode===posFilter);
   $id('positionFilters')?.classList.remove('hidden');
-  $id('thead').innerHTML='<tr><th>合约</th><th>方向</th><th>模式</th><th>杠杆</th><th>仓位价值(USDT)</th><th>开仓均价</th><th>合约标记价</th><th>保证金</th><th>未实现盈亏</th><th>ROE</th><th>强平价</th><th>操作</th></tr>';
+  $id('thead').innerHTML='<tr><th>合约</th><th>方向</th><th>模式</th><th>杠杆</th><th>仓位价值(USDT)</th><th>开仓均价</th><th>合约标记价</th><th>保证金</th><th>未实现盈亏</th><th>收益率</th><th>强平价</th><th>操作</th></tr>';
   $id('tbody').innerHTML=list.length?list.map(p=>{
     const mark=marketMark(p),pnl=(mark-p.entry)*p.qty*(p.side==='long'?1:-1);
     const roe=p.margin?pnl/p.margin*100:0,kind=profitClass(pnl),dec=configs[p.symbol]?.dec??2,
       liq=liqPrice(p.side,p.entry,p.mode,p.margin,p.notional,p.id,p.symbol)||p.liq;
     return `<tr class="gb-pos-row">
-      <td>${label(p.symbol)}</td><td class="${p.side==='long'?'gb-pos-profit':'gb-pos-loss'}">${p.side==='long'?'多':'空'}</td>
+      <td>${positionSymbolCell(p.symbol)}</td><td class="${p.side==='long'?'gb-pos-profit':'gb-pos-loss'}">${p.side==='long'?'多':'空'}</td>
       <td>${p.mode==='cross'?'全仓':'逐仓'}</td><td>${lev(p.leverage)}</td>
       <td>${number(p.qty*mark)}</td><td>${number(p.entry,dec)}</td><td>${number(mark,dec)}</td>
       <td>${number(p.margin)}</td><td class="${kind}">${pnl>0?'+':''}${number(pnl)}</td>
@@ -134,7 +140,25 @@ function cancelCloseOrder(id){
   const i=closeOrders.findIndex(o=>String(o.id)===String(id));if(i<0)return;
   const order=closeOrders[i];closeOrders.splice(i,1);orderHistory.unshift({...order,type:'限价平仓',status:'已撤销',finishedAt:nowText(),finishedTs:Date.now()});saveState();renderTable();notify('限价平仓已撤销','','info');
 }
+async function openPositionSymbol(target){
+  if(!configs[target])return notify('无法跳转','该交易对目前不可用','warning');
+  try{
+    showPage('futures');
+    if(symbol!==target)await setSymbol(target);
+    resize();
+    draw();
+  }catch(error){
+    console.error('[GreedBit] position symbol navigation failed',error);
+    notify('跳转失败','交易对切换未完成，请重试','error');
+  }
+}
 function handleAction(e){
+  const symbolButton=e.target.closest('[data-gb-pos-symbol]');
+  if(symbolButton){
+    if(!ensureStateFresh())return true;
+    void openPositionSymbol(symbolButton.dataset.gbPosSymbol);
+    return true;
+  }
   const cancel=e.target.closest('[data-gb-pos-cancel-close]');if(cancel){cancelCloseOrder(cancel.dataset.gbPosCancelClose);return true}
   const btn=e.target.closest('[data-gb-pos-action]');if(!btn)return false;
   const id=Number(btn.dataset.id);
