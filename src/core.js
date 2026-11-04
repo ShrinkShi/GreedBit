@@ -1,6 +1,6 @@
 'use strict';
 /* Single version source; tools/check-version.mjs keeps it in sync with VERSION/README/index.html. */
-window.GB_VERSION='0.1.0';
+window.GB_VERSION='0.1.1';
 /* Append the build id to dynamically injected stylesheets so a deploy cannot keep stale CSS. */
 /* Periodic task helper: skips work while the tab is hidden. */
 function every(a,b){let ms=b,fn=a;if(typeof a!=='function'){ms=a;fn=b}return setInterval(()=>{if(typeof document!=='undefined'&&document.hidden)return;fn()},ms)}
@@ -51,7 +51,7 @@ let chartSettings={...chartDefaults,...safeParse(localStorage.getItem('greedbit_
 let currentPage='futures',tradingMode='futures',assetTab='overview';
 let symbol='BTC/USDT',cfg=configs[symbol],price=cfg.anchor,tfKey='5m',tf=300;
 let candles=[],current=null,visibleCount=72,viewShift=0,yZoom=1,yPan=0,hoverIndex=-1,hoverPrice=null,dragging=false,dragX=0,dragY=0,dragShift=0,dragYPan=0,dragRange=1,crosshairLocked=false,lockedCrosshair=null,contextPrice=null,contextIndex=null;
-let positions=[],orders=[],orderHistory=[],trades=[],closedPositions=[],ledger=[];
+let positions=[],orders=[],closeOrders=[],orderHistory=[],trades=[],closedPositions=[],ledger=[];
 let spotOrders=[],spotOrderHistory=[],spotTrades=[];
 let nextId=1,tableMode='positions',posFilter='all',orderType='market',spotOrderType='market',spotSide='buy',leverage=10,levDraft=10;
 let wallets=freshWallets(),accountStats=freshStats(),authMode='login',user=null,fundMode='deposit';
@@ -131,7 +131,7 @@ function saveState(){
   if(spotOrderHistory.length>MAX_HISTORY)spotOrderHistory=spotOrderHistory.slice(0,MAX_HISTORY);
   stateRev++;
   try{
-    localStorage.setItem(stateKey(),JSON.stringify({wallets,accountStats,positions,orders,orderHistory,trades,closedPositions,ledger,spotOrders,spotOrderHistory,spotTrades,nextId,rev:stateRev}));
+    localStorage.setItem(stateKey(),JSON.stringify({wallets,accountStats,positions,orders,closeOrders,orderHistory,trades,closedPositions,ledger,spotOrders,spotOrderHistory,spotTrades,nextId,rev:stateRev}));
     localStorage.setItem(stateRevKey(),String(stateRev));
   }catch(e){
     if(!stateQuotaWarned){stateQuotaWarned=true;try{notify('本地存储已满','状态未能保存，请清理浏览器数据后重试','error',6000)}catch{}}
@@ -142,7 +142,7 @@ function saveState(){
 function loadState(){
   if(!user)return;
   const raw=localStorage.getItem(stateKey());
-  if(!raw){wallets=freshWallets();accountStats=freshStats();positions=[];orders=[];orderHistory=[];trades=[];closedPositions=[];ledger=[];spotOrders=[];spotOrderHistory=[];spotTrades=[];nextId=1;stateRev=readStoredRev();return}
+  if(!raw){wallets=freshWallets();accountStats=freshStats();positions=[];orders=[];closeOrders=[];orderHistory=[];trades=[];closedPositions=[];ledger=[];spotOrders=[];spotOrderHistory=[];spotTrades=[];nextId=1;stateRev=readStoredRev();return}
   try{
     const s=JSON.parse(raw);
     if(s.wallets)wallets=s.wallets;
@@ -157,12 +157,12 @@ function loadState(){
     wallets.futures={...fresh.futures,...(wallets.futures||{})};
     for(const k of ['earn','fiat','strategy'])wallets[k]={...fresh[k],...(wallets[k]||{})};
     accountStats={...freshStats(),...(s.accountStats||{})};
-    positions=s.positions||[];orders=s.orders||[];orderHistory=s.orderHistory||[];trades=s.trades||[];closedPositions=s.closedPositions||[];ledger=s.ledger||[];
+    positions=window.GreedBitPositionBook?.normalize(s.positions||[])||(s.positions||[]);orders=s.orders||[];closeOrders=s.closeOrders||[];orderHistory=s.orderHistory||[];trades=s.trades||[];closedPositions=s.closedPositions||[];ledger=s.ledger||[];
     spotOrders=s.spotOrders||[];spotOrderHistory=s.spotOrderHistory||[];spotTrades=s.spotTrades||[];nextId=Number.isFinite(+s.nextId)&&+s.nextId>0?+s.nextId:1;stateRev=Math.max(readStoredRev(),(+s.rev||0));
   }catch{
     /* Corrupted snapshot: drop every per-account array, not just the wallets,
      * otherwise the previous account's positions leak into the next login. */
-    wallets=freshWallets();positions=[];orders=[];orderHistory=[];trades=[];closedPositions=[];ledger=[];spotOrders=[];spotOrderHistory=[];spotTrades=[];nextId=1;stateRev=readStoredRev();
+    wallets=freshWallets();positions=[];orders=[];closeOrders=[];orderHistory=[];trades=[];closedPositions=[];ledger=[];spotOrders=[];spotOrderHistory=[];spotTrades=[];nextId=1;stateRev=readStoredRev();
   }
 }
 function addLedger(type,amount,sym='',note='',wallet='futures'){ledger.unshift({time:nowText(),type,symbol:sym,amount,wallet,note});ledger=ledger.slice(0,600)}

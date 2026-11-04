@@ -87,7 +87,7 @@ function ensureTableChrome(){
   if(!$('gb19TableToolbar')){const x=document.createElement('div');x.id='gb19TableToolbar';x.className='gb19-table-toolbar hidden';pos.insertAdjacentElement('beforebegin',x)}
   if(!$('gb19Pagination')){const p=document.createElement('div');p.id='gb19Pagination';p.className='gb19-pagination hidden';bottom.appendChild(p)}
 }
-function modeCount(kind){if(kind==='limit')return orders.length;return advancedOrders().filter(x=>x.kind===kind&&x.status==='open').length}
+function modeCount(kind){if(kind==='limit')return orders.length+closeOrders.length;return advancedOrders().filter(x=>x.kind===kind&&x.status==='open').length}
 function syncTableChrome(){
   ensureTableChrome();const bar=$('gb19TableToolbar'),pos=$('positionFilters');if(!bar||!pos)return;
   pos.classList.toggle('hidden',tradingMode!=='futures'||tableMode!=='positions');
@@ -109,7 +109,7 @@ function hidePagination(){const p=$('gb19Pagination');if(p){p.classList.add('hid
 function emptyRow(cols,text){return `<tr><td colspan="${cols}" class="empty">${esc(text)}</td></tr>`}
 
 function currentOrderRows(){
-  if(openKind==='limit')return orders.map(o=>({...o,_kind:'limit'}));
+  if(openKind==='limit')return [...orders.map(o=>({...o,_kind:'limit'})),...closeOrders.map(o=>({...o,_kind:'close',leverage:'-',margin:o.qty*o.limit,reserved:0}))];
   if(['plan','trailing','twap'].includes(openKind))return advancedOrders().filter(o=>o.kind===openKind&&o.status==='open').map(o=>({...o,_kind:o.kind}));
   return[];
 }
@@ -117,17 +117,30 @@ function renderCurrentOrders(){
   const arr=currentOrderRows();
   $('thead').innerHTML='<tr><th>合约</th><th>倍数</th><th>委托时间</th><th>更新时间</th><th>交易类型</th><th>只减仓</th><th>委托类型</th><th>委托量(USDT)</th><th>委托价(USDT)</th><th>成交量(USDT)</th><th>成交均价(USDT)</th><th>冻结保证金</th><th>手续费</th><th>成交率</th><th>止盈/止损</th><th>订单编号</th><th>操作</th></tr>';
   $('tbody').innerHTML=arr.length?arr.map(o=>{
-    const side=orderSide(o.side),notional=(+o.margin||0)*(+o.leverage||1),kind=o._kind||'limit';
-    let priceText='--';if(kind==='limit')priceText=fmt(o.limit,decFor(o.symbol));if(kind==='plan')priceText=`触发 ${fmt(o.trigger,decFor(o.symbol))}`;if(kind==='trailing')priceText=o.activation?`激活 ${fmt(o.activation,decFor(o.symbol))}`:`回调 ${fmt((+o.callback||0)*100,2)}%`;if(kind==='twap')priceText='分时市价';
-    const cancel=kind==='limit'?`<button class="gb19-link danger" data-cancel="${o.id}">撤单</button>`:`<button class="gb19-link danger" data-gb19-adv-cancel="${o.id}">撤单</button>`;
-    return `<tr><td>${contractLabel(o.symbol)}</td><td>${o.leverage||'-'}</td><td>${timeCell(o.createdTs,o.createdAt)}</td><td>${timeCell(o.updatedTs||o.createdTs,o.updatedAt||o.createdAt)}</td><td class="${side[1]}">${side[0]}</td><td>否</td><td>${kind==='limit'?'限价委托':advancedKindName(kind)}</td><td>${fmt(notional,4)}</td><td>${priceText}</td><td>0.0000</td><td>--</td><td>${fmt(+o.reserved||+o.margin||0,4)}</td><td>--</td><td>0%</td><td>${tpSlCell(o)}</td><td>${idCell(o.id)}</td><td>${cancel}</td></tr>`
+    const side=orderSide(o.side,true),kind=o._kind||'limit',notional=kind==='close'?o.qty*o.limit:(+o.margin||0)*(+o.leverage||1);
+    let priceText='--';if(kind==='limit'||kind==='close')priceText=fmt(o.limit,decFor(o.symbol));if(kind==='plan')priceText=`触发 ${fmt(o.trigger,decFor(o.symbol))}`;if(kind==='trailing')priceText=o.activation?`激活 ${fmt(o.activation,decFor(o.symbol))}`:`回调 ${fmt((+o.callback||0)*100,2)}%`;if(kind==='twap')priceText='分时市价';
+    const cancel=kind==='close'?`<button class="gb19-link danger" data-gb-pos-cancel-close="${o.id}">撤单</button>`:kind==='limit'?`<button class="gb19-link danger" data-cancel="${o.id}">撤单</button>`:`<button class="gb19-link danger" data-gb19-adv-cancel="${o.id}">撤单</button>`;
+    return `<tr><td>${contractLabel(o.symbol)}</td><td>${o.leverage||'-'}</td><td>${timeCell(o.createdTs,o.createdAt)}</td><td>${timeCell(o.updatedTs||o.createdTs,o.updatedAt||o.createdAt)}</td><td class="${side[1]}">${side[0]}</td><td>${kind==='close'?'是':'否'}</td><td>${kind==='close'?'限价平仓':kind==='limit'?'限价委托':advancedKindName(kind)}</td><td>${fmt(notional,4)}</td><td>${priceText}</td><td>0.0000</td><td>--</td><td>${fmt(+o.reserved||+o.margin||0,4)}</td><td>--</td><td>0%</td><td>${tpSlCell(o)}</td><td>${idCell(o.id)}</td><td>${cancel}</td></tr>`
   }).join(''):emptyRow(17,openKind==='limit'?'暂无当前委托':`暂无${advancedKindName(openKind)}`);
   hidePagination();
 }
 function renderOrderHistory(){
   const all=openKind==='limit'?orderHistory:[];const {rows,pages}=pageSlice(all,'orders');
   $('thead').innerHTML='<tr><th>合约</th><th>倍数</th><th>委托时间</th><th>更新时间</th><th>交易类型</th><th>只减仓</th><th>委托类型</th><th>委托量(USDT)</th><th>委托价(USDT)</th><th>成交量(USDT)</th><th>成交均价(USDT)</th><th>平仓盈亏 | 收益(USDT)</th><th>手续费</th><th>状态</th><th>订单编号</th><th>止盈/止损</th></tr>';
-  $('tbody').innerHTML=rows.length?rows.map(o=>{const side=orderSide(o.side),notional=(+o.margin||0)*(+o.leverage||1),filled=o.status==='已成交';return `<tr><td>${contractLabel(o.symbol)}</td><td>${o.leverage||'-'}</td><td>${timeCell(o.createdTs,o.createdAt)}</td><td>${timeCell(o.finishedTs,o.finishedAt)}</td><td class="${side[1]}">${side[0]}</td><td>否</td><td>${/maker|限价/i.test(o.type||'限价')?'限价委托':'限价委托'}</td><td>${fmt(notional,4)}</td><td>${fmt(o.limit,decFor(o.symbol))}</td><td>${filled?fmt(notional,4):'--'}</td><td>${filled?fmt(o.limit,decFor(o.symbol)):'0.00'}</td><td><span class="gb19-neutral">0.0000 | 0.0000</span></td><td>${o.fee!=null?signed(-Math.abs(o.fee),6,' USDT'):'--'}</td><td class="${filled?'gb19-positive':'gb19-muted'}">${esc(o.status||'-')}</td><td>${idCell(o.id)}</td><td>${tpSlCell(o)}</td></tr>`}).join(''):emptyRow(16,openKind==='limit'?'暂无历史委托':`暂无${advancedKindName(openKind)}历史记录`);
+  $('tbody').innerHTML=rows.length?rows.map(o=>{
+    const close=o.kind==='close'||o.reduceOnly||o.type==='限价平仓';
+    const side=orderSide(o.side,close),notional=close?(+o.qty||0)*(+o.limit||0):(+o.margin||0)*(+o.leverage||1),filled=o.status==='已成交';
+    const pnl=close&&Number.isFinite(+o.realized)?signed(o.realized,4):'<span class="gb19-neutral">--</span>';
+    return `<tr><td>${contractLabel(o.symbol)}</td><td>${o.leverage||'-'}</td>
+      <td>${timeCell(o.createdTs,o.createdAt)}</td><td>${timeCell(o.finishedTs,o.finishedAt)}</td>
+      <td class="${side[1]}">${side[0]}</td><td>${close?'是':'否'}</td>
+      <td>${close?'限价平仓':'限价开仓'}</td><td>${fmt(notional,4)}</td>
+      <td>${fmt(o.limit,decFor(o.symbol))}</td><td>${filled?fmt(notional,4):'--'}</td>
+      <td>${filled?fmt(o.limit,decFor(o.symbol)):'0.00'}</td>
+      <td>${pnl}</td><td>${o.fee!=null?signed(-Math.abs(o.fee),6,' USDT'):'--'}</td>
+      <td class="${filled?'gb19-positive':'gb19-muted'}">${esc(o.status||'-')}</td>
+      <td>${idCell(o.id)}</td><td>${tpSlCell(o)}</td></tr>`;
+  }).join(''):emptyRow(16,openKind==='limit'?'暂无历史委托':`暂无${advancedKindName(openKind)}历史记录`);
   renderPagination(all.length,'orders');
 }
 function renderTrades(){
@@ -153,7 +166,7 @@ function renderLedger(){
 const baseRenderFuturesTable19=renderFuturesTable;
 const baseRenderSpotTable19=renderSpotTable;
 renderFuturesTable=function(){
-  if(tableMode==='positions'){hidePagination();return baseRenderFuturesTable19.apply(this,arguments)}
+  if(tableMode==='positions'){hidePagination();return window.GreedBitPositionsUI?window.GreedBitPositionsUI.render():baseRenderFuturesTable19.apply(this,arguments)}
   if(tableMode==='open')return renderCurrentOrders();
   if(tableMode==='orders')return renderOrderHistory();
   if(tableMode==='history')return renderTrades();

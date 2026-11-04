@@ -97,27 +97,24 @@ const inheritedRenderAssetPage=renderAssetPage;
 renderAssetPage=function(){const out=inheritedRenderAssetPage.apply(this,arguments);if(!user||assetTab!=='spot')return out;const box=$('assetPageBody')?.querySelector('.asset-detail'),w=spotWallet();if(!box)return out;box.querySelectorAll('.gb18-stock-asset-row').forEach(x=>x.remove());for(const m of stockMetas()){const q=+w.coins?.[m.ticker]||0;if(q<=0)continue;const p=spotReference(m.symbol),row=document.createElement('div');row.className='asset-list-row gb18-stock-asset-row';row.innerHTML=`<span>${m.ticker}<small>${companyName(m)}股票</small></span><span>${fmt(q,6)}</span><span>${fmt(q*p)} USDT</span>`;box.appendChild(row)}return out};
 
 const inheritedSetSymbol=setSymbol;
-setSymbol=async function(sym){const restore=requestedTradingMode&&isStock(sym)?requestedTradingMode:null,out=await inheritedSetSymbol.apply(this,arguments);if(restore){tradingMode=restore;renderTradingMode()}patchCompanyNames();ensureStockWalletShape();scheduleDecorate();document.dispatchEvent(new CustomEvent('greedbit:market-context-changed'));return out};
+setSymbol=async function(sym){const restore=requestedTradingMode&&isStock(sym)?requestedTradingMode:null,out=await inheritedSetSymbol.apply(this,arguments);if(restore){tradingMode=restore;renderTradingMode()}patchCompanyNames();ensureStockWalletShape();syncCrossLeverage();scheduleDecorate();document.dispatchEvent(new CustomEvent('greedbit:market-context-changed'));return out};
 const inheritedShowPage=showPage;showPage=function(page){const out=inheritedShowPage.apply(this,arguments);scheduleDecorate();document.dispatchEvent(new CustomEvent('greedbit:market-context-changed'));return out};
 
 function withContractPrice(fn){if(tradingMode!=='futures'||!supportsPerpBasis(symbol))return fn();const old=price,p=contractPriceFor(symbol);if(p)price=p;try{return fn()}finally{price=old}}
 const inheritedPlaceOrder=placeOrder;placeOrder=function(side){return withContractPrice(()=>inheritedPlaceOrder.call(this,side))};
 const inheritedMatchOrders=matchOrders;matchOrders=function(){return withContractPrice(()=>inheritedMatchOrders.apply(this,arguments))};
 const inheritedCheckRisk=checkRisk;checkRisk=function(){return withContractPrice(()=>inheritedCheckRisk.apply(this,arguments))};
-const inheritedClosePosition=closePosition;closePosition=function(id,reason='手动平仓',fill,fraction=1){
+const inheritedClosePosition=closePosition;closePosition=function(id,reason='手动平仓',fill,fraction=1,liquidity='taker'){
   const p=positions.find(x=>x.id===id);
   if(p){
     const derive=fill==null||reason==='减仓'||reason==='手动平仓';
     if(derive)fill=supportsPerpBasis(p.symbol)?(contractPriceFor(p.symbol)||spotReference(p.symbol)):(markFor(p.symbol)||spotReference(p.symbol));
   }
-  return inheritedClosePosition.call(this,id,reason,fill,fraction);
+  return inheritedClosePosition.call(this,id,reason,fill,fraction,liquidity);
 };
 const inheritedPnlOf=pnlOf;pnlOf=function(p,mark){if(p&&supportsPerpBasis(p.symbol)){const m=mark==null?contractPriceFor(p.symbol):mark;return(m-p.entry)*p.qty*(p.side==='long'?1:-1)}return inheritedPnlOf.apply(this,arguments)};
 const inheritedUpdatePreview=updatePreview;updatePreview=function(){return withContractPrice(()=>{const out=inheritedUpdatePreview.apply(this,arguments);updateFeeMetric();return out})};
 const inheritedRenderBook=renderBook;renderBook=function(){return withContractPrice(()=>inheritedRenderBook.apply(this,arguments))};
-
-const inheritedRenderFuturesTable=renderFuturesTable;
-renderFuturesTable=function(){if(tableMode!=='positions')return inheritedRenderFuturesTable.apply(this,arguments);$('positionFilters').classList.remove('hidden');const rows=positions.filter(p=>posFilter==='all'||p.mode===posFilter).map(p=>{const mark=supportsPerpBasis(p.symbol)?contractPriceFor(p.symbol):markFor(p.symbol),pnl=pnlOf(p,mark);return{...p,mark,pnl,roe:p.margin?pnl/p.margin*100:0}});$('thead').innerHTML='<tr><th>合约</th><th>方向</th><th>模式</th><th>杠杆</th><th>开仓价</th><th>合约标记价</th><th>保证金</th><th>未实现盈亏</th><th>ROE</th><th>强平价</th><th>操作</th></tr>';$('tbody').innerHTML=rows.length?rows.map(r=>`<tr><td>${String(r.symbol).replace('/','')}永续合约</td><td class="${r.side==='long'?'green':'red'}">${r.side==='long'?'多':'空'}</td><td>${r.mode==='cross'?'全仓':'逐仓'}</td><td>${r.leverage}X</td><td>${fmt(r.entry,configs[r.symbol]?.dec??2)}</td><td>${fmt(r.mark,configs[r.symbol]?.dec??2)}</td><td>${fmt(r.margin)}</td><td class="${r.pnl>=0?'green':'red'}">${r.pnl>=0?'+':''}${fmt(r.pnl)}</td><td class="${r.roe>=0?'green':'red'}">${r.roe.toFixed(2)}%</td><td>${fmt(r.liq||0,configs[r.symbol]?.dec??2)}</td><td><button class="reducepos" data-reduce="${r.id}">减仓50%</button><button class="closepos" data-closepos="${r.id}">全平</button></td></tr>`).join(''):'<tr><td colspan="11" class="empty">暂无持仓</td></tr>'};
 
 const inheritedDraw=draw;
 draw=function(){if(tradingMode!=='futures'||!supportsPerpBasis(symbol))return inheritedDraw.apply(this,arguments);const factor=1+touchBasis(symbol),savedPrice=price,savedCandles=candles,savedCurrent=current,savedSnap=marketSnapshots[symbol],scale=c=>c?{...c,o:c.o*factor,h:c.h*factor,l:c.l*factor,c:c.c*factor}:c;try{candles=savedCandles.map(scale);current=scale(savedCurrent);price=contractPriceFor(symbol)||savedPrice;if(savedSnap)marketSnapshots[symbol]={...savedSnap,last:price,high:(+savedSnap.high||spotReference(symbol))*factor,low:(+savedSnap.low||spotReference(symbol))*factor};return inheritedDraw.apply(this,arguments)}finally{price=savedPrice;candles=savedCandles;current=savedCurrent;if(savedSnap)marketSnapshots[symbol]=savedSnap}};

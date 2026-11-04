@@ -14,7 +14,7 @@ $$('.navbtn[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));$$('
 $('loginBtn').onclick=()=>openAuth('login');$('registerBtn').onclick=()=>openAuth('register');$('tradeLoginBtn').onclick=()=>openAuth('login');$('spotLoginBtn').onclick=()=>openAuth('login');$('assetLoginBtn').onclick=()=>openAuth('login');$('switchMode').onclick=()=>{authMode=authMode==='login'?'register':'login';syncAuthModal()};$('authSubmit').onclick=submitAuth;$('logoutBtn').onclick=()=>{saveState();localStorage.removeItem('greedbit_session');user=null;syncAuth();notify('已退出登录','','info')};
 $$('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).classList.remove('show'));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'))});
-$('marginInput').oninput=updatePreview;$('limitPriceInput').oninput=updatePreview;$('marginMode').onchange=updatePreview;
+$('marginInput').oninput=updatePreview;$('limitPriceInput').oninput=updatePreview;$('marginMode').onchange=()=>{syncCrossLeverage();updatePreview()};
 function affordableMargin(pct){const rate=window.GreedBitV13?.TAKER_RATE||.0006;return futuresWallet().usdt*pct/100/(1+leverage*rate)}
 function affordableSpot(pct){const rate=window.GreedBitV13?.TAKER_RATE||.0006;return spotWallet().usdt*pct/100/(1+rate)}
 $('pct').oninput=e=>{const p=+e.target.value;$('pctValue').textContent=p+'%';$('marginInput').value=affordableMargin(p).toFixed(2);updatePreview()};$('pctDots').onclick=e=>{const b=e.target.closest('[data-pct]');if(!b)return;const p=+b.dataset.pct;$('pct').value=p;$('pctValue').textContent=p+'%';$('marginInput').value=affordableMargin(p).toFixed(2);updatePreview()};
@@ -22,9 +22,15 @@ $('tpslEnable').onchange=e=>$('tpslPanel').classList.toggle('hidden',!e.target.c
 $('spotSideSwitch').onclick=e=>{const b=e.target.closest('[data-spotside]');if(!b)return;spotSide=b.dataset.spotside;$$('[data-spotside]').forEach(x=>x.classList.toggle('active',x===b));updateSpotPanel()};
 $$('.spot-order-type').forEach(b=>b.onclick=()=>{spotOrderType=b.dataset.spottype;$$('.spot-order-type').forEach(x=>x.classList.toggle('active',x===b));$('spotLimitField').classList.toggle('hidden',spotOrderType!=='limit');if(spotOrderType==='limit'&&!$('spotLimitInput').value)$('spotLimitInput').value=price.toFixed(cfg.dec)});
 $('spotPct').oninput=e=>{const p=+e.target.value,c=base();$('spotPctValue').textContent=p+'%';$('spotAmountInput').value=(spotSide==='buy'?affordableSpot(p):spotAvailableCoin(c)*p/100).toFixed(spotSide==='buy'?2:6)};$('spotPctDots').onclick=e=>{const b=e.target.closest('[data-pct]');if(!b)return;$('spotPct').value=b.dataset.pct;$('spotPct').dispatchEvent(new Event('input'))};$('spotActionBtn').onclick=placeSpotOrder;
-$('tbody').onclick=e=>{if(!ensureStateFresh())return;if(e.target.dataset.cancel)cancelOrder(+e.target.dataset.cancel);if(e.target.dataset.closepos)closePosition(+e.target.dataset.closepos);if(e.target.dataset.reduce)closePosition(+e.target.dataset.reduce,'减仓',null,.5);if(e.target.dataset.cancelspot)cancelSpotOrder(+e.target.dataset.cancelspot)};
+$('tbody').onclick=e=>{if(!ensureStateFresh())return;
+    if(window.GreedBitPositionsUI?.handleAction(e))return;
+    if(e.target.dataset.cancel)cancelOrder(+e.target.dataset.cancel);
+    if(e.target.dataset.cancelspot)cancelSpotOrder(+e.target.dataset.cancelspot);
+  };
 $$('.bottomtabs button[data-table]').forEach(b=>b.onclick=()=>{tableMode=b.dataset.table;$$('.bottomtabs button[data-table]').forEach(x=>x.classList.toggle('active',x===b));renderTable()});$$('[data-posfilter]').forEach(b=>b.onclick=()=>{posFilter=b.dataset.posfilter;$$('[data-posfilter]').forEach(x=>x.classList.toggle('active',x===b));renderTable()});
-$('leverageBtn').onclick=openLeverage;$('levMinus').onclick=()=>{levDraft--;updateLevModal()};$('levPlus').onclick=()=>{levDraft++;updateLevModal()};$('levRange').oninput=e=>{levDraft=+e.target.value;updateLevModal()};$('levConfirm').onclick=()=>{leverage=levDraft;$('levLabel').textContent=leverage+'X';$('leverageModal').classList.remove('show');updatePreview();notify('杠杆已调整',`后续开仓使用 ${leverage}X`,'info')};
+$('leverageBtn').onclick=openLeverage;$('levMinus').onclick=()=>{levDraft--;updateLevModal()};$('levPlus').onclick=()=>{levDraft++;updateLevModal()};$('levRange').oninput=e=>{levDraft=+e.target.value;updateLevModal()};$('levConfirm').onclick=()=>{const locked=lockedCrossLeverage();if(locked!==null){syncCrossLeverage();$('leverageModal').classList.remove('show');return notify('全仓杠杆已锁定','平掉该交易对的全部全仓仓位后才能调整','warning')}
+    leverage=levDraft;$('levLabel').textContent=leverage+'X';$('leverageModal').classList.remove('show');updatePreview();notify('杠杆已调整',`后续开仓使用 ${leverage}X`,'info');
+  };
 $('buyCoinBtn').onclick=()=>openFund('deposit');$('assetDepositBtn').onclick=()=>openFund('deposit');$('assetWithdrawBtn').onclick=()=>openFund('withdraw');$('fundConfirm').onclick=confirmFund;$('accountStatsBtn').onclick=openStatsModal;$('transferQuickBtn').onclick=()=>openTransfer('fiat',tradingMode==='futures'?'futures':'spot');$('assetTransferBtn').onclick=()=>openTransfer('fiat','spot');
 $('transferFrom').onchange=updateTransferAvailable;$('swapTransfer').onclick=()=>{const a=$('transferFrom').value;$('transferFrom').value=$('transferTo').value;$('transferTo').value=a;updateTransferAvailable()};$('transferConfirm').onclick=confirmTransfer;
 $('assetSubnav').onclick=e=>{const b=e.target.closest('[data-assettab]');if(!b)return;assetTab=b.dataset.assettab;$$('[data-assettab]').forEach(x=>x.classList.toggle('active',x===b));renderAssetPage()};$('assetPageBody').onclick=e=>{const b=e.target.closest('[data-openwallet]');if(!b)return;assetTab=b.dataset.openwallet;$$('[data-assettab]').forEach(x=>x.classList.toggle('active',x.dataset.assettab===assetTab));renderAssetPage()};
@@ -46,6 +52,7 @@ window.addEventListener('resize',resize);
   setTimeout(resize,0);draw();
 })();
 every(()=>renderBook(),2000);
+every(()=>{if(user&&closeOrders.length)matchCloseOrders()},3000);
 every(()=>updateMarketSnapshots(),10000);
 every(()=>{if(!window.GreedBitBootstrap?.ready)return;settleFunding();updateFundingUI()},1000);
 every(()=>loadRealNews(false),60000);

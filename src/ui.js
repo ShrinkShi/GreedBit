@@ -1,6 +1,33 @@
-/* leverage */
-function openLeverage(){levDraft=leverage;$('levRange').value=levDraft;updateLevModal();$('leverageModal').classList.add('show')}
-function updateLevModal(){const maxLev=window.GreedBitDomain?.MAX_LEVERAGE||100;levDraft=clamp(Math.round(levDraft),1,maxLev);$('levRange').value=levDraft;$('levDraftText').textContent=levDraft+'X';$('levLimit').textContent=fmt(300000000/levDraft,4)+' USDT';$('levMaxOpen').textContent=fmt(futuresWallet().usdt*levDraft,4)+' USDT';$('levRange').style.setProperty('--lev-pct',((levDraft-1)/(maxLev-1)*100).toFixed(3)+'%')}
+/* Cross leverage is a per-symbol invariant, not a cosmetic select value. */
+function lockedCrossLeverage(sym=symbol){
+  if($('marginMode')?.value!=='cross')return null;
+  return window.GreedBitPositionBook?.lockedLeverage(positions,sym)??null;
+}
+function syncCrossLeverage(){
+  const locked=lockedCrossLeverage();
+  if(locked===null)return;
+  leverage=locked;levDraft=locked;
+  if($('levLabel'))$('levLabel').textContent=`${Number(locked.toFixed(4))}X`;
+  if($('levRange'))$('levRange').value=locked;
+}
+function openLeverage(){
+  const locked=lockedCrossLeverage();
+  if(locked!==null){
+    syncCrossLeverage();
+    notify('全仓杠杆已锁定',`${symbol} 已有全仓持仓，需全部平仓后才能修改杠杆`,'info');
+    return;
+  }
+  levDraft=leverage;$('levRange').value=levDraft;updateLevModal();$('leverageModal').classList.add('show');
+}
+function updateLevModal(){
+  const locked=lockedCrossLeverage(),maxLev=window.GreedBitDomain?.MAX_LEVERAGE||100;
+  levDraft=locked!==null?locked:clamp(Math.round(levDraft),1,maxLev);
+  $('levRange').value=levDraft;
+  $('levDraftText').textContent=Number(levDraft.toFixed(4))+'X';
+  $('levLimit').textContent=fmt(300000000/levDraft,4)+' USDT';
+  $('levMaxOpen').textContent=fmt(futuresWallet().usdt*levDraft,4)+' USDT';
+  $('levRange').style.setProperty('--lev-pct',((levDraft-1)/(maxLev-1)*100).toFixed(3)+'%');
+}
 
 /* picker/home/pages */
 function renderCoinList(){
@@ -21,6 +48,7 @@ function showPage(page){
 }
 function renderTradingMode(){
   const fut=tradingMode==='futures';$('futuresPanel').classList.toggle('hidden',!fut);$('spotPanel').classList.toggle('hidden',fut);$('futuresBottomTabs').classList.toggle('hidden',!fut);$('spotBottomTabs').classList.toggle('hidden',fut);$$('.futures-only').forEach(x=>x.classList.toggle('hidden',!fut));
+  if(fut)syncCrossLeverage();
   tableMode=fut?'positions':'spotAssets';$$('#futuresBottomTabs button,#spotBottomTabs button').forEach(b=>b.classList.toggle('active',b.dataset.table===tableMode));renderTable();updateAssets();draw();
 }
 

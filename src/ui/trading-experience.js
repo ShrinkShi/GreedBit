@@ -1,4 +1,4 @@
-/* Trading experience: position overlays, favorites picker and PnL-aware notifications. */
+/* Trading experience: favorites picker and PnL-aware notifications. Chart renderer owns overlays. */
 (function(){
 'use strict';
 const V=window.GreedBitV13;if(!V)throw new Error('market/model.js must load before ui/trading-experience.js');
@@ -25,26 +25,6 @@ notify=function(title,msg='',type='success',ttl=3200){
   const p=document.createElement('p');appendColoredMessage(p,msg);
   n.append(close,b,p);$('notifications').prepend(n);const rm=()=>n.remove();close.onclick=rm;if(ttl)setTimeout(rm,ttl);
 };
-
-/* ---------- futures positions on K-line ---------- */
-function positionPnl(p,mark){return(mark-(+p.entry||0))*(+p.qty||0)*(p.side==='long'?1:-1)}
-function drawPositionOverlay(){
-  if(currentPage!=='futures'||tradingMode!=='futures'||!Array.isArray(positions)||!positions.length)return;
-  const W=canvas.clientWidth,H=canvas.clientHeight;if(!W||!H)return;
-  const pad={l:8,r:82,t:28,b:42},plotH=H-pad.t-pad.b,{hi,lo}=calcPriceBounds(),range=hi-lo;if(!Number.isFinite(range)||range<=0)return;
-  const rows=positions.filter(p=>p.symbol===symbol&&Number.isFinite(+p.entry)&&+p.entry>=lo&&+p.entry<=hi);if(!rows.length)return;
-  const occupied=new Map();ctx.save();ctx.font='600 10px system-ui,-apple-system,"Segoe UI",sans-serif';ctx.textBaseline='middle';
-  rows.forEach(p=>{
-    const entry=+p.entry,mark=+marketSnapshots[p.symbol]?.last||price,pnl=positionPnl(p,mark),positive=pnl>1e-8,negative=pnl<-1e-8,col=positive?'#3dbb83':negative?'#ec5d68':'#7b8798',soft=positive?'rgba(31,87,66,.92)':negative?'rgba(91,37,45,.94)':'rgba(50,58,70,.94)',yy=pad.t+(hi-entry)/range*plotH;
-    const bucket=Math.round(yy/18),stack=occupied.get(bucket)||0;occupied.set(bucket,stack+1);const labelY=clamp(yy+stack*20,pad.t+10,H-pad.b-10);
-    ctx.globalAlpha=.92;ctx.strokeStyle=col;ctx.lineWidth=1;ctx.setLineDash([5,3]);ctx.beginPath();ctx.moveTo(pad.l,labelY+.5);ctx.lineTo(W-pad.r,labelY+.5);ctx.stroke();ctx.setLineDash([]);
-    const side=p.side==='long'?'多':'空',lev=`${p.leverage||1}X`,state=positive?'浮盈':negative?'浮亏':'持平',notional=Number.isFinite(+p.notional)?+p.notional:(+p.qty||0)*entry,txt=`${side} ${lev}  ${state} ${pnl>0?'+':''}${fmt(pnl,4)} USDT  ${fmt(notional,2)} USDT`;
-    const tw=Math.min(W-pad.r-pad.l-30,ctx.measureText(txt).width+18),x=pad.l+10;
-    ctx.fillStyle=soft;ctx.fillRect(x,labelY-9,tw,18);ctx.strokeStyle=col;ctx.strokeRect(x+.5,labelY-8.5,tw-1,17);ctx.fillStyle=col;ctx.fillText(txt,x+7,labelY);
-    const sideTxt=p.side==='long'?'L':'S';ctx.fillStyle=col;ctx.fillRect(W-pad.r-20,labelY-9,20,18);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(sideTxt,W-pad.r-10,labelY);ctx.textAlign='left';
-  });ctx.restore();
-}
-const baseDraw=draw;draw=function(){const out=baseDraw.apply(this,arguments);drawPositionOverlay();return out};
 
 /* ---------- picker favorites + futures / spot tabs ---------- */
 function readFavorites(){try{return new Set(JSON.parse(localStorage.getItem(FAV_KEY)||'[]'))}catch{return new Set()}}
@@ -78,5 +58,5 @@ function installPicker(){
 
 function boot(){installStyle();installPicker();draw();setTimeout(()=>{renderCoinList();draw()},120)}
 boot();
-window.GreedBitTradingExperience={renderCoinList,drawPositionOverlay};
+window.GreedBitTradingExperience={renderCoinList};
 })();
