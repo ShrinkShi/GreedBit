@@ -117,11 +117,11 @@ test('position overlay survives MA and separate-volume rendering in the same can
 });
 test('UI preferences cannot replace the canonical chart renderer',()=>{
   const source=fs.readFileSync(path.resolve(__dirname,'../src/ui/preferences.js'),'utf8');
-  assert.doesNotMatch(source,/window\\.draw\\s*=/);
-  assert.doesNotMatch(source,/function\\s+draw\\s*\\(/);
-  assert.doesNotMatch(source,/ctx\\.(?:clearRect|fillRect|stroke|beginPath)/);
+  assert.doesNotMatch(source,/window\.draw\s*=/);
+  assert.doesNotMatch(source,/function\s+draw\s*\(/);
+  assert.doesNotMatch(source,/ctx\.(?:clearRect|fillRect|stroke|beginPath)/);
   const renderer=fs.readFileSync(path.resolve(__dirname,'../src/chart/renderer.js'),'utf8');
-  assert.match(renderer,/drawPositionOverlay\\(y,lo,hi,pad,W,L\\.mainBottom\\)/);
-  assert.match(renderer,/drawVolumes\\(geom,L\\)/);
-  assert.match(renderer,/drawMAs\\(geom,L,y\\)/);
+  assert.match(renderer,/drawPositionOverlay\(y,lo,hi,pad,W,L\.mainBottom\)/);
+  assert.match(renderer,/drawVolumes\(geom,L\)/);
+  assert.match(renderer,/drawMAs\(geom,L,y\)/);
 });
