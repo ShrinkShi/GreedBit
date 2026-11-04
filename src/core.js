@@ -44,7 +44,9 @@ const chartDefaults={
   precision:'auto',timezone:'utc8',statusTitle:true,statusValues:true,statusChange:true,statusVolume:true,
   indicatorTitle:true,indicatorValues:true,symbolLabel:true,countdown:true,highLow:true,markers:true,
   dateFormat:'ymd',timeFormat:'24',background:'#0b0e12',grid:'#1d232b',crosshair:true,
-  topMargin:12,bottomMargin:8,rightBars:4
+  topMargin:12,bottomMargin:8,rightBars:4,
+  maEnabled:true,ma5:true,ma10:true,ma30:true,ma60:true,maDisplay:'line-values',
+  volumeEnabled:true,volumeMode:'separate',volumeRatio:.22
 };
 let chartSettings={...chartDefaults,...safeParse(localStorage.getItem('greedbit_chart_settings'),{})};
 
