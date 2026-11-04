@@ -1,19 +1,19 @@
 /* final runtime stabilization (release v0.0.23) */
 (function(){
 'use strict';
-const VERSION='0.0.23';
+const VERSION=window.GB_VERSION||'0.0.26';
 let finalized=false,activeInfoMode='chart';
 
 function installStyle(done){
-  let l=document.querySelector('link[href="styles/v021.css"]');
+  let l=document.querySelector('link[href^="styles/v021.css"]');
   if(l){if(l.sheet){done();return}l.addEventListener('load',done,{once:true});l.addEventListener('error',done,{once:true});return}
-  l=document.createElement('link');l.rel='stylesheet';l.href='styles/v021.css';l.addEventListener('load',done,{once:true});l.addEventListener('error',done,{once:true});document.head.appendChild(l);
+  l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v021.css');l.addEventListener('load',done,{once:true});l.addEventListener('error',done,{once:true});document.head.appendChild(l);
 }
 function currentSymbol(){try{if(typeof symbol==='string'&&symbol)return symbol}catch{}return document.getElementById('symbol')?.value||''}
 function currentMode(){try{if(typeof tradingMode==='string'&&tradingMode)return tradingMode}catch{}return'futures'}
 function marketMeta(sym){return window.GreedBitV13?.META?.[sym]||null}
 function isZh(){return !String(document.documentElement.lang||'zh-CN').toLowerCase().startsWith('en')}
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]))}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function safeUrl(v){try{const u=new URL(v);return/^https?:$/.test(u.protocol)?u.href:''}catch{return''}}
 function fmtLocal(n,d=2){try{return typeof fmt==='function'?fmt(n,d):Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}catch{return String(n??'--')}}
 
@@ -167,6 +167,9 @@ function finalize(){
   if(finalized)return;finalized=true;installFavicon();updateVersion();installMarketReliability();installUnifiedContractPanels();installAmountSelector();installLanguageSync();
   requestAnimationFrame(()=>{syncHomeLanguage();syncMarketLanguage();updateVersion();document.documentElement.classList.add('gb-runtime-ready')});
   window.GreedBitV21={VERSION,sourceLabel,renderOverview:renderUnifiedOverview,renderData:renderUnifiedData};
+  /* bootstrap.js reads GreedBitV21 right after this script's load event, which fires before
+   * finalize(); publish the alias here so app/runtime.js can actually start. */
+  window.GreedBitRuntimeUI=window.GreedBitV21;
 }
 function boot(){document.documentElement.classList.add('gb21-ui');installStyle(finalize);setTimeout(finalize,1500)}
 boot();

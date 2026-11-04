@@ -2,8 +2,8 @@
 (function(){
 'use strict';
 function installStyle(){
-  if(document.querySelector('link[href="styles/v020.css"]'))return;
-  const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v020.css';document.head.appendChild(l);
+  if(document.querySelector('link[href^="styles/v020.css"]'))return;
+  const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v020.css');document.head.appendChild(l);
 }
 function pct(input){
   if(!input)return 0;const min=Number(input.min)||0,max=Number(input.max)||100,v=Number(input.value)||0;

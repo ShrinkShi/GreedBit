@@ -3,7 +3,7 @@
 if(!window.GreedBitV21||!document.getElementById('strategyPanel')){setTimeout(waitV024,80);return}
 (()=>{
 'use strict';
-const VERSION='0.0.24';
+const VERSION=window.GB_VERSION||'0.0.26';
 const STRATEGY_KEY='greedbit_v024_strategies_';
 const SEED_MIGRATION_KEY='greedbit_v024_seed_migrated_';
 const MAX_EVENTS=1200;
@@ -44,18 +44,6 @@ const inheritedFreshWallets=freshWallets;
 freshWallets=function(){const w=inheritedFreshWallets();if(w?.fiat)w.fiat.usdt=0;return w};
 const inheritedNotify=notify;
 notify=function(title,msg='',type='success',ttl=3200){if(title==='注册成功'&&/100,?000/.test(String(msg)))msg='账户初始余额为 0 USDT，请先通过“入金”获得模拟资金。';return inheritedNotify(title,msg,type,ttl)};
-function migrateUntouchedLegacySeed(){
-  if(!user)return;const key=SEED_MIGRATION_KEY+user.username;if(localStorage.getItem(key))return;
-  const s=accountStats||{},noExternal=num(s.inflow)===0&&num(s.outflow)===0,noTrading=num(s.trades)===0&&num(s.spotTrades)===0&&!positions.length&&!orders.length&&!spotOrders.length;
-  const sw=spotWallet(),coinQty=Object.values(sw?.coins||{}).reduce((a,b)=>a+Math.abs(num(b)),0);
-  const cash=num(wallets?.fiat?.usdt)+num(wallets?.strategy?.usdt)+num(wallets?.earn?.usdt)+num(sw?.usdt)+num(sw?.frozenUsdt)+num(wallets?.futures?.usdt)+num(wallets?.futures?.frozen);
-  if(noExternal&&noTrading&&coinQty<1e-12&&Math.abs(cash-100000)<.02){
-    if(wallets.fiat)wallets.fiat.usdt=0;if(wallets.strategy)wallets.strategy.usdt=0;if(wallets.earn)wallets.earn.usdt=0;
-    if(wallets.spot){wallets.spot.usdt=0;wallets.spot.frozenUsdt=0}if(wallets.futures){wallets.futures.usdt=0;wallets.futures.frozen=0}
-    saveState();
-  }
-  localStorage.setItem(key,'1');
-}
 
 /* ---------- strategy valuation and engine ---------- */
 function gridLevels(r){if(Array.isArray(r.levels)&&r.levels.length===r.grids+1)return r.levels;const out=[],step=(r.high-r.low)/r.grids;for(let i=0;i<=r.grids;i++)out.push(r.low+step*i);r.levels=out;return out}
@@ -129,7 +117,7 @@ function renderStrategyPanel(fillRecommended=false){
     ${isF?`<div class="gb24-field-group"><label>方向</label><div class="gb24-segment" id="gb24Direction"><button data-dir="long">做多</button><button data-dir="neutral" class="active">中性</button><button data-dir="short">做空</button></div></div>`:''}
     <div class="gb24-field-group"><div class="gb24-field-head"><label>1. 价格区间</label><button id="gb24Recommend">智能参数</button></div><div class="gb24-double"><div><input id="gb24Low" type="number" min="0" step="any" value="${r.low.toFixed(dec)}"><span>最低价 USDT</span></div><div><input id="gb24High" type="number" min="0" step="any" value="${r.high.toFixed(dec)}"><span>最高价 USDT</span></div></div></div>
     <div class="gb24-field-group"><label>2. 网格数量</label><div class="gb24-inline-input"><input id="gb24Grids" type="number" min="2" max="200" step="1" value="${r.grids}"><select id="gb24GridMode"><option value="arithmetic">等差</option><option value="geometric">等比</option></select></div><small class="gb24-field-note">当前执行引擎使用等差价格网格；等比模式先保留界面入口。</small></div>
-    ${isF?`<div class="gb24-field-group"><label>3. 杠杆倍数</label><div class="gb24-inline-input"><input id="gb24Leverage" type="number" min="1" max="200" step="1" value="${r.leverage}"><span class="gb24-unit">X</span></div></div>`:''}
+    ${isF?`<div class="gb24-field-group"><label>3. 杠杆倍数</label><div class="gb24-inline-input"><input id="gb24Leverage" type="number" min="1" max="100" step="1" value="${r.leverage}"><span class="gb24-unit">X</span></div></div>`:''}
     <div class="gb24-field-group"><label>${isF?'4':'3'}. 投入金额</label><div class="gb24-inline-input"><input id="gb24Amount" type="number" min="0" step="0.01" value="${r.amount?r.amount.toFixed(2):''}" placeholder="0.00"><span class="gb24-unit">USDT</span></div><div class="gb24-balance-line"><span>可用 ${money(available)} USDT</span><button id="gb24Transfer">划转资金</button></div></div>
     <details class="gb24-advanced"><summary>高级设置</summary><div class="gb24-advanced-grid"><label>止盈率<input id="gb24TakeProfit" type="number" min="0" max="10000" step="0.1" placeholder="可选"><span>%</span></label><label>止损率<input id="gb24StopLoss" type="number" min="0" max="100" step="0.1" placeholder="可选"><span>%</span></label></div><label class="gb24-check"><input id="gb24Loop" type="checkbox" checked> 策略循环</label><div class="gb24-loop-row"><span>循环轮次</span><input id="gb24Rounds" type="number" min="1" max="9999" step="1" value="20" disabled><small>关闭“策略循环”后生效</small></div></details>
     <div class="gb24-strategy-estimate"><span>当前参考价 <b>${pSafe(currentMark(),dec)}</b></span><span>预计每格投入 <b id="gb24PerGrid">--</b></span></div>
@@ -151,7 +139,7 @@ function handleStrategyPanelClick(e){
 function applyRecommended(){const r=recommendedParams();const dec=configs?.[symbol]?.dec??2;$v('gb24Low').value=r.low.toFixed(dec);$v('gb24High').value=r.high.toFixed(dec);$v('gb24Grids').value=r.grids;if($v('gb24Leverage'))$v('gb24Leverage').value=r.leverage;if(!$v('gb24Amount').value&&r.amount)$v('gb24Amount').value=r.amount.toFixed(2);syncStrategyEstimate();notify('已生成建议参数','基于当前价与 24H 高低区间生成，不代表收益承诺。','info')}
 function syncStrategyEstimate(){const amount=num($v('gb24Amount')?.value),grids=Math.max(1,num($v('gb24Grids')?.value)),el=$v('gb24PerGrid');if(el)el.textContent=amount>0?`${money(amount/grids)} USDT`:'--'}
 function createGridStrategy(){
-  if(!user)return openAuth('login');const low=num($v('gb24Low')?.value),high=num($v('gb24High')?.value),grids=Math.floor(num($v('gb24Grids')?.value)),amount=num($v('gb24Amount')?.value),lev=Math.max(1,Math.min(200,Math.floor(num($v('gb24Leverage')?.value)||1))),p=currentMark(),available=num(wallets.strategy.usdt);
+  if(!user)return openAuth('login');const low=num($v('gb24Low')?.value),high=num($v('gb24High')?.value),grids=Math.floor(num($v('gb24Grids')?.value)),amount=num($v('gb24Amount')?.value),lev=Math.max(1,Math.min(window.GreedBitDomain?.MAX_LEVERAGE||100,Math.floor(num($v('gb24Leverage')?.value)||1))),p=currentMark(),available=num(wallets.strategy.usdt);
   if(!p)return notify('策略创建失败','当前交易对暂无有效价格','error');if(!(low>0&&high>low&&p>0))return notify('策略创建失败','请检查价格区间','error');if(grids<2||grids>200)return notify('策略创建失败','网格数量需为 2-200','error');if(amount<=0||amount>available+1e-8)return notify('策略创建失败','策略账户可用 USDT 不足','error');
   const direction=$v('gb24Direction')?.querySelector('.active')?.dataset.dir||'neutral',loop=!!$v('gb24Loop')?.checked,rounds=Math.max(1,Math.floor(num($v('gb24Rounds')?.value)||20));wallets.strategy.usdt-=amount;
   const rec={id:strategyState.seq++,kind:strategyKind,name:strategyName(strategyKind),symbol,status:'running',low,high,grids,amount,startPrice:p,lastPrice:p,gridIndex:0,createdAt:Date.now(),trades:0,closedTrades:0,wins:0,losses:0,realized:0,fees:0,takeProfitPct:num($v('gb24TakeProfit')?.value),stopLossPct:num($v('gb24StopLoss')?.value),loop,rounds,completedRounds:0};rec.gridIndex=gridIndex(rec,p);
@@ -203,13 +191,13 @@ function installStatsTab(){const sub=$v('assetSubnav');if(sub&&!sub.querySelecto
 
 /* sync strategy state across auth changes */
 const inheritedSyncAuth=syncAuth;
-syncAuth=function(){const out=inheritedSyncAuth.apply(this,arguments);loadStrategyState();migrateUntouchedLegacySeed();renderStrategyBottom();if(strategyTabActive)renderStrategyPanel();return out};
+syncAuth=function(){const out=inheritedSyncAuth.apply(this,arguments);loadStrategyState();renderStrategyBottom();if(strategyTabActive)renderStrategyPanel();return out};
 
 function updateVersion(){const el=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));if(el)el.textContent=`GreedBit v${VERSION}`}
-function installStyle(){if(document.querySelector('link[href="styles/v024.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v024.css';document.head.appendChild(l)}
+function installStyle(){if(document.querySelector('link[href^="styles/v024.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v024.css');document.head.appendChild(l)}
 function boot(){
-  installStyle();loadStrategyState();migrateUntouchedLegacySeed();installStatsTab();installStrategyUI();updateVersion();
-  setInterval(()=>{processStrategies();if(strategyTabActive)renderStrategyBottom()},1200);
+  installStyle();loadStrategyState();installStatsTab();installStrategyUI();updateVersion();
+  every(()=>{processStrategies();if(strategyTabActive)renderStrategyBottom()},1200);
   window.GreedBitV24={VERSION,collectPerformance,strategyEquity,stopStrategy,get state(){return strategyState}};
 }
 boot();

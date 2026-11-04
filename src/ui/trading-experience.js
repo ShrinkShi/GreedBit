@@ -5,7 +5,7 @@ const V=window.GreedBitV13;if(!V)throw new Error('market/model.js must load befo
 const FAV_KEY='greedbit_pair_favorites_v14';
 let pickerMode='favorites';
 
-function installStyle(){if(document.querySelector('link[href="styles/v014.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v014.css';document.head.appendChild(l)}
+function installStyle(){if(document.querySelector('link[href^="styles/v014.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v014.css');document.head.appendChild(l)}
 
 /* ---------- notification profit/loss colors ---------- */
 function appendColoredMessage(parent,text){

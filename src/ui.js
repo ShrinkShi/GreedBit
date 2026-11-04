@@ -1,6 +1,6 @@
 /* leverage */
 function openLeverage(){levDraft=leverage;$('levRange').value=levDraft;updateLevModal();$('leverageModal').classList.add('show')}
-function updateLevModal(){levDraft=clamp(Math.round(levDraft),1,200);$('levRange').value=levDraft;$('levDraftText').textContent=levDraft+'X';$('levLimit').textContent=fmt(300000000/levDraft,4)+' USDT';$('levMaxOpen').textContent=fmt(futuresWallet().usdt*levDraft,4)+' USDT';$('levRange').style.setProperty('--lev-pct',((levDraft-1)/199*100).toFixed(3)+'%')}
+function updateLevModal(){const maxLev=window.GreedBitDomain?.MAX_LEVERAGE||100;levDraft=clamp(Math.round(levDraft),1,maxLev);$('levRange').value=levDraft;$('levDraftText').textContent=levDraft+'X';$('levLimit').textContent=fmt(300000000/levDraft,4)+' USDT';$('levMaxOpen').textContent=fmt(futuresWallet().usdt*levDraft,4)+' USDT';$('levRange').style.setProperty('--lev-pct',((levDraft-1)/(maxLev-1)*100).toFixed(3)+'%')}
 
 /* picker/home/pages */
 function renderCoinList(){
@@ -14,7 +14,7 @@ async function setSymbol(sym){
   await loadHistoricalMarket(true);renderTable();
 }
 function showPage(page){
-  if(page==='admin'&&!user?.isAdmin)return notify('无权限','仅管理员可访问管理界面','error');
+  if(page==='admin'&&(!user||!isAdminMode()))return notify('无权限','管理界面仅在 ?admin=1 的开发模式下可用','error');
   currentPage=page;$$('.navbtn[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));$('homePage').classList.toggle('hidden',page!=='home');$('marketPage').classList.toggle('hidden',page!=='market');$('tradePage').classList.toggle('hidden',page!=='trade'&&page!=='futures');$('assetsPage').classList.toggle('hidden',page!=='assets');$('adminPage').classList.toggle('hidden',page!=='admin');
   if(page==='trade'||page==='futures'){tradingMode=page==='trade'?'spot':'futures';renderTradingMode();setTimeout(resize,0)}
   if(page==='market')renderNews();if(page==='assets')renderAssetPage();if(page==='admin')renderAdminPage();if(page==='home'){renderHomeMarkets();updateAssets()}

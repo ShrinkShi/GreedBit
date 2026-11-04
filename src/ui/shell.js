@@ -16,7 +16,7 @@ const GREED_NEWS_TEMPLATES=[
 ];
 let newsEnhancementInstalled=false;
 
-function installStyle(){if(document.querySelector('link[href="styles/v013.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v013.css';document.head.appendChild(l)}
+function installStyle(){if(document.querySelector('link[href^="styles/v013.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v013.css');document.head.appendChild(l)}
 function installFavicon(){let f=document.querySelector('link[rel~="icon"]');if(!f){f=document.createElement('link');f.rel='icon';document.head.appendChild(f)}f.type='image/png';f.sizes='64x64';f.href=FAVICON_PATH+'?v='+VERSION}
 function formatPrice(sym){const m=V.META[sym],s=marketSnapshots[sym]||{};return s.last?fmt(s.last,m?.dec??4):'--'}
 function pnlClass(v){return Math.abs(v)<1e-8?'neutral':v>0?'green':'red'}
@@ -42,7 +42,7 @@ function renderHome(){const eq=$('homeV13Equity'),daily=$('homeV13Daily'),box=$(
 function installEarn(){
   const assetsNav=document.querySelector('.navbtn[data-page="assets"]');if(assetsNav&&!document.querySelector('.navbtn[data-page="earn"]'))assetsNav.insertAdjacentHTML('beforebegin','<button class="navbtn" data-page="earn">赚币</button>');const nav=document.querySelector('.navbtn[data-page="earn"]');if(nav)nav.onclick=()=>showPage('earn');
   if(!$('earnPage')){const assets=$('assetsPage');assets?.insertAdjacentHTML('beforebegin','<section class="page earn-page hidden" id="earnPage"><div class="earn-shell" id="earnShell"></div></section>')}
-  if(!$('earnModal'))document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="earnModal"><div class="card dark-card small-card"><button class="close dark-close" id="earnModalClose">×</button><h2 id="earnModalTitle">赚币申购</h2><div class="earn-modal-info" id="earnModalInfo"></div><div class="field modal-field"><label>数量</label><input id="earnAmount" type="number" min="0" step="any" placeholder="0.00"/><span id="earnAmountUnit">USDT</span></div><div class="modal-actions"><button class="ghostbtn" id="earnModalCancel">取消</button><button class="confirmbtn" id="earnConfirm">确认</button></div></div></div>`);
+  if(!$('earnModal'))document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="earnModal" role="dialog" aria-modal="true" aria-label="赚币申购"><div class="card dark-card small-card"><button class="close dark-close" id="earnModalClose">×</button><h2 id="earnModalTitle">赚币申购</h2><div class="earn-modal-info" id="earnModalInfo"></div><div class="field modal-field"><label>数量</label><input id="earnAmount" type="number" min="0" step="any" placeholder="0.00"/><span id="earnAmountUnit">USDT</span></div><div class="modal-actions"><button class="ghostbtn" id="earnModalCancel">取消</button><button class="confirmbtn" id="earnConfirm">确认</button></div></div></div>`);
   $('earnModalClose').onclick=$('earnModalCancel').onclick=()=>$('earnModal').classList.remove('show');$('earnConfirm').onclick=confirmEarnTransfer;$('earnShell').onclick=e=>{const b=e.target.closest('[data-earn-action]');if(b)openEarnModal(b.dataset.asset,b.dataset.earnAction)};
 }
 function earnAssetRows(){return['USDT',...V.ASSETS.map(a=>a.ticker)]}
@@ -71,7 +71,7 @@ showPage=function(page){if(page==='earn'){currentPage='earn';$$('.navbtn[data-pa
 
 function installContractGuard(){const tabs=document.querySelector('.charttabs');if(!tabs)return;tabs.addEventListener('click',e=>{const s=e.target.closest('span');if(!s)return;const idx=[...tabs.querySelectorAll('span')].indexOf(s);if(idx>0&&!['BTC/USDT','ETH/USDT'].includes(symbol)){e.preventDefault();e.stopImmediatePropagation();notify('数据页暂未接入',`${base()} 当前仅开放图表与交易；概况/衍生品数据页暂只支持 BTC、ETH。`,'info')}},true)}
 
-function voteInfo(id,title){const map=JSON.parse(localStorage.getItem('greedbit_news_votes')||'{}'),seed=newsHash(title),u=map[id]||null;return{bull:24+(seed%210)+(u==='bull'?1:0),bear:18+((seed>>>8)%190)+(u==='bear'?1:0),userVote:u}}
+function voteInfo(id,title){const map=safeParse(localStorage.getItem('greedbit_news_votes'),{}),seed=newsHash(title),u=map[id]||null;return{bull:24+(seed%210)+(u==='bull'?1:0),bear:18+((seed>>>8)%190)+(u==='bear'?1:0),userVote:u}}
 function injectGreedNews(){if(!Array.isArray(newsItems))return;const bucket=Math.floor(Date.now()/300000),id=`GreedBitSim-${bucket}`;if(newsItems.some(x=>x.id===id))return;let choice=null;try{choice=JSON.parse(localStorage.getItem('greedbit_greed_news_choice')||'null')}catch{}if(!choice||choice.bucket!==bucket){choice={bucket,index:Math.floor(Math.random()*GREED_NEWS_TEMPLATES.length)};localStorage.setItem('greedbit_greed_news_choice',JSON.stringify(choice))}const t=GREED_NEWS_TEMPLATES[choice.index%GREED_NEWS_TEMPLATES.length],v=voteInfo(id,t.title),item={id,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),publishedAt:Date.now(),source:'GreedBit 模拟事件',link:'',title:t.title,desc:t.desc,symbol:'GREED/USDT',kind:'市场',important:t.important,sentiment:t.sentiment,greedImpact:t.impact,...v};newsItems.unshift(item);newsItems=newsItems.slice(0,90);const last=localStorage.getItem('greedbit_last_greed_news_impact');if(last!==String(bucket)){localStorage.setItem('greedbit_last_greed_news_impact',String(bucket));window.greedbitApplyGreedEvent?.(t.impact)}}
 function containsHan(s){return /[\u3400-\u9fff]/.test(String(s||''))}
 function targetLanguage(){return document.documentElement.lang?.toLowerCase().startsWith('zh')?'zh-CN':'en'}
@@ -88,6 +88,6 @@ function waitNews(){let tries=0;const t=setInterval(()=>{tries++;if(installNewsE
 function updateVersion(){const v=[...document.querySelectorAll('.statusbar .ticker')].find(x=>x.textContent.includes('GreedBit'));if(v)v.textContent=`GreedBit v${VERSION}`}
 function syncEarnNavLanguage(){const b=document.querySelector('.navbtn[data-page="earn"]');if(b)b.textContent=document.documentElement.lang?.toLowerCase().startsWith('en')?'Earn':'赚币'}
 
-function boot(){installStyle();installFavicon();installHome();installEarn();installFeeUi();installContractGuard();waitNews();updateVersion();renderHome();renderEarn();V.renderEarn=renderEarn;syncEarnNavLanguage();new MutationObserver(syncEarnNavLanguage).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});setInterval(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHome();if(!$('earnPage')?.classList.contains('hidden'))renderEarn();updateFeeUi()},1500)}
+function boot(){installStyle();installFavicon();installHome();installEarn();installFeeUi();installContractGuard();waitNews();updateVersion();renderHome();renderEarn();V.renderEarn=renderEarn;syncEarnNavLanguage();new MutationObserver(syncEarnNavLanguage).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});every(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHome();if(!$('earnPage')?.classList.contains('hidden'))renderEarn();updateFeeUi()},1500)}
 boot();
 })();

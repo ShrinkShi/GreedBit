@@ -4,7 +4,7 @@
   (()=>{
   'use strict';
 
-  const VERSION='0.0.11';
+  const VERSION=window.GB_VERSION||'0.0.26';
   const PREF_KEY='greedbit_ui_prefs';
   const LOGO='assets/greedbit-logo.png';
   const fallbackFx={USD:1,CNY:7.12,EUR:.86,GBP:.76,AUD:1.54,HKD:7.78,JPY:154.0};
@@ -16,7 +16,7 @@
   for(const [k,v] of Object.entries(chartDefaults))if(chartSettings[k]===undefined)chartSettings[k]=v;
 
   function injectShell(){
-    if(!document.querySelector('link[href="styles/v011.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v011.css';document.head.appendChild(l)}
+    if(!document.querySelector('link[href^="styles/v011.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v011.css');document.head.appendChild(l)}
     let favicon=document.querySelector('link[rel~="icon"]');if(!favicon){favicon=document.createElement('link');favicon.rel='icon';document.head.appendChild(favicon)}favicon.type='image/png';favicon.href=LOGO;
     let brand=document.querySelector('.brand');
     if(brand&&!brand.querySelector('.brand-logo'))brand.insertAdjacentHTML('afterbegin',`<img class="brand-logo" src="${LOGO}" alt="GreedBit"/>`);
@@ -60,10 +60,10 @@
   }
   function markMail(id){const rows=readInbox(),m=rows.find(x=>String(x.id)===String(id));if(m){m.read=true;writeInbox(user.username,rows);renderInbox()}}
   function markAllRead(){if(!user)return;const rows=readInbox();rows.forEach(x=>x.read=true);writeInbox(user.username,rows);renderInbox()}
-  function renderRecipientOptions(){const el=$('adminMailRecipient');if(!el)return;const users=JSON.parse(localStorage.getItem('greedbit_users')||'{}'),names=['admin',...Object.keys(users)];el.innerHTML='<option value="*">全体用户（本机）</option>'+[...new Set(names)].map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
+  function renderRecipientOptions(){const el=$('adminMailRecipient');if(!el)return;const users=safeParse(localStorage.getItem('greedbit_users'),{}),names=Object.keys(users);el.innerHTML='<option value="*">全体用户（本机）</option>'+[...new Set(names)].map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('')}
   function sendAdminMail(){
-    if(!user?.isAdmin)return;const to=$('adminMailRecipient').value,subject=$('adminMailSubject').value.trim(),body=$('adminMailBody').value.trim();if(!subject||!body)return notify('发送失败','请填写主题和正文','error');
-    const users=JSON.parse(localStorage.getItem('greedbit_users')||'{}'),targets=to==='*'?[...new Set(['admin',...Object.keys(users)])]:[to],msg={id:Date.now()+'_'+Math.random().toString(36).slice(2,7),subject,body,from:'GreedBit Admin',time:Date.now(),read:false};targets.forEach(n=>addMail(n,{...msg,id:msg.id+'_'+n}));$('adminMailSubject').value='';$('adminMailBody').value='';notify('通知已发送',to==='*'?`已写入 ${targets.length} 个本地账号收件箱`:`已发送给 ${to}`);renderInbox();
+    if(!isAdminMode())return;const to=$('adminMailRecipient').value,subject=$('adminMailSubject').value.trim(),body=$('adminMailBody').value.trim();if(!subject||!body)return notify('发送失败','请填写主题和正文','error');
+    const users=safeParse(localStorage.getItem('greedbit_users'),{}),targets=to==='*'?[...new Set(Object.keys(users))]:[to],msg={id:Date.now()+'_'+Math.random().toString(36).slice(2,7),subject,body,from:'GreedBit Admin',time:Date.now(),read:false};targets.forEach(n=>addMail(n,{...msg,id:msg.id+'_'+n}));$('adminMailSubject').value='';$('adminMailBody').value='';notify('通知已发送',to==='*'?`已写入 ${targets.length} 个本地账号收件箱`:`已发送给 ${to}`);renderInbox();
   }
 
   const i18n={

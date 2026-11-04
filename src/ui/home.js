@@ -3,7 +3,7 @@
 'use strict';
 const HERO_VIDEO='assets/mammon-home.webm';
 
-function installStyle(){if(document.querySelector('link[href="styles/v012.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v012.css';document.head.appendChild(l)}
+function installStyle(){if(document.querySelector('link[href^="styles/v012.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v012.css');document.head.appendChild(l)}
 function safeNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
 function changeClass(v){return safeNum(v)>=0?'green':'red'}
 function signedPct(v){v=safeNum(v);return`${v>=0?'+':''}${v.toFixed(2)}%`}
@@ -59,7 +59,7 @@ const baseSetStatus=setMarketStatus;setMarketStatus=function(){const out=baseSet
 const baseSyncAuth=syncAuth;syncAuth=function(){const out=baseSyncAuth.apply(this,arguments);setTimeout(renderHome,0);return out};
 const baseShowPage=showPage;showPage=function(page){const out=baseShowPage.apply(this,arguments);if(page==='home')renderHome();return out};
 
-function boot(){installStyle();installHome();renderHome();setInterval(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHome()},1500)}
+function boot(){installStyle();installHome();renderHome();every(()=>{if(!$('homePage')?.classList.contains('hidden'))renderHome()},1500)}
 boot();
 window.GreedBitHome={render:renderHome};
 })();
