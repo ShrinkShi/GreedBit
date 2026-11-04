@@ -122,7 +122,7 @@ function drawPositionOverlay(y,lo,hi,pad,W,H){
     usedLabels.push(labelY);
     ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([5,3]);ctx.beginPath();
     ctx.moveTo(pad.l,Math.round(lineY)+.5);ctx.lineTo(W-pad.r,Math.round(lineY)+.5);ctx.stroke();ctx.setLineDash([]);
-    const side=p.side==='long'?'多':'空',lev=`${Number(p.leverage).toFixed(2).replace(/\\.?0+$/,'')}X`,state=positive?'浮盈':negative?'浮亏':'持平';
+    const side=p.side==='long'?'多':'空',lev=Number(Number(p.leverage).toFixed(4))+'X',state=positive?'浮盈':negative?'浮亏':'持平';
     const nominal=(+p.qty||0)*entry;
     const label=`${side} ${lev}  ${state} ${pnl>0?'+':''}${fmt(pnl,4)} USDT  ${fmt(nominal,2)} USDT`;
     const width=Math.min(W-pad.r-pad.l-30,ctx.measureText(label).width+18),x=pad.l+10;
