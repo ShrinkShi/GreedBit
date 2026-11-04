@@ -52,6 +52,7 @@ window.addEventListener('resize',resize);
   setTimeout(resize,0);draw();
 })();
 every(()=>renderBook(),2000);
+every(()=>{if(user&&closeOrders.length)matchCloseOrders()},3000);
 every(()=>updateMarketSnapshots(),10000);
 every(()=>{if(!window.GreedBitBootstrap?.ready)return;settleFunding();updateFundingUI()},1000);
 every(()=>loadRealNews(false),60000);
