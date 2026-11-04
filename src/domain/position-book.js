@@ -28,6 +28,7 @@
     if(!(aq>0&&bq>0&&am>0&&bm>0))throw new Error('仓位数量/保证金无效');
     const qty=aq+bq,margin=am+bm,notional=number(a.notional||am*a.leverage)+number(b.notional||bm*b.leverage);
     const entry=(aq*number(a.entry)+bq*number(b.entry))/qty;
+    if(!(entry>0)||!valid(entry)||!(notional>0)||!valid(notional))throw new Error('仓位入场价格/名义价值无效');
     // A later order with explicit TP/SL replaces that field for the net position.
     return {...a,qty,margin,notional,entry,leverage:notional/margin,
       fee:(number(a.fee)||0)+(number(b.fee)||0),
