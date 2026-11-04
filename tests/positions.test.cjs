@@ -79,3 +79,24 @@ test('legacy normalization does not drop positions with malformed quantities',()
   assert.equal(out.length,3);
   assert.deepEqual(out.map(p=>p.id).sort(),[1,2,3]);
 });
+
+test('visible chart positions include restored in-range ETH cross holdings',()=>{
+  const saved=[
+    short(1,{entry:2301.62,qty:2.63,margin:60,notional:6042.67}),
+    short(2,{symbol:'BTC/USDT',entry:65000}),
+    short(3,{entry:2100}),
+    short(4,{entry:2300,qty:0})
+  ];
+  const restored=book.normalize(saved);
+  const visible=book.visibleChartPositions(restored,{symbol:'ETH/USDT',lo:2240,hi:2340});
+  assert.equal(visible.length,1);
+  assert.equal(visible[0].entry,2301.62);
+  assert.equal(visible[0].symbol,'ETH/USDT');
+});
+test('chart position selection has no dependency on page state or order history',()=>{
+  const position=short(21,{entry:2297.46});
+  assert.deepEqual(book.visibleChartPositions([position],{symbol:'ETH/USDT',lo:2200,hi:2350}),[position]);
+  assert.deepEqual(book.visibleChartPositions([position],{symbol:'ETH/USDT',lo:2350,hi:2450}),[]);
+  assert.deepEqual(book.visibleChartPositions([position],{symbol:'BTC/USDT',lo:2200,hi:2350}),[]);
+  assert.deepEqual(book.visibleChartPositions([position],{symbol:'ETH/USDT',lo:2400,hi:2400}),[]);
+});
