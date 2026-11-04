@@ -127,7 +127,20 @@ function renderCurrentOrders(){
 function renderOrderHistory(){
   const all=openKind==='limit'?orderHistory:[];const {rows,pages}=pageSlice(all,'orders');
   $('thead').innerHTML='<tr><th>合约</th><th>倍数</th><th>委托时间</th><th>更新时间</th><th>交易类型</th><th>只减仓</th><th>委托类型</th><th>委托量(USDT)</th><th>委托价(USDT)</th><th>成交量(USDT)</th><th>成交均价(USDT)</th><th>平仓盈亏 | 收益(USDT)</th><th>手续费</th><th>状态</th><th>订单编号</th><th>止盈/止损</th></tr>';
-  $('tbody').innerHTML=rows.length?rows.map(o=>{const side=orderSide(o.side),notional=(+o.margin||0)*(+o.leverage||1),filled=o.status==='已成交';return `<tr><td>${contractLabel(o.symbol)}</td><td>${o.leverage||'-'}</td><td>${timeCell(o.createdTs,o.createdAt)}</td><td>${timeCell(o.finishedTs,o.finishedAt)}</td><td class="${side[1]}">${side[0]}</td><td>否</td><td>${/maker|限价/i.test(o.type||'限价')?'限价委托':'限价委托'}</td><td>${fmt(notional,4)}</td><td>${fmt(o.limit,decFor(o.symbol))}</td><td>${filled?fmt(notional,4):'--'}</td><td>${filled?fmt(o.limit,decFor(o.symbol)):'0.00'}</td><td><span class="gb19-neutral">0.0000 | 0.0000</span></td><td>${o.fee!=null?signed(-Math.abs(o.fee),6,' USDT'):'--'}</td><td class="${filled?'gb19-positive':'gb19-muted'}">${esc(o.status||'-')}</td><td>${idCell(o.id)}</td><td>${tpSlCell(o)}</td></tr>`}).join(''):emptyRow(16,openKind==='limit'?'暂无历史委托':`暂无${advancedKindName(openKind)}历史记录`);
+  $('tbody').innerHTML=rows.length?rows.map(o=>{
+    const close=o.kind==='close'||o.reduceOnly||o.type==='限价平仓';
+    const side=orderSide(o.side,close),notional=close?(+o.qty||0)*(+o.limit||0):(+o.margin||0)*(+o.leverage||1),filled=o.status==='已成交';
+    const pnl=close&&Number.isFinite(+o.realized)?signed(o.realized,4):'<span class="gb19-neutral">--</span>';
+    return `<tr><td>${contractLabel(o.symbol)}</td><td>${o.leverage||'-'}</td>
+      <td>${timeCell(o.createdTs,o.createdAt)}</td><td>${timeCell(o.finishedTs,o.finishedAt)}</td>
+      <td class="${side[1]}">${side[0]}</td><td>${close?'是':'否'}</td>
+      <td>${close?'限价平仓':'限价开仓'}</td><td>${fmt(notional,4)}</td>
+      <td>${fmt(o.limit,decFor(o.symbol))}</td><td>${filled?fmt(notional,4):'--'}</td>
+      <td>${filled?fmt(o.limit,decFor(o.symbol)):'0.00'}</td>
+      <td>${pnl}</td><td>${o.fee!=null?signed(-Math.abs(o.fee),6,' USDT'):'--'}</td>
+      <td class="${filled?'gb19-positive':'gb19-muted'}">${esc(o.status||'-')}</td>
+      <td>${idCell(o.id)}</td><td>${tpSlCell(o)}</td></tr>`;
+  }).join(''):emptyRow(16,openKind==='limit'?'暂无历史委托':`暂无${advancedKindName(openKind)}历史记录`);
   renderPagination(all.length,'orders');
 }
 function renderTrades(){
