@@ -87,7 +87,7 @@ function renderDepth(d){
   if(!d?.asks||!d?.bids)return;lastDepthAt=Date.now();
   const asks=d.asks.slice(0,9).map(x=>[+x[0],+x[1]]).reverse(),bids=d.bids.slice(0,9).map(x=>[+x[0],+x[1]]);
   const mk=(rows,side)=>{let total=rows.reduce((a,r)=>a+r[1],0),cum=0;return rows.map(r=>{cum+=r[1];return`<div class="obrow"><i class="depth" style="width:${total?cum/total*100:0}%;background:${side==='a'?'#ec5d68':'#3dbb83'}"></i><span class="${side==='a'?'red':'green'}">${fmt(r[0],cfg.dec)}</span><span>${fmt(r[1],4)}</span><span>${fmt(cum,4)}</span></div>`}).join('')};
-  $('asks').innerHTML=mk(asks,'a');$('bids').innerHTML=mk(bids,'b');
+  $('asks').innerHTML=mk(asks,'a');$('bids').innerHTML=mk(bids,'b');setBookMode(false);
 }
 
 connectMarketSocket=function(hostIndex=0){
@@ -104,14 +104,23 @@ const baseRenderBook=renderBook;
 renderBook=async function(){if(marketReady&&Date.now()-lastDepthAt<3500)return;baseRenderBook().catch?.(()=>{})};
 
 loadHistoricalMarket=async function(resetView=true){
-  const seq=++marketLoadSeq,info=tfInfo();historyExhausted=false;historyLoading=false;
+  const seq=++marketLoadSeq,expected=symbol,info=tfInfo();historyExhausted=false;historyLoading=false;
   if(!marketSocket||marketSocket.readyState>1||marketSocket._gbSymbol!==symbol){closeMarketSocket();connectMarketSocket()}
   if(!marketReady)setMarketStatus('connecting','实时行情抢连中 · 同步历史K线…');
   try{
-    const raw=await fetchBinance(`/api/v3/klines?symbol=${apiSymbol()}&interval=${info.api}&limit=500`);if(seq!==marketLoadSeq)return;let bars=aggregateRealKlines(raw,info),now=Date.now()/1000;current=null;
+    const raw=await fetchBinance(`/api/v3/klines?symbol=${apiSymbol(expected)}&interval=${info.api}&limit=500`);
+    if(seq!==marketLoadSeq||expected!==symbol)return;
+    let bars=aggregateRealKlines(raw,info),now=Date.now()/1000;current=null;
     if(bars.length){const last=bars.at(-1),end=last.end||bucketEnd(last.t,info);if(now<end+2)current={...bars.pop(),live:true}}
-    candles=bars;price=current?.c||candles.at(-1)?.c||price;marketSnapshots[symbol].last=price;if(resetView){visibleCount=72;viewShift=0;yZoom=1;yPan=0;hoverIndex=-1}
-    refreshTicker(symbol).catch(()=>{});renderBook();stats();draw();renderCoinList();renderHomeMarkets();if(resetView)setTimeout(()=>{if(viewGeometry().start<100)loadOlderHistory()},350);
-  }catch(e){console.error(e);setMarketStatus('error','真实行情加载失败');notify('真实行情连接失败','无法从 Binance 获取行情，请检查网络或地区访问情况。','error',6000)}
+    candles=bars;price=current?.c||candles.at(-1)?.c||price;marketSnapshots[expected].last=price;if(resetView){visibleCount=72;viewShift=0;yZoom=1;yPan=0;hoverIndex=-1}
+    refreshTicker(expected).catch(()=>{});renderBook();stats();draw();renderCoinList();renderHomeMarkets();if(resetView)setTimeout(()=>{if(expected===symbol&&viewGeometry().start<100)loadOlderHistory()},350);
+  }catch(e){
+    console.error(e);
+    if(seq!==marketLoadSeq||expected!==symbol)return;
+    /* Never let the previous symbol's candles/price survive a failed switch. */
+    candles=[];current=null;price=0;draw();
+    setMarketStatus('error','真实行情加载失败');
+    notify('真实行情连接失败','无法从 Binance 获取行情，请检查网络或地区访问情况。','error',6000);
+  }
 };
 })();

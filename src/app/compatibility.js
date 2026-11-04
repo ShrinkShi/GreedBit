@@ -57,7 +57,8 @@ updateFooterTickers();
 
 const bridgeObserver=new MutationObserver(()=>{if(!$('homeMarkets')||!$('homeTotalAsset'))ensureLegacyHomeNodes()});
 bridgeObserver.observe(document.body,{childList:true,subtree:false});
-setInterval(()=>{if(user){try{saveState()}catch{}}},60000);
+/* No blanket autosave here: every mutation already calls saveState(), and an unconditional
+ * periodic write would bump the multi-tab revision and force the other tab to reload. */
 
 window.GreedBitCompatibility={ensureLegacyHomeNodes,ensureSymbolOptions};
 })();

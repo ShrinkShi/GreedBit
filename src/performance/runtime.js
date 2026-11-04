@@ -5,7 +5,7 @@ const V=window.GreedBitV13;if(!V)throw new Error('market/model.js must load befo
 const ROW_H=40,BUFFER=7,VIRTUAL_THRESHOLD=80;
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-function installStyle(){if(document.querySelector('link[href="styles/v015.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v015.css';document.head.appendChild(l)}
+function installStyle(){if(document.querySelector('link[href^="styles/v015.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v015.css');document.head.appendChild(l)}
 
 function migrateChartContrast(){
   if(typeof chartDefaults==='object')chartDefaults.bear='#ff6b78';
@@ -95,10 +95,27 @@ renderTable=function(){
   $('positionFilters')?.classList.add('hidden');$('thead').innerHTML=spec.head;attachVirtualScroll();if(virtual.key!==spec.key){virtual.key=spec.key;if(virtual.wrap)virtual.wrap.scrollTop=0}virtual.spec=spec;renderVirtualRows();
 };
 
-let marketWorker=null,activeSeq=0,activeExpected='',uiQueued=false,lastUi=0,uiTimer=0;
+let marketWorker=null,marketWorkerBroken=false,activeSeq=0,activeExpected='',uiQueued=false,lastUi=0,uiTimer=0;
 function ensureMarketWorker(){
+  if(marketWorkerBroken)return null;
   if(marketWorker)return marketWorker;
-  try{marketWorker=new Worker('src/performance/market-worker.js');marketWorker.onmessage=e=>handleWorkerBatch(e.data)}catch(e){console.warn('market worker unavailable; using main-thread fallback',e);marketWorker=null}
+  try{
+    const build=encodeURIComponent(window.GreedBitBootstrap?.build||'');
+    const w=new Worker(`src/performance/market-worker.js?gb=${build}`);
+    let ready=false;
+    const fail=reason=>{
+      if(marketWorkerBroken)return;
+      marketWorkerBroken=true;
+      console.warn('market worker unavailable; using main-thread fallback',reason);
+      try{w.terminate()}catch{}
+      if(marketWorker===w)marketWorker=null;
+    };
+    w.onmessage=e=>{const d=e.data;if(d&&d.type==='ready'){ready=true;return}handleWorkerBatch(d)};
+    w.onerror=e=>fail(e?.message||'worker error');
+    w.onmessageerror=()=>fail('worker messageerror');
+    setTimeout(()=>{if(!ready)fail('worker handshake timeout')},2500);
+    marketWorker=w;
+  }catch(e){marketWorkerBroken=true;console.warn('market worker unavailable; using main-thread fallback',e);marketWorker=null}
   return marketWorker;
 }
 function applyTradeCore(p,t,v){
@@ -110,7 +127,12 @@ function applyTradeCore(p,t,v){
   }
   price=p;marketSnapshots[symbol].last=p;resolveNews();matchOrders();matchSpotOrders();checkRisk();settleFunding();
 }
-function flushMarketUi(){uiQueued=false;clearTimeout(uiTimer);uiTimer=0;lastUi=performance.now();requestAnimationFrame(()=>{stats();updateFooterTickers();draw();renderTable()})}
+let slowUiAt=0;
+function flushMarketUi(){uiQueued=false;clearTimeout(uiTimer);uiTimer=0;lastUi=performance.now();requestAnimationFrame(()=>{
+  stats(false);updateFooterTickers();draw();
+  const now=performance.now();
+  if(now-slowUiAt>=450){slowUiAt=now;updateAssets();renderTable()}
+})}
 function scheduleMarketUi(){if(uiQueued)return;uiQueued=true;const wait=Math.max(0,80-(performance.now()-lastUi));if(wait<=1)requestAnimationFrame(flushMarketUi);else uiTimer=setTimeout(()=>requestAnimationFrame(flushMarketUi),wait)}
 function handleWorkerBatch(msg){
   if(!msg||msg.type!=='batch'||msg.seq!==activeSeq||symbol!==activeExpected)return;
@@ -123,7 +145,7 @@ const inheritedConnectMarket=connectMarketSocket;
 connectMarketSocket=function(hostIndex=0){
   const meta=V.META?.[symbol];if(meta?.market!=='binance')return inheritedConnectMarket.apply(this,arguments);
   closeMarketSocket(false);marketSocketHostIndex=hostIndex;const s=apiSymbol().toLowerCase(),host=WS_HOSTS[hostIndex]||WS_HOSTS[0],url=`${host}/stream?streams=${s}@aggTrade/${s}@ticker`;setMarketStatus('connecting','正在连接实时行情…');
-  try{marketSocket=new WebSocket(url)}catch{scheduleSocketReconnect(hostIndex+1);return}
+  try{marketSocket=new WebSocket(url);marketSocket._gbSymbol=symbol}catch{scheduleSocketReconnect(hostIndex+1);return}
   const expected=symbol,seq=++activeSeq;activeExpected=expected;ensureMarketWorker()?.postMessage({type:'reset',seq});
   marketSocket.onopen=()=>{if(expected!==symbol)return;setMarketStatus('live','Binance 实时行情已连接 · Worker批处理')};
   marketSocket.onmessage=ev=>{if(expected!==symbol||seq!==activeSeq)return;const w=ensureMarketWorker();if(w)w.postMessage({type:'raw',seq,payload:ev.data});else directRawFallback(ev.data,seq)};
@@ -133,6 +155,10 @@ connectMarketSocket=function(hostIndex=0){
 function boot(){
   installStyle();migrateChartContrast();installValidation();installTerms();renderTable();annotateTerms();
   const meta=V.META?.[symbol];if((currentPage==='trade'||currentPage==='futures')&&meta?.market==='binance')connectMarketSocket();
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)return;
+    try{stats();updateFooterTickers();renderBook()}catch(e){console.warn('visibility refresh failed',e)}
+  });
 }
 boot();
 window.GreedBitPerformance={annotateTerms,validateNumber};

@@ -1,9 +1,12 @@
 /* Canonical shared-UI runtime owner. */
+let runtimeWaitCount=0;
 (function waitRuntime(){
-if(!window.GreedBitRuntimeUI||!window.GreedBitContracts||!document.getElementById('pairName')){setTimeout(waitRuntime,60);return}
+if((!window.GreedBitRuntimeUI&&!window.GreedBitV21)||!window.GreedBitContracts||!document.getElementById('pairName')){
+  if(++runtimeWaitCount>200){console.error('[GreedBit] app/runtime 依赖等待超时',{runtimeUI:!!window.GreedBitRuntimeUI,v21:!!window.GreedBitV21,contracts:!!window.GreedBitContracts,pairName:!!document.getElementById('pairName')});return}
+  setTimeout(waitRuntime,60);return}
 (()=>{
 'use strict';
-const VERSION='0.0.26';
+const VERSION=window.GB_VERSION||'0.0.26';
 const MANUAL_NEWS_KEY='greedbit_news_manual_original';
 let newsPolicyBusy=false,newsPolicyTimer=0;
 
@@ -58,14 +61,14 @@ function waitTranslation(btn,timeout=9000){return new Promise(resolve=>{const st
 async function applyNewsTranslationPolicy(){
   if(newsPolicyBusy)return;const list=document.getElementById('newsList');if(!list)return;newsPolicyBusy=true;
   try{
+    /* Only restore cards the user explicitly pinned back to the original text.
+     * Auto-translating every rendered card used to fire ~40 third-party requests per render. */
     const all=[...list.querySelectorAll('[data-news-translate]')];
     for(const btn of all){
       if(!document.body.contains(btn)||btn.disabled)continue;
       const pinned=isPinnedOriginal(btn,readManualNews());
       if(pinned&&btn.dataset.state==='translated'){btn.click();await waitTranslation(btn);await new Promise(r=>setTimeout(r,40))}
     }
-    const prefs=readManualNews(),buttons=[...list.querySelectorAll('[data-news-translate]')].filter(b=>!b.disabled&&b.dataset.state!=='translated'&&!isPinnedOriginal(b,prefs));
-    for(const btn of buttons.slice(0,20)){if(!document.body.contains(btn)||btn.disabled||isPinnedOriginal(btn,readManualNews()))continue;btn.click();await waitTranslation(btn);await new Promise(r=>setTimeout(r,60))}
   }finally{newsPolicyBusy=false}
 }
 function scheduleNewsPolicy(delay=140){clearTimeout(newsPolicyTimer);newsPolicyTimer=setTimeout(applyNewsTranslationPolicy,delay)}

@@ -11,7 +11,7 @@ const FEEDS=[
 ];
 let sourceState={},lastSuccessfulFetch=0,usingCache=false;
 
-function installCss(){if(document.querySelector('link[href="styles/v012-news.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v012-news.css';document.head.appendChild(l)}
+function installCss(){if(document.querySelector('link[href^="styles/v012-news.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v012-news.css');document.head.appendChild(l)}
 function marketNewsMarkup(){return`<div class="news-center-v12">
   <header class="news-center-head">
     <div><span class="eyebrow">MARKET NEWS</span><h1>市场资讯</h1><p>聚合 CoinDesk 加密市场资讯，并以 CNBC 财经新闻作为独立兜底源。新闻加载失败不会影响交易与行情功能。</p></div>
@@ -32,7 +32,7 @@ function renderSourceStrip(){const box=$('newsSourceStrip');if(!box)return;box.i
 function readCache(){try{const c=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');if(!c||!Array.isArray(c.items)||!c.items.length)return null;if(Date.now()-Number(c.savedAt||0)>CACHE_MAX_AGE)return null;return c}catch{return null}}
 function writeCache(items){try{localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),items:items.slice(0,80)}))}catch{}}
 function applyCache(){const c=readCache();if(!c)return false;newsItems=c.items;usingCache=true;setOverallState('cached',`显示缓存资讯 · ${new Date(c.savedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`);renderNews();return true}
-function voteInfo(id,title){const voteMap=JSON.parse(localStorage.getItem('greedbit_news_votes')||'{}'),seed=newsHash(title),userVote=voteMap[id]||null;return{bull:24+(seed%210)+(userVote==='bull'?1:0),bear:18+((seed>>>8)%190)+(userVote==='bear'?1:0),userVote}}
+function voteInfo(id,title){const voteMap=safeParse(localStorage.getItem('greedbit_news_votes'),{}),seed=newsHash(title),userVote=voteMap[id]||null;return{bull:24+(seed%210)+(userVote==='bull'?1:0),bear:18+((seed>>>8)%190)+(userVote==='bear'?1:0),userVote}}
 function normalizeItem(raw,source){const title=stripHtml(raw.title||''),desc=stripHtml(raw.description||raw.content||'').slice(0,420),link=String(raw.link||raw.guid||'').trim(),pub=Date.parse(raw.pubDate||raw.published||raw.date||'')||Date.now(),id=`${source.name}-${newsHash(link||title)}`,meta=inferNewsMeta(title+' '+desc);return{id,time:new Date(pub).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),publishedAt:pub,source:source.name,link,title,desc,...meta,...voteInfo(id,title)}}
 function parseXml(xml,source){const doc=new DOMParser().parseFromString(xml,'application/xml');if(doc.querySelector('parsererror'))throw new Error('RSS parse error');const nodes=[...doc.querySelectorAll('item')];if(!nodes.length)throw new Error('RSS has no items');return nodes.slice(0,60).map(it=>normalizeItem({title:it.querySelector('title')?.textContent||'',description:it.querySelector('description')?.textContent||'',link:it.querySelector('link')?.textContent||'',pubDate:it.querySelector('pubDate')?.textContent||''},source)).filter(x=>x.title)}
 async function fetchText(url,timeout=4200){const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(url,{cache:'no-store',signal:c.signal});if(!r.ok)throw new Error(`HTTP ${r.status}`);return await r.text()}finally{clearTimeout(timer)}}
@@ -57,7 +57,7 @@ loadRealNews=async function(showToast=false){
     if(!results.length){const fallback=FEEDS.find(x=>x.fallback);try{const items=await fetchFeed(fallback);sourceState[fallback.name]='fallback';results.push(...items)}catch{sourceState[fallback.name]='error'}}else sourceState['CNBC Top News']='fallback';
     if(!results.length)throw new Error('all news feeds unavailable');
     const unique=new Map();for(const n of results.sort((a,b)=>b.publishedAt-a.publishedAt))if(!unique.has(n.id))unique.set(n.id,n);newsItems=[...unique.values()].slice(0,80);writeCache(newsItems);lastSuccessfulFetch=Date.now();const liveNames=Object.entries(sourceState).filter(([,v])=>v==='live').map(([k])=>k);setOverallState('ok',`已连接 ${liveNames.join(' + ')||'财经备用源'}`);if(showToast)notify('资讯已刷新',`已加载 ${newsItems.length} 条真实新闻`,'success')
-  }catch(e){console.warn('news load failed',e);if(!applyCache()){newsItems=[];setOverallState('error','新闻源连接失败')}if(showToast)notify('资讯刷新失败',usingCache?'已回退到本地缓存':'CoinDesk 与财经备用源当前均不可用','error',5000)}finally{newsLoading=false;renderSourceStrip();renderNews();if(user?.isAdmin)renderAdminPage()}
+  }catch(e){console.warn('news load failed',e);if(!applyCache()){newsItems=[];setOverallState('error','新闻源连接失败')}if(showToast)notify('资讯刷新失败',usingCache?'已回退到本地缓存':'CoinDesk 与财经备用源当前均不可用','error',5000)}finally{newsLoading=false;renderSourceStrip();renderNews();if(isAdminMode())renderAdminPage()}
 };
 
 installCss();installMarket();renderSourceStrip();if(!newsItems.length)applyCache();renderNews();newsLoading=false;setTimeout(()=>loadRealNews(false),300);setTimeout(()=>{if(!lastSuccessfulFetch)loadRealNews(false)},5200);

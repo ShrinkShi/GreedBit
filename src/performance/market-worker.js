@@ -1,5 +1,6 @@
 /* v0.0.15 market worker: parse and batch websocket payloads off the main thread. */
 'use strict';
+postMessage({type:'ready'});
 let batch={seq:0,trades:[],ticker:null};
 let timer=null;
 const FLUSH_MS=80;

@@ -5,10 +5,11 @@ const V=window.GreedBitV13,EXTENDED=window.GreedBitExtendedMarkets;
 if(!V||!EXTENDED)throw new Error('market/model.js and market/extended.js must load before market/external.js');
 
 const FAV_KEY='greedbit_pair_favorites_v14';
-const STOCK_MANIFEST_URL='https://api.github.com/repos/ShrinkShi/GreedBit/contents/assets/stocksicon?ref=main';
+const STOCK_MANIFEST_URL='assets/stocksicon/manifest.json';
 const SNAPSHOT_TTL=60000;
+const SNAPSHOT_FAIL_BACKOFF=30000;
 let pickerMode='favorites',externalPoll=0,stockObserver=null,renderTimer=0,techMood=0;
-const lastSnapshotAt=new Map(),fxCache=new Map();
+const lastSnapshotAt=new Map(),failedSnapshotAt=new Map(),fxCache=new Map();
 
 const FOREX=[
   {ticker:'EUR/USD',code:'EURUSD',symbol:'EURUSD/USDT',name:'欧元 / 美元',yahoo:'EURUSD=X',iconPath:'assets/forex/eurusd.png',dec:5,color:'#5d85d9',market:'forex',category:'forex',quote:'USD',tokenType:'外汇代币'},
@@ -34,7 +35,7 @@ const EXTERNAL_MAP={};
 
 function hash32(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function seeded01(str){let x=hash32(str)||1;x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)%1000000)/1000000}
-function installStyle(){if(document.querySelector('link[href="styles/v017.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href='styles/v017.css';document.head.appendChild(l)}
+function installStyle(){if(document.querySelector('link[href^="styles/v017.css"]'))return;const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v017.css');document.head.appendChild(l)}
 function readFav(){try{return new Set(JSON.parse(localStorage.getItem(FAV_KEY)||'[]'))}catch{return new Set()}}
 function saveFav(s){localStorage.setItem(FAV_KEY,JSON.stringify([...s]))}
 function favId(m,s){return`${m}|${s}`}
@@ -48,12 +49,18 @@ function buildStock(base){
   if(special){const ticker=special.ticker;return{ticker,symbol:`${ticker}/USDT`,name:special.name,yahoo:special.yahoo,quote:special.quote||'USD',iconPath:`assets/stocksicon/${base}.png`,dec:2,color:'#7189b8',market:'stock',category:'stock',tokenType:'股票代币',listed:true,synthetic:false}}
   const priv=PRIVATE_SPECIAL[base];if(priv){return{ticker:priv.ticker,symbol:`${priv.ticker}/USDT`,name:priv.name,yahoo:null,quote:'USDT',iconPath:`assets/stocksicon/${base}.png`,dec:2,color:'#8d72d9',market:'stock',category:'stock',tokenType:'股票代币',listed:false,synthetic:true,anchor:priv.anchor}}
   const ticker=FILE_ALIASES[base]||base.toUpperCase();
-  if(!/^[A-Z][A-Z0-9.-]{0,9}$/.test(ticker))return{ticker,symbol:`${ticker}/USDT`,name:ticker,yahoo:null,quote:'USDT',iconPath:`assets/stocksicon/${base}.png`,dec:2,color:'#8d72d9',market:'stock',category:'stock',tokenType:'股票代币',listed:false,synthetic:true,anchor:20+seeded01(base)*80};
+  /* Never echo an invalid file name back into the UI: it ends up in innerHTML. */
+  if(!/^[A-Z][A-Z0-9.-]{0,9}$/.test(ticker))return null;
   return{ticker,symbol:`${ticker}/USDT`,name:STOCK_NAMES[ticker]||ticker,yahoo:ticker,quote:'USD',iconPath:`assets/stocksicon/${base}.png`,dec:2,color:'#7189b8',market:'stock',category:'stock',tokenType:'股票代币',listed:true,synthetic:false,autoTicker:true};
 }
 async function loadStockManifest(){
   let bases=[];
-  try{const r=await fetch(STOCK_MANIFEST_URL,{cache:'no-store'});if(!r.ok)throw new Error(`GitHub HTTP ${r.status}`);const files=await r.json();bases=files.filter(x=>x.type==='file'&&/\.png$/i.test(x.name)).map(x=>x.name.replace(/\.png$/i,''))}catch(e){console.warn('stock icon manifest unavailable',e);bases=[...FALLBACK_ICON_BASES]}
+  try{
+    const r=await fetch(STOCK_MANIFEST_URL,{cache:'no-store'});if(!r.ok)throw new Error(`manifest HTTP ${r.status}`);
+    const files=await r.json();
+    bases=(Array.isArray(files)?files:[]).map(x=>typeof x==='string'?x:String(x?.name||'')).filter(n=>/\.png$/i.test(n)).map(n=>n.replace(/\.png$/i,''));
+    if(!bases.length)throw new Error('manifest is empty');
+  }catch(e){console.warn('stock icon manifest unavailable',e);bases=[...FALLBACK_ICON_BASES]}
   const seen=new Set(),rows=[];for(const base of bases){const a=buildStock(base);if(!a||seen.has(a.symbol))continue;seen.add(a.symbol);rows.push(a)}
   STOCKS=rows;STOCK_MAP=Object.fromEntries(rows.map(x=>[x.symbol,x]));for(const a of rows)EXTERNAL_MAP[a.symbol]=a;return rows
 }
@@ -74,9 +81,25 @@ function rowBadge(market,a){if(market==='spot')return'';if(market==='futures')re
 function rowTitle(a,market){if(market==='spot'||market==='forex'||market==='stock')return a.ticker;return a.symbol}
 function rowSub(a,market){if(market==='stock')return`${a.name} · ${a.synthetic?'GreedBit 模拟估值':'追踪公开标的价格'}`;if(market==='forex')return`${a.name} · 追踪公开外汇汇率`;if(market==='commodity')return`${a.name} · 大宗商品参考合约`;if(market==='spot')return a.name;return`${a.name} · 永续`}
 function scheduleRender(){clearTimeout(renderTimer);renderTimer=setTimeout(()=>renderCoinListExternal(),120)}
-function attachLazyQuotes(){stockObserver?.disconnect();stockObserver=new IntersectionObserver(entries=>{for(const e of entries){if(!e.isIntersecting)continue;const sym=e.target.dataset.symbol,a=EXTERNAL_MAP[sym];if(a)ensureSnapshot(a).then(()=>scheduleRender()).catch(()=>{});stockObserver.unobserve(e.target)}},{root:$('coinList'),rootMargin:'160px'});document.querySelectorAll('#coinList .coin-row[data-market="stock"],#coinList .coin-row[data-market="forex"]').forEach(el=>stockObserver.observe(el))}
+function attachLazyQuotes(){
+  if(!stockObserver){
+    stockObserver=new IntersectionObserver(entries=>{
+      for(const e of entries){
+        if(!e.isIntersecting)continue;
+        const sym=e.target.dataset.symbol,a=EXTERNAL_MAP[sym];
+        if(a)ensureSnapshot(a).then(()=>scheduleRender()).catch(()=>{});
+        stockObserver.unobserve(e.target);
+      }
+    },{root:$('coinList'),rootMargin:'160px'});
+  }else{
+    stockObserver.disconnect();
+  }
+  document.querySelectorAll('#coinList .coin-row[data-market="stock"],#coinList .coin-row[data-market="forex"]').forEach(el=>stockObserver.observe(el));
+}
 function renderCoinListExternal(){
-  const box=$('coinList');if(!box)return;renderTabs();const head=document.querySelector('.coin-list-head');if(head?.children?.[0])head.children[0].textContent=pickerMode==='spot'?'币种':pickerMode==='forex'?'外汇代币':pickerMode==='stocks'?'股票代币':pickerMode==='commodities'?'大宗商品':pickerMode==='favorites'?'自选交易':'合约';
+  const box=$('coinList');if(!box)return;
+  if($('coinPicker')?.classList.contains('hidden'))return;
+  renderTabs();const head=document.querySelector('.coin-list-head');if(head?.children?.[0])head.children[0].textContent=pickerMode==='spot'?'币种':pickerMode==='forex'?'外汇代币':pickerMode==='stocks'?'股票代币':pickerMode==='commodities'?'大宗商品':pickerMode==='favorites'?'自选交易':'合约';
   const rows=pickerRows(),fav=readFav();if(!rows.length){box.innerHTML='<div class="coin-picker-empty-v14"><b>暂无匹配结果</b>可切换分类或清空搜索条件。</div>';return}
   box.innerHTML=rows.map(({a,market})=>{const m=marketSnapshots[a.symbol]||{},last=+m.last||0,ch=+m.change||0,id=favId(market,a.symbol),on=fav.has(id),spot=market==='spot',active=a.symbol===symbol&&((spot&&tradingMode==='spot')||(!spot&&tradingMode==='futures')),badge=rowBadge(market,a);return`<div class="coin-row ${active?'active':''}" data-symbol="${a.symbol}" data-market="${market}" tabindex="0"><div class="coin-name-v14"><button class="coin-star-v14 ${on?'on':''}" data-external-fav="1" data-fav-symbol="${a.symbol}" data-fav-market="${market}" title="${on?'取消收藏':'加入自选'}">${on?'★':'☆'}</button><div class="coin-main-v14"><img class="coin-icon-img" src="${a.iconPath}" alt="${a.ticker}"/><span class="coin-text-v14"><b>${rowTitle(a,market)}${badge?`<em class="coin-market-badge-v14 ${a.synthetic?'gb17-sim-badge':''}">${badge}</em>`:''}</b><small>${rowSub(a,market)}</small></span></div></div><span>${last?fmt(last,a.dec):'--'}</span><span class="${ch>0?'green':ch<0?'red':'muted'}">${last?(ch>=0?'+':'')+ch.toFixed(2)+'%':'--'}</span></div>`}).join('');attachLazyQuotes()
 }
@@ -85,7 +108,7 @@ function installPicker(){const tabs=document.querySelector('.coin-tabs'),list=$(
 async function fetchYahooRaw(ticker,interval='5m',range='5d'){
   const target=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}&range=${range}&includePrePost=false&events=div%2Csplits`;
   const urls=[`https://proxy.cors.dev/${target}`,`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`];let err;
-  for(const url of urls){try{const c=new AbortController(),to=setTimeout(()=>c.abort(),7500);const r=await fetch(url,{cache:'no-store',signal:c.signal,credentials:'omit'});clearTimeout(to);if(!r.ok)throw new Error(`HTTP ${r.status}`);const j=await r.json(),res=j?.chart?.result?.[0];if(!res)throw new Error('Yahoo empty');return res}catch(e){err=e}}
+  for(const url of urls){const c=new AbortController(),to=setTimeout(()=>c.abort(),7500);try{const r=await fetch(url,{cache:'no-store',signal:c.signal,credentials:'omit'});if(!r.ok)throw new Error(`HTTP ${r.status}`);const j=await r.json(),res=j?.chart?.result?.[0];if(!res)throw new Error('Yahoo empty');return res}catch(e){err=e}finally{clearTimeout(to)}}
   throw err||new Error('Yahoo unavailable')
 }
 async function usdPerCurrency(q){if(!q||q==='USD'||q==='USDT')return 1;const hit=fxCache.get(q);if(hit&&Date.now()-hit.ts<300000)return hit.v;const res=await fetchYahooRaw(`${q}=X`,'5m','5d'),m=res.meta||{},rate=+(m.regularMarketPrice||m.chartPreviousClose||m.previousClose||0);if(!rate)throw new Error(`FX ${q} unavailable`);const v=1/rate;fxCache.set(q,{v,ts:Date.now()});return v}
@@ -93,28 +116,36 @@ function yahooBars(res,info,mult=1){const q=res?.indicators?.quote?.[0]||{},ts=r
 function yahooPlan(info){if(info.calendarMonth)return{interval:'1d',range:'5y'};if(info.sec<=180)return{interval:'1m',range:'5d'};if(info.sec<=900)return{interval:'5m',range:'1mo'};if(info.sec<=1800)return{interval:'15m',range:'1mo'};if(info.sec<=28800)return{interval:'60m',range:'6mo'};return{interval:'1d',range:'5y'}}
 
 function simStore(){try{return JSON.parse(localStorage.getItem('greedbit_stocktoken_sim_v17')||'{}')}catch{return{}}}
-function saveSim(s){localStorage.setItem('greedbit_stocktoken_sim_v17',JSON.stringify(s))}
+function saveSim(s){try{localStorage.setItem('greedbit_stocktoken_sim_v17',JSON.stringify(s))}catch(e){console.warn('sim state save failed',e)}}
 function syntheticState(a){const all=simStore(),day=new Date().toISOString().slice(0,10),old=all[a.symbol];if(old&&old.day===day)return{all,state:old};const anchor=a.anchor||20+seeded01(a.symbol)*100,state={day,open:anchor,price:anchor,high:anchor,low:anchor,volume:0};all[a.symbol]=state;saveSim(all);return{all,state}}
 function advanceSynthetic(a,paint=false){const {all,state}=syntheticState(a),targetChange=clamp(techMood*1.25+(seeded01(a.symbol+state.day)-.5)*6,-12,12),target=state.open*(1+targetChange/100),pull=(target-state.price)*.018,noise=state.price*(Math.random()-.5)*.0018;state.price=Math.max(.01,state.price+pull+noise);state.high=Math.max(state.high,state.price);state.low=Math.min(state.low,state.price);state.volume+=Math.abs(noise)*50000;all[a.symbol]=state;saveSim(all);const change=(state.price/state.open-1)*100;marketSnapshots[a.symbol]={last:state.price,change,high:state.high,low:state.low,quoteVolume:state.volume,_source:'GreedBit 模拟估值（未上市股票代币）'};lastSnapshotAt.set(a.symbol,Date.now());if(symbol===a.symbol){price=state.price;latestTicker=marketSnapshots[a.symbol];if(paint){stats();draw();renderBook()}}return marketSnapshots[a.symbol]}
 function syntheticBars(a,info,count=900){const state=syntheticState(a).state,now=Math.floor(Date.now()/info.sec)*info.sec,start=now-(count-1)*info.sec,arr=[];let p=state.open*(.92+seeded01(a.symbol+info.key)*.16);for(let i=0;i<count;i++){const t=start+i*info.sec,r=(seeded01(`${a.symbol}:${info.key}:${t}`)-.5)*(info.sec>=86400?.055:info.sec>=3600?.025:.008),drift=techMood/100*(info.sec/86400)*.65,o=p,c=Math.max(.01,o*(1+r+drift)),wick=Math.abs(r)*.55+.0015,h=Math.max(o,c)*(1+wick*seeded01(`h${t}${a.symbol}`)),l=Math.max(.001,Math.min(o,c)*(1-wick*seeded01(`l${t}${a.symbol}`))),v=Math.abs(c-o)*10000+1000*seeded01(`v${t}${a.symbol}`);arr.push({t,end:t+info.sec,o,h,l,c,v,live:i===count-1});p=c}const scale=state.price/(arr.at(-1)?.c||state.price);for(const c of arr){c.o*=scale;c.h*=scale;c.l*=scale;c.c*=scale}return arr}
 
 async function refreshReferenceMood(){try{const res=await fetchYahooRaw('QQQ','5m','5d'),m=res.meta||{},last=+(m.regularMarketPrice||0),prev=+(m.chartPreviousClose||m.previousClose||last);if(last&&prev)techMood=(last/prev-1)*100}catch{}}
 async function refreshYahooSnapshot(a){const res=await fetchYahooRaw(a.yahoo,'5m','5d'),m=res.meta||{},mult=a.market==='stock'?await usdPerCurrency(a.quote):1,bars=yahooBars(res,{sec:300,calendarMonth:false},mult),lastLocal=+(m.regularMarketPrice||bars.at(-1)?.c/mult||0),prevLocal=+(m.chartPreviousClose||m.previousClose||lastLocal),last=lastLocal*mult,prev=prevLocal*mult,hi=+(m.regularMarketDayHigh||0)*mult||Math.max(...bars.slice(-96).map(x=>x.h)),lo=+(m.regularMarketDayLow||0)*mult||Math.min(...bars.slice(-96).map(x=>x.l)),vol=bars.slice(-96).reduce((s,x)=>s+(x.v||0),0);if(!last)throw new Error('no price');a.dec=decForPrice(last);configs[a.symbol].dec=a.dec;marketSnapshots[a.symbol]={last,change:prev?(last/prev-1)*100:0,high:hi||last,low:lo||last,quoteVolume:vol*last,_source:a.market==='stock'?`Yahoo Finance 标的参考价${a.quote&&a.quote!=='USD'?` · ${a.quote} 换算 USDT`:''}`:'Yahoo Finance 外汇参考汇率'};lastSnapshotAt.set(a.symbol,Date.now());if(symbol===a.symbol){price=last;latestTicker=marketSnapshots[a.symbol]}return marketSnapshots[a.symbol]}
-async function ensureSnapshot(a,force=false){if(a.synthetic)return advanceSynthetic(a,false);const ts=lastSnapshotAt.get(a.symbol)||0;if(!force&&Date.now()-ts<SNAPSHOT_TTL&&marketSnapshots[a.symbol]?.last)return marketSnapshots[a.symbol];try{return await refreshYahooSnapshot(a)}catch(e){marketSnapshots[a.symbol]._source='公开参考行情暂不可用';throw e}}
+async function ensureSnapshot(a,force=false){
+  if(a.synthetic)return advanceSynthetic(a,false);
+  const now=Date.now(),ts=lastSnapshotAt.get(a.symbol)||0;
+  if(!force&&now-ts<SNAPSHOT_TTL&&marketSnapshots[a.symbol]?.last)return marketSnapshots[a.symbol];
+  /* Failed symbols must not be retried on every render/poll: back off for 30s. */
+  if(now-(failedSnapshotAt.get(a.symbol)||0)<SNAPSHOT_FAIL_BACKOFF)throw new Error('reference quote cooling down');
+  try{const r=await refreshYahooSnapshot(a);failedSnapshotAt.delete(a.symbol);return r}
+  catch(e){failedSnapshotAt.set(a.symbol,Date.now());if(marketSnapshots[a.symbol])marketSnapshots[a.symbol]._source='公开参考行情暂不可用';throw e}
+}
 
 const inheritedUpdate=updateMarketSnapshots;
 updateMarketSnapshots=async function(){const held={};for(const a of [...FOREX,...STOCKS]){if(configs[a.symbol]){held[a.symbol]=configs[a.symbol];delete configs[a.symbol]}}try{await inheritedUpdate.apply(this,arguments)}finally{Object.assign(configs,held)}if(EXTERNAL_MAP[symbol])await ensureSnapshot(EXTERNAL_MAP[symbol],true).catch(()=>{});renderCoinListExternal()};
 
 const inheritedLoadHistory=loadHistoricalMarket;
-loadHistoricalMarket=async function(resetView=true){const a=EXTERNAL_MAP[symbol];if(!a)return inheritedLoadHistory.apply(this,arguments);closeMarketSocket();setMarketStatus('connecting',`${a.name} · 正在加载${a.synthetic?'模拟':'公开参考'}行情…`);try{const info=tfInfo();let bars;if(a.synthetic){advanceSynthetic(a,false);bars=syntheticBars(a,info,900)}else{const plan=yahooPlan(info),res=await fetchYahooRaw(a.yahoo,plan.interval,plan.range),mult=a.market==='stock'?await usdPerCurrency(a.quote):1;bars=yahooBars(res,info,mult);if(!bars.length)throw new Error('empty history');await refreshYahooSnapshot(a)}current=null;candles=bars.slice(0,-1);current={...bars.at(-1),live:true};price=current.c;marketSnapshots[a.symbol].last=price;if(resetView){visibleCount=72;viewShift=0;yZoom=1;yPan=0;hoverIndex=-1}connectMarketSocket();renderBook();stats();draw();renderCoinListExternal();setMarketStatus('live',a.synthetic?`${a.name} · GreedBit 模拟估值`:`${a.name} · ${a.market==='stock'?'股票代币追踪标的':'公开外汇'}参考行情`)}catch(e){console.warn('external history failed',e);setMarketStatus('error',`${a.name} 行情连接失败`);candles=[];current=null;draw();notify('行情暂不可用',`${a.name} 暂时无法取得参考行情。`,'error',5000)}};
+loadHistoricalMarket=async function(resetView=true){const a=EXTERNAL_MAP[symbol];if(!a)return inheritedLoadHistory.apply(this,arguments);const seq0=marketLoadSeq,sym0=symbol;closeMarketSocket();setMarketStatus('connecting',`${a.name} · 正在加载${a.synthetic?'模拟':'公开参考'}行情…`);try{const info=tfInfo();let bars;if(a.synthetic){advanceSynthetic(a,false);bars=syntheticBars(a,info,900)}else{const plan=yahooPlan(info),res=await fetchYahooRaw(a.yahoo,plan.interval,plan.range),mult=a.market==='stock'?await usdPerCurrency(a.quote):1;bars=yahooBars(res,info,mult);if(!bars.length)throw new Error('empty history');await refreshYahooSnapshot(a)}if(seq0!==marketLoadSeq||sym0!==symbol)return;current=null;candles=bars.slice(0,-1);current={...bars.at(-1),live:true};price=current.c;marketSnapshots[a.symbol].last=price;if(resetView){visibleCount=72;viewShift=0;yZoom=1;yPan=0;hoverIndex=-1}connectMarketSocket();renderBook();stats();draw();renderCoinListExternal();setMarketStatus('live',a.synthetic?`${a.name} · GreedBit 模拟估值`:`${a.name} · ${a.market==='stock'?'股票代币追踪标的':'公开外汇'}参考行情`)}catch(e){if(seq0!==marketLoadSeq||sym0!==symbol)return;console.warn('external history failed',e);setMarketStatus('error',`${a.name} 行情连接失败`);candles=[];current=null;draw();notify('行情暂不可用',`${a.name} 暂时无法取得参考行情。`,'error',5000)}};
 
 const inheritedCloseSocket=closeMarketSocket;
 closeMarketSocket=function(clearRetry=true){if(externalPoll){clearInterval(externalPoll);externalPoll=0}return inheritedCloseSocket(clearRetry)};
 const inheritedConnect=connectMarketSocket;
-connectMarketSocket=function(){const a=EXTERNAL_MAP[symbol];if(!a)return inheritedConnect.apply(this,arguments);inheritedCloseSocket(false);if(externalPoll)clearInterval(externalPoll);setMarketStatus('live',a.synthetic?`${a.name} · 模拟估值实时更新`:`${a.name} · 公开参考行情轮询`);externalPoll=setInterval(()=>{if(symbol!==a.symbol)return;ensureSnapshot(a,true).then(()=>{price=marketSnapshots[a.symbol].last;if(current){current.c=price;current.h=Math.max(current.h,price);current.l=Math.min(current.l,price)}stats();draw();renderBook();renderCoinListExternal()}).catch(()=>{})},a.synthetic?4500:12000)};
+connectMarketSocket=function(){const a=EXTERNAL_MAP[symbol];if(!a)return inheritedConnect.apply(this,arguments);inheritedCloseSocket(false);if(externalPoll)clearInterval(externalPoll);setMarketStatus('live',a.synthetic?`${a.name} · 模拟估值实时更新`:`${a.name} · 公开参考行情轮询`);externalPoll=every(()=>{if(symbol!==a.symbol)return;ensureSnapshot(a,true).then(()=>{price=marketSnapshots[a.symbol].last;if(current){current.c=price;current.h=Math.max(current.h,price);current.l=Math.min(current.l,price)}stats();draw();renderBook();renderCoinListExternal()}).catch(()=>{})},a.synthetic?4500:12000)};
 
 const inheritedRenderBook=renderBook;
-renderBook=function(){const a=EXTERNAL_MAP[symbol];if(!a)return inheritedRenderBook.apply(this,arguments);const p=price||marketSnapshots[symbol]?.last||0;if(!p)return;const spread=Math.max(p*(a.market==='forex'?.00008:.00035),Math.pow(10,-cfg.dec)),n=9;let ac=0,bc=0;const asks=[],bids=[];for(let i=n;i>=1;i--){const q=(.5+Math.random()*2.2)*Math.max(.01,100/p);ac+=q;asks.push(`<div class="obrow"><i class="depth" style="width:${(n-i+1)/n*100}%;background:#ff6b78"></i><span class="red">${fmt(p+spread*i,cfg.dec)}</span><span>${fmt(q,4)}</span><span>${fmt(ac,4)}</span></div>`)}for(let i=1;i<=n;i++){const q=(.5+Math.random()*2.2)*Math.max(.01,100/p);bc+=q;bids.push(`<div class="obrow"><i class="depth" style="width:${i/n*100}%;background:#3dbb83"></i><span class="green">${fmt(Math.max(.000001,p-spread*i),cfg.dec)}</span><span>${fmt(q,4)}</span><span>${fmt(bc,4)}</span></div>`)}$('asks').innerHTML=asks.join('');$('bids').innerHTML=bids.join('');$('midPrice').textContent=fmt(p,cfg.dec)};
+renderBook=function(){const a=EXTERNAL_MAP[symbol];if(!a)return inheritedRenderBook.apply(this,arguments);const p=price||marketSnapshots[symbol]?.last||0;if(!p)return;const spread=Math.max(p*(a.market==='forex'?.00008:.00035),Math.pow(10,-cfg.dec)),n=9;let ac=0,bc=0;const asks=[],bids=[];for(let i=n;i>=1;i--){const q=(.5+Math.random()*2.2)*Math.max(.01,100/p);ac+=q;asks.push(`<div class="obrow"><i class="depth" style="width:${(n-i+1)/n*100}%;background:#ff6b78"></i><span class="red">${fmt(p+spread*i,cfg.dec)}</span><span>${fmt(q,4)}</span><span>${fmt(ac,4)}</span></div>`)}for(let i=1;i<=n;i++){const q=(.5+Math.random()*2.2)*Math.max(.01,100/p);bc+=q;bids.push(`<div class="obrow"><i class="depth" style="width:${i/n*100}%;background:#3dbb83"></i><span class="green">${fmt(Math.max(.000001,p-spread*i),cfg.dec)}</span><span>${fmt(q,4)}</span><span>${fmt(bc,4)}</span></div>`)}$('asks').innerHTML=asks.join('');$('bids').innerHTML=bids.join('');setBookMode(true);$('midPrice').textContent=fmt(p,cfg.dec)};
 
 const inheritedSetSymbol=setSymbol;
 setSymbol=async function(sym){if(EXTERNAL_MAP[sym])tradingMode='futures';return inheritedSetSymbol.apply(this,arguments)};
@@ -123,6 +154,6 @@ function overviewDescription(a){if(a.market==='forex')return`${a.name} 外汇代
 function renderOverview(){const a=EXTERNAL_MAP[symbol];if(!a)return EXTENDED.renderOverview?.();const s=marketSnapshots[symbol]||{},source=s._source||'参考行情',kind=a.market==='forex'?'外汇代币':a.synthetic?'未上市公司股票代币':'股票代币';$('contractInfoPanel').innerHTML=`<div class="overview-subnav"><button class="active">基础信息</button><button>交易参数</button><button disabled>更多数据</button></div><div class="overview-grid overview-grid-v16"><section class="overview-main"><h2 class="overview-title-v16"><img src="${a.iconPath}" alt="${a.ticker}"/><span>${a.ticker}<small>${a.name}</small></span></h2><div class="overview-tags-v16"><span>${kind}</span><span>${source}</span></div><h3>品种说明</h3><p class="coin-intro">${overviewDescription(a)}</p><div class="kv-list"><div><span>最新价</span><b>${s.last?fmt(s.last,a.dec):'--'} USDT</b></div><div><span>24H 涨跌</span><b class="${(+s.change||0)>0?'green':(+s.change||0)<0?'red':'muted'}">${s.last?((+s.change||0)>=0?'+':'')+(+s.change||0).toFixed(2)+'%':'--'}</b></div><div><span>24H 高</span><b>${s.high?fmt(s.high,a.dec):'--'}</b></div><div><span>24H 低</span><b>${s.low?fmt(s.low,a.dec):'--'}</b></div><div><span>结算资产</span><b>USDT</b></div><div><span>价格类型</span><b>${a.synthetic?'GreedBit 模拟估值':'公开标的追踪价'}</b></div></div></section><aside class="overview-side"><h3>数据说明</h3><div class="score-card"><span>行情来源</span><b>${source}</b><small>${a.synthetic?'未上市公司不存在真实连续股价，因此本代币价格为明确标注的模拟值。':'真实公开标的价格只作为股票/外汇代币的参考基准，GreedBit 不提供真实证券或外汇交易。'}</small></div><h3>图标</h3><div class="overview-icon-card-v16"><img src="${a.iconPath}" alt="${a.ticker}"/><span>${a.name}</span></div></aside></div>`}
 function installOverview(){const tabs=[...document.querySelectorAll('.charttabs span')];tabs.forEach((x,i)=>{const mode=x.dataset.contracttab||['chart','overview','data'][i];if(mode!=='overview')return;x.onclick=()=>{const info=$('contractInfoPanel'),timebar=$('timebar'),wrap=$('chartwrap'),layout=$('layout');tabs.forEach(t=>t.classList.toggle('active',t===x));timebar.classList.add('hidden');wrap.classList.add('hidden');info.classList.remove('hidden');layout.classList.add('contract-info-mode');renderOverview()}})}
 
-async function boot(){installStyle();for(const a of FOREX)EXTERNAL_MAP[a.symbol]=a;await loadStockManifest();registerExternal();installPicker();installOverview();refreshReferenceMood();setInterval(refreshReferenceMood,180000);window.GreedBitExternalMarkets={FOREX,get STOCKS(){return STOCKS},EXTERNAL_MAP,renderOverview};renderCoinListExternal()}
+async function boot(){installStyle();for(const a of FOREX)EXTERNAL_MAP[a.symbol]=a;await loadStockManifest();registerExternal();installPicker();installOverview();refreshReferenceMood();every(refreshReferenceMood,180000);window.GreedBitExternalMarkets={FOREX,get STOCKS(){return STOCKS},EXTERNAL_MAP,renderOverview};renderCoinListExternal()}
 boot();
 })();
