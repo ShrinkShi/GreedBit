@@ -1,6 +1,6 @@
 'use strict';
 /* Single version source; tools/check-version.mjs keeps it in sync with VERSION/README/index.html. */
-window.GB_VERSION='0.1.2';
+window.GB_VERSION='0.1.3';
 /* Append the build id to dynamically injected stylesheets so a deploy cannot keep stale CSS. */
 /* Periodic task helper: skips work while the tab is hidden. */
 function every(a,b){let ms=b,fn=a;if(typeof a!=='function'){ms=a;fn=b}return setInterval(()=>{if(typeof document!=='undefined'&&document.hidden)return;fn()},ms)}
@@ -44,7 +44,9 @@ const chartDefaults={
   precision:'auto',timezone:'utc8',statusTitle:true,statusValues:true,statusChange:true,statusVolume:true,
   indicatorTitle:true,indicatorValues:true,symbolLabel:true,countdown:true,highLow:true,markers:true,
   dateFormat:'ymd',timeFormat:'24',background:'#0b0e12',grid:'#1d232b',crosshair:true,
-  topMargin:12,bottomMargin:8,rightBars:4
+  topMargin:12,bottomMargin:8,rightBars:4,
+  maEnabled:true,ma5:true,ma10:true,ma30:true,ma60:true,maDisplay:'line-values',
+  volumeEnabled:true,volumeMode:'separate',volumeRatio:.22
 };
 let chartSettings={...chartDefaults,...safeParse(localStorage.getItem('greedbit_chart_settings'),{})};
 

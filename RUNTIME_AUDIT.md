@@ -42,6 +42,20 @@ CI 现在执行该脚本：输出覆盖链，并在「赋值了但从未声明�
 - 持仓行交易对跳转由 `src/trading/positions-ui.js` 通过既有 `showPage` 和 `setSymbol` 完成，不绕过全局切换与行情请求令牌。
 - 新增 `tests/position-overlay.test.cjs`：真实主渲染器在隔离 Canvas 模拟环境中执行，检查仓位恢复后的事件重绘与价格到像素的映射。
 
+## v0.1.3 图表绘制所有权复核（2026-11-04）
+
+**实际根因与上轮审查遗漏**：v0.1.1 / v0.1.2 虽然把仓位线加入了 `src/chart/renderer.js`，却漏查 `src/ui/preferences.js` 后加载的 `window.draw=draw`。这个偏好模块包含另一整套 Canvas 绘制，未调用仓位线，因此实际 UI 永远使用遗漏仓位线的版本。此前的“唯一渲染器”判断不成立；单元测试仅加载了 renderer，未覆盖真实启动模块顺序。
+
+**修复后唯一主 Canvas 绘制所有者**：`src/chart/renderer.js`。以下功能都在一次绘图流程中完成：网格、价格/时间坐标、MA 均线、成交量（叠加和独立窗格）、K 线、成交标记、最高/最低价、持仓线、价格线、委托线和十字光标。
+
+- `src/ui/preferences.js` 只负责 UI 偏好、图表设置输入、成交量分隔条鼠标事件，不再定义完整 `draw`、不赋值 `window.draw`、不持有第二套 `ctx` 绘制。
+- `src/ui.js` 删除老的 `chartPriceAtClientY`，新实现与 `chartLayout` 均由主绘制器提供，并与独立成交量窗格扣除后的主图区高度严格对应。
+- `src/trading/contracts.js` 仍使用原有 `draw` 包装，只在入主绘制前临时映射合约基差，**不得**绘制第二套 Canvas。后续应进一步去除此全局函数覆盖，但它不是完整的第二绘制器。
+- `src/core.js` 在初始化时设置 MA 与成交量相关默认值，避免图表先启动、偏好模块后加载时出现默认值漂移。
+- `tests/position-overlay.test.cjs` 不只测试不带指标的 renderer：新增“独立成交量窗格 + MA + 恢复仓位”联合测试，核对仓位线 Y 坐标、鼠标逆向价格换算；还禁止偏好模块再定义 `draw`。
+
+**工程结论**：仅验证 `src/chart/renderer.js` 的孤立单元测试不足以证明浏览器最终绘制链；必须审查后加载模块对全局函数的再赋值。
+
 ## 当前运行时结构
 
 - `src/app/`：启动事件、兼容桥、共享 UI 最终所有权。

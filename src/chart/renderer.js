@@ -98,7 +98,7 @@ function buildIndexTicks(geom,target=8){
 /* Position entries are price-axis objects, not free-floating labels.
  * Always use the SAME y() transform as grid, candles and price ticks.
  */
-function drawPositionOverlay(y,lo,hi,pad,W,H){
+function drawPositionOverlay(y,lo,hi,pad,W,mainBottom){
   // The shared trading page may be named "trade" even while displaying futures.
   // Rendering depends on the trading mode and the visible chart, not one route spelling.
   if(!user||tradingMode!=='futures'||(currentPage!=='futures'&&currentPage!=='trade'))return;
@@ -120,7 +120,7 @@ function drawPositionOverlay(y,lo,hi,pad,W,H){
     for(let i=0;i<usedLabels.length&&i<rows.length;i++){
       if(usedLabels.some(other=>Math.abs(other-labelY)<20))labelY+=20;
     }
-    labelY=clamp(labelY,pad.t+10,H-pad.b-10);
+    labelY=clamp(labelY,pad.t+10,mainBottom-10);
     usedLabels.push(labelY);
     ctx.strokeStyle=color;ctx.lineWidth=1;ctx.setLineDash([5,3]);ctx.beginPath();
     ctx.moveTo(pad.l,Math.round(lineY)+.5);ctx.lineTo(W-pad.r,Math.round(lineY)+.5);ctx.stroke();ctx.setLineDash([]);
@@ -137,37 +137,37 @@ function drawPositionOverlay(y,lo,hi,pad,W,H){
   }
   ctx.restore();
 }
-function draw(){
-  if(currentPage!=='trade'&&currentPage!=='futures')return;const W=canvas.clientWidth,H=canvas.clientHeight;if(!W||!H)return;const pad={l:8,r:82,t:28,b:42},plotW=W-pad.l-pad.r,plotH=H-pad.t-pad.b;
-  ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,axis={lo,hi,top:pad.t,height:plotH};
-  const y=p=>window.GreedBitPositionBook.priceY(p,axis);
-  ctx.font='10px sans-serif';ctx.fillStyle='#6f7a8b';
-
-  const priceTicks=buildPriceTicks(lo,hi,5);
-  ctx.textAlign='left';
-  for(const pv of priceTicks){
-    const yy=y(pv);if(yy<pad.t-1||yy>H-pad.b+1)continue;
-    const lineY=Math.round(yy)+.5;ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.beginPath();ctx.moveTo(pad.l,lineY);ctx.lineTo(W-pad.r,lineY);ctx.stroke();ctx.fillStyle='#6f7a8b';ctx.fillText(fmt(Math.max(0,pv),chartDecimals()),W-pad.r+5,yy+3);
+  function maAt(all,idx,n){if(idx<n-1||idx>=all.length)return null;let s=0;for(let i=idx-n+1;i<=idx;i++)s+=all[i].c;return s/n}
+  const maDefs=[[5,'#9271d7','ma5'],[10,'#86a6da','ma10'],[30,'#65b26d','ma30'],[60,'#c52c98','ma60']];
+  function chartLayout(){
+    const W=canvas.clientWidth,H=canvas.clientHeight,pad={l:8,r:82,t:28,b:42},fullH=Math.max(1,H-pad.t-pad.b),sep=chartSettings.volumeEnabled&&chartSettings.volumeMode==='separate',ratio=clamp(+chartSettings.volumeRatio||.22,.1,.55),volH=sep?fullH*ratio:0,divider=sep?H-pad.b-volH:null,mainBottom=sep?divider-5:H-pad.b,mainH=Math.max(1,mainBottom-pad.t);return{W,H,pad,fullH,sep,ratio,volH,divider,mainBottom,mainH,plotW:Math.max(1,W-pad.l-pad.r)}
   }
-
-  const indexTicks=buildIndexTicks(geom,8);
-  ctx.textAlign='center';
-  for(const tick of indexTicks){
-    const x=xForIndex(tick.index,geom,pad,plotW);if(x<pad.l-1||x>W-pad.r+1)continue;
-    const lineX=Math.round(x)+.5;ctx.strokeStyle=chartSettings.grid||'#171c22';ctx.beginPath();ctx.moveTo(lineX,pad.t);ctx.lineTo(lineX,H-pad.b);ctx.stroke();
-    const label=formatTime(tick.ts),labelW=ctx.measureText(label).width;
-    if(x-labelW/2>=pad.l&&x+labelW/2<=W-pad.r){ctx.fillStyle='#6f7a8b';ctx.fillText(label,x,H-11)}
+  function updateIndicatorLegend(geom){
+    const el=$('maLegend');if(!el)return;if(!chartSettings.maEnabled||chartSettings.maDisplay==='line'){el.innerHTML='';return}const idx=Math.min(geom.all.length-1,Math.floor(Math.min(geom.right-1,geom.all.length-1))),rows=[];for(const [n,col,key] of maDefs){if(!chartSettings[key])continue;const v=maAt(geom.all,idx,n);if(v!=null)rows.push(`<span style="color:${col}">MA ${n} close 0&nbsp;&nbsp;${fmt(v,chartDecimals())}</span>`)}el.innerHTML=rows.join('')
   }
-  ctx.textAlign='left';
+  function drawMAs(geom,L,y){if(!chartSettings.maEnabled||chartSettings.maDisplay==='values')return;ctx.lineWidth=1.15;for(const [n,col,key] of maDefs){if(!chartSettings[key])continue;ctx.strokeStyle=col;ctx.beginPath();let started=false;const first=Math.max(0,Math.floor(geom.start)-n-2),last=Math.min(geom.all.length-1,Math.ceil(geom.right)+2);for(let idx=first;idx<=last;idx++){const v=maAt(geom.all,idx,n);if(v==null)continue;const x=xForIndex(idx,geom,L.pad,L.plotW);if(!started){ctx.moveTo(x,y(v));started=true}else ctx.lineTo(x,y(v))}if(started)ctx.stroke()}}
+  function drawVolumes(geom,L){
+    if(!chartSettings.volumeEnabled)return;const rows=geom.visible.filter(x=>x.idx>=geom.start-1&&x.idx<=geom.right+1);if(!rows.length)return;const maxV=Math.max(1,...rows.map(x=>x.c.v||0)),cw=L.plotW/visibleCount;
+    let top,bottom;if(L.sep){top=L.divider+6;bottom=L.H-L.pad.b}else{bottom=L.mainBottom;top=bottom-L.mainH*.2}
+    const h=Math.max(1,bottom-top);ctx.save();ctx.globalAlpha=L.sep?0.72:0.28;for(const {idx,c} of rows){const x=xForIndex(idx,geom,L.pad,L.plotW),bar=Math.max(1,(c.v||0)/maxV*h),w=Math.max(1,Math.min(18,Math.abs(cw)*.58));ctx.fillStyle=c.c>=c.o?chartSettings.bull:chartSettings.bear;ctx.fillRect(x-w/2,bottom-bar,w,bar)}ctx.restore();if(L.sep){ctx.strokeStyle='#343b45';ctx.beginPath();ctx.moveTo(0,L.divider+.5);ctx.lineTo(L.W-L.pad.r,L.divider+.5);ctx.stroke();ctx.fillStyle='#7d8796';ctx.font='10px sans-serif';ctx.fillText(`成交量(Volume) ${fmt(rows.at(-1)?.c.v||0,0)}`,10,L.divider+17);const hint=$('volumeDividerHint');if(hint)hint.style.top=(L.divider-3)+'px'}
+  }
+  function draw(){
+    if(currentPage!=='trade'&&currentPage!=='futures')return;const L=chartLayout(),{W,H,pad,plotW,mainH}=L;if(!W||!H)return;ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),axis={lo,hi,top:pad.t,height:mainH},y=p=>window.GreedBitPositionBook.priceY(p,axis);
+    $('chartwrap').classList.toggle('volume-separate',L.sep);if(!L.sep){const hint=$('volumeDividerHint');if(hint)hint.style.top=''}ctx.font='10px sans-serif';ctx.fillStyle='#6f7a8b';for(const pv of buildPriceTicks(lo,hi,10)){const yy=y(pv);if(yy<pad.t-1||yy>L.mainBottom+1)continue;ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.beginPath();ctx.moveTo(pad.l,yy+.5);ctx.lineTo(W-pad.r,yy+.5);ctx.stroke();ctx.fillText(fmt(Math.max(0,pv),chartDecimals()),W-pad.r+5,yy+3)}
+    let timeLabelRight=-Infinity;for(const tick of buildIndexTicks(geom,12)){const x=xForIndex(tick.index,geom,pad,plotW);if(x<pad.l-1||x>W-pad.r+1)continue;ctx.strokeStyle=chartSettings.grid||'#171c22';ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();ctx.fillStyle='#6f7a8b';const label=formatTime(tick.ts),lw=ctx.measureText(label).width,lx=x-lw/2;if(lx>=pad.l&&lx+lw<=W-pad.r&&lx>timeLabelRight+10){ctx.fillText(label,lx,H-11);timeLabelRight=lx+lw}}
+    if(chartSettings.volumeEnabled&&chartSettings.volumeMode==='overlay')drawVolumes(geom,L);drawMAs(geom,L,y);
+    for(const {idx,c} of geom.visible){const x=xForIndex(idx,geom,pad,plotW),cw=plotW/visibleCount;if(x<-Math.abs(cw)*2||x>W-pad.r+Math.abs(cw)*2)continue;const col=c.c>=c.o?chartSettings.bull:chartSettings.bear,yo=y(c.o),yc=y(c.c),top=Math.min(yo,yc),bh=Math.max(1,Math.abs(yc-yo)),bodyW=Math.max(1,Math.min(40,Math.abs(cw)*.62));if(chartSettings.wick){ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke()}if(chartSettings.body){ctx.fillStyle=col;ctx.fillRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(chartSettings.border){ctx.strokeStyle=col;ctx.strokeRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(c.live){ctx.strokeStyle='#5d8cff';ctx.strokeRect(Math.round(x-bodyW/2-2),Math.round(top-2),bodyW+4,bh+4)}}
+    drawTradeMarkers(geom,pad,plotW,y,lo,hi);drawHighLow(geom,pad,plotW,y,lo,hi);
+    drawPositionOverlay(y,lo,hi,pad,W,L.mainBottom);
+    if(chartSettings.volumeEnabled&&chartSettings.volumeMode==='separate')drawVolumes(geom,L);
+    if(price>=lo&&price<=hi){const py=y(price),up=!current||current.c>=current.o,col=up?chartSettings.bull:chartSettings.bear;ctx.setLineDash([2,3]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(W-pad.r,py);ctx.stroke();ctx.setLineDash([]);const h=chartSettings.countdown?36:22,boxY=clamp(py-h/2,pad.t,L.mainBottom-h);ctx.fillStyle=col;ctx.fillRect(W-pad.r,boxY,pad.r,h);ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText(fmt(price,chartDecimals()),W-pad.r+5,boxY+14);if(chartSettings.countdown){ctx.font='10px sans-serif';ctx.fillText(candleRemain(),W-pad.r+5,boxY+29)}if(chartSettings.symbolLabel){const lab=apiSymbol().replace('USDT','-USDT'),tw=ctx.measureText(lab).width+10;ctx.fillStyle=col;ctx.fillRect(W-pad.r-tw,boxY,tw,22);ctx.fillStyle='#fff';ctx.fillText(lab,W-pad.r-tw+5,boxY+14)}}
+    for(const o of activeChartOrders()){if(o.limit<lo||o.limit>hi)continue;const oy=y(o.limit),col=o.side==='buy'?chartSettings.bull:chartSettings.bear;ctx.setLineDash([6,4]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,oy);ctx.lineTo(W-pad.r,oy);ctx.stroke();ctx.setLineDash([]);const tw=ctx.measureText(o.label).width+12;ctx.fillStyle=o.side==='buy'?'#14251f':'#2a171b';ctx.fillRect(pad.l+8,oy-10,tw,20);ctx.fillStyle=col;ctx.fillText(o.label,pad.l+14,oy+3)}
+    const ch=crosshairLocked&&lockedCrosshair?lockedCrosshair:(hoverIndex>=0?{idx:hoverIndex,price:hoverPrice}:null);if(ch&&chartSettings.crosshair){const x=xForIndex(ch.idx,geom,pad,plotW);if(x>=pad.l&&x<=W-pad.r){ctx.strokeStyle='#697386';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,L.mainBottom);ctx.stroke();if(Number.isFinite(ch.price)){const yy=y(ch.price);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke()}ctx.setLineDash([])}}
+    ctx.strokeStyle='#303741';ctx.beginPath();ctx.moveTo(W-pad.r,pad.t);ctx.lineTo(W-pad.r,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,H-pad.b);ctx.lineTo(W-pad.r,H-pad.b);ctx.stroke();updateIndicatorLegend(geom);
+  }
+  function chartPriceAtClientY(clientY){const r=canvas.getBoundingClientRect(),L=chartLayout(),{hi,lo}=calcPriceBounds(),y=clamp(clientY-r.top,L.pad.t,L.mainBottom);return hi-(y-L.pad.t)/L.mainH*(hi-lo)}
 
-  for(const {idx,c} of geom.visible){const x=xForIndex(idx,geom,pad,plotW),cw=plotW/visibleCount;if(x<-Math.abs(cw)*2||x>W-pad.r+Math.abs(cw)*2)continue;const col=c.c>=c.o?chartSettings.bull:chartSettings.bear,yo=y(c.o),yc=y(c.c),top=Math.min(yo,yc),bh=Math.max(1,Math.abs(yc-yo)),bodyW=Math.max(1,Math.min(40,Math.abs(cw)*.62));if(chartSettings.wick){ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke()}if(chartSettings.body){ctx.fillStyle=col;ctx.fillRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(chartSettings.border){ctx.strokeStyle=col;ctx.strokeRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(c.live){ctx.strokeStyle='#5d8cff';ctx.strokeRect(Math.round(x-bodyW/2-2),Math.round(top-2),bodyW+4,bh+4)}}
-  drawTradeMarkers(geom,pad,plotW,y,lo,hi);drawHighLow(geom,pad,plotW,y,lo,hi);
-  drawPositionOverlay(y,lo,hi,pad,W,H);
-  if(price>=lo&&price<=hi){const py=y(price),up=!current||current.c>=current.o,col=up?chartSettings.bull:chartSettings.bear;ctx.setLineDash([2,3]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(W-pad.r,py);ctx.stroke();ctx.setLineDash([]);const h=chartSettings.countdown?36:22,boxY=clamp(py-h/2,pad.t,H-pad.b-h);ctx.fillStyle=col;ctx.fillRect(W-pad.r,boxY,pad.r,h);ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText(fmt(price,chartDecimals()),W-pad.r+5,boxY+14);if(chartSettings.countdown){ctx.font='10px sans-serif';ctx.fillText(candleRemain(),W-pad.r+5,boxY+29)}if(chartSettings.symbolLabel){const lab=apiSymbol().replace('USDT','-USDT'),tw=ctx.measureText(lab).width+10;ctx.fillStyle=col;ctx.fillRect(W-pad.r-tw,boxY,tw,22);ctx.fillStyle='#fff';ctx.fillText(lab,W-pad.r-tw+5,boxY+14)}}
-  for(const o of activeChartOrders()){if(o.limit<lo||o.limit>hi)continue;const oy=y(o.limit),col=o.side==='buy'?chartSettings.bull:chartSettings.bear;ctx.setLineDash([6,4]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,oy);ctx.lineTo(W-pad.r,oy);ctx.stroke();ctx.setLineDash([]);const tw=ctx.measureText(o.label).width+12;ctx.fillStyle=o.side==='buy'?'#14251f':'#2a171b';ctx.fillRect(pad.l+8,oy-10,tw,20);ctx.fillStyle=col;ctx.fillText(o.label,pad.l+14,oy+3)}
-  const ch=crosshairLocked&&lockedCrosshair?lockedCrosshair:(hoverIndex>=0?{idx:hoverIndex,price:hoverPrice}:null);if(ch&&chartSettings.crosshair){const x=xForIndex(ch.idx,geom,pad,plotW);if(x>=pad.l&&x<=W-pad.r){ctx.strokeStyle='#697386';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();if(Number.isFinite(ch.price)){const yy=y(ch.price);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke()}ctx.setLineDash([])}}
-  ctx.strokeStyle='#303741';ctx.beginPath();ctx.moveTo(W-pad.r,pad.t);ctx.lineTo(W-pad.r,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,H-pad.b);ctx.lineTo(W-pad.r,H-pad.b);ctx.stroke();
-}
+
 /* State hydration is independent of candle loading. Request one complete redraw after
  * login/session restore and after all dynamically loaded modules finish starting.
  * This is a single event-driven invalidation, not a second canvas rendering layer.
@@ -184,5 +184,6 @@ function invalidatePositionChart(){
 }
 document.addEventListener('greedbit:positions-changed',invalidatePositionChart);
 document.addEventListener('greedbit:ready',invalidatePositionChart);
-window.GreedBitChartRenderer={viewGeometry,resize,calcPriceBounds,xForIndex,timestampAtIndex,buildPriceTicks,buildIndexTicks,draw,invalidatePositionChart};
+window.chartPriceAtClientY=chartPriceAtClientY;
+window.GreedBitChartRenderer={viewGeometry,resize,calcPriceBounds,chartLayout,chartPriceAtClientY,xForIndex,timestampAtIndex,buildPriceTicks,buildIndexTicks,draw,invalidatePositionChart};
 draw();

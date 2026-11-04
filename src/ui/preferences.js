@@ -1,4 +1,4 @@
-/* v0.0.11 UX / account menus / persistent notifications / indicators */
+/* UI preferences, accounts, notifications and indicator settings. No Canvas renderer ownership. */
 (function waitV011(){
   if(typeof drawTradeMarkers!=='function'||typeof renderOverview!=='function'){setTimeout(waitV011,60);return}
   (()=>{
@@ -12,8 +12,6 @@
   let fxRates={...fallbackFx};
   let volumeDragging=false;
 
-  Object.assign(chartDefaults,{maEnabled:true,ma5:true,ma10:true,ma30:true,ma60:true,maDisplay:'line-values',volumeEnabled:true,volumeMode:'separate',volumeRatio:.22});
-  for(const [k,v] of Object.entries(chartDefaults))if(chartSettings[k]===undefined)chartSettings[k]=v;
 
   function injectShell(){
     if(!document.querySelector('link[href^="styles/v011.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href=cssHref('styles/v011.css');document.head.appendChild(l)}
@@ -97,34 +95,6 @@
     document.addEventListener('click',e=>{if(!$('topUtility').contains(e.target)){$('localeMenu').classList.add('hidden');$('notifPanel').classList.add('hidden')}if(!$('userchip').contains(e.target))$('profileMenu')?.classList.add('hidden')});
   }
 
-  function maAt(all,idx,n){if(idx<n-1||idx>=all.length)return null;let s=0;for(let i=idx-n+1;i<=idx;i++)s+=all[i].c;return s/n}
-  const maDefs=[[5,'#9271d7','ma5'],[10,'#86a6da','ma10'],[30,'#65b26d','ma30'],[60,'#c52c98','ma60']];
-  function chartLayout(){
-    const W=canvas.clientWidth,H=canvas.clientHeight,pad={l:8,r:82,t:28,b:42},fullH=Math.max(1,H-pad.t-pad.b),sep=chartSettings.volumeEnabled&&chartSettings.volumeMode==='separate',ratio=clamp(+chartSettings.volumeRatio||.22,.1,.55),volH=sep?fullH*ratio:0,divider=sep?H-pad.b-volH:null,mainBottom=sep?divider-5:H-pad.b,mainH=Math.max(1,mainBottom-pad.t);return{W,H,pad,fullH,sep,ratio,volH,divider,mainBottom,mainH,plotW:Math.max(1,W-pad.l-pad.r)}
-  }
-  function updateIndicatorLegend(geom){
-    const el=$('maLegend');if(!el)return;if(!chartSettings.maEnabled||chartSettings.maDisplay==='line'){el.innerHTML='';return}const idx=Math.min(geom.all.length-1,Math.floor(Math.min(geom.right-1,geom.all.length-1))),rows=[];for(const [n,col,key] of maDefs){if(!chartSettings[key])continue;const v=maAt(geom.all,idx,n);if(v!=null)rows.push(`<span style="color:${col}">MA ${n} close 0&nbsp;&nbsp;${fmt(v,chartDecimals())}</span>`)}el.innerHTML=rows.join('')
-  }
-  function drawMAs(geom,L,y){if(!chartSettings.maEnabled||chartSettings.maDisplay==='values')return;ctx.lineWidth=1.15;for(const [n,col,key] of maDefs){if(!chartSettings[key])continue;ctx.strokeStyle=col;ctx.beginPath();let started=false;const first=Math.max(0,Math.floor(geom.start)-n-2),last=Math.min(geom.all.length-1,Math.ceil(geom.right)+2);for(let idx=first;idx<=last;idx++){const v=maAt(geom.all,idx,n);if(v==null)continue;const x=xForIndex(idx,geom,L.pad,L.plotW);if(!started){ctx.moveTo(x,y(v));started=true}else ctx.lineTo(x,y(v))}if(started)ctx.stroke()}}
-  function drawVolumes(geom,L){
-    if(!chartSettings.volumeEnabled)return;const rows=geom.visible.filter(x=>x.idx>=geom.start-1&&x.idx<=geom.right+1);if(!rows.length)return;const maxV=Math.max(1,...rows.map(x=>x.c.v||0)),cw=L.plotW/visibleCount;
-    let top,bottom;if(L.sep){top=L.divider+6;bottom=L.H-L.pad.b}else{bottom=L.mainBottom;top=bottom-L.mainH*.2}
-    const h=Math.max(1,bottom-top);ctx.save();ctx.globalAlpha=L.sep?0.72:0.28;for(const {idx,c} of rows){const x=xForIndex(idx,geom,L.pad,L.plotW),bar=Math.max(1,(c.v||0)/maxV*h),w=Math.max(1,Math.min(18,Math.abs(cw)*.58));ctx.fillStyle=c.c>=c.o?chartSettings.bull:chartSettings.bear;ctx.fillRect(x-w/2,bottom-bar,w,bar)}ctx.restore();if(L.sep){ctx.strokeStyle='#343b45';ctx.beginPath();ctx.moveTo(0,L.divider+.5);ctx.lineTo(L.W-L.pad.r,L.divider+.5);ctx.stroke();ctx.fillStyle='#7d8796';ctx.font='10px sans-serif';ctx.fillText(`成交量(Volume) ${fmt(rows.at(-1)?.c.v||0,0)}`,10,L.divider+17);$('volumeDividerHint').style.top=(L.divider-3)+'px'}
-  }
-  function draw(){
-    if(currentPage!=='trade'&&currentPage!=='futures')return;const L=chartLayout(),{W,H,pad,plotW,mainH}=L;if(!W||!H)return;ctx.clearRect(0,0,W,H);ctx.fillStyle=chartSettings.background||'#0b0e12';ctx.fillRect(0,0,W,H);const geom=viewGeometry(),{hi,lo}=calcPriceBounds(geom),range=hi-lo,y=p=>pad.t+(hi-p)/range*mainH;
-    $('chartwrap').classList.toggle('volume-separate',L.sep);if(!L.sep)$('volumeDividerHint').style.top='';ctx.font='10px sans-serif';ctx.fillStyle='#6f7a8b';for(const pv of buildPriceTicks(lo,hi,10)){const yy=y(pv);if(yy<pad.t-1||yy>L.mainBottom+1)continue;ctx.strokeStyle=chartSettings.grid||'#1d232b';ctx.beginPath();ctx.moveTo(pad.l,yy+.5);ctx.lineTo(W-pad.r,yy+.5);ctx.stroke();ctx.fillText(fmt(Math.max(0,pv),chartDecimals()),W-pad.r+5,yy+3)}
-    let timeLabelRight=-Infinity;for(const tick of buildIndexTicks(geom,12)){const x=xForIndex(tick.index,geom,pad,plotW);if(x<pad.l-1||x>W-pad.r+1)continue;ctx.strokeStyle=chartSettings.grid||'#171c22';ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();ctx.fillStyle='#6f7a8b';const label=formatTime(tick.ts),lw=ctx.measureText(label).width,lx=x-lw/2;if(lx>=pad.l&&lx+lw<=W-pad.r&&lx>timeLabelRight+10){ctx.fillText(label,lx,H-11);timeLabelRight=lx+lw}}
-    if(chartSettings.volumeEnabled&&chartSettings.volumeMode==='overlay')drawVolumes(geom,L);drawMAs(geom,L,y);
-    for(const {idx,c} of geom.visible){const x=xForIndex(idx,geom,pad,plotW),cw=plotW/visibleCount;if(x<-Math.abs(cw)*2||x>W-pad.r+Math.abs(cw)*2)continue;const col=c.c>=c.o?chartSettings.bull:chartSettings.bear,yo=y(c.o),yc=y(c.c),top=Math.min(yo,yc),bh=Math.max(1,Math.abs(yc-yo)),bodyW=Math.max(1,Math.min(40,Math.abs(cw)*.62));if(chartSettings.wick){ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y(c.h));ctx.lineTo(x,y(c.l));ctx.stroke()}if(chartSettings.body){ctx.fillStyle=col;ctx.fillRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(chartSettings.border){ctx.strokeStyle=col;ctx.strokeRect(Math.round(x-bodyW/2),Math.round(top),bodyW,bh)}if(c.live){ctx.strokeStyle='#5d8cff';ctx.strokeRect(Math.round(x-bodyW/2-2),Math.round(top-2),bodyW+4,bh+4)}}
-    drawTradeMarkers(geom,pad,plotW,y,lo,hi);drawHighLow(geom,pad,plotW,y,lo,hi);if(chartSettings.volumeEnabled&&chartSettings.volumeMode==='separate')drawVolumes(geom,L);
-    if(price>=lo&&price<=hi){const py=y(price),up=!current||current.c>=current.o,col=up?chartSettings.bull:chartSettings.bear;ctx.setLineDash([2,3]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,py);ctx.lineTo(W-pad.r,py);ctx.stroke();ctx.setLineDash([]);const h=chartSettings.countdown?36:22,boxY=clamp(py-h/2,pad.t,L.mainBottom-h);ctx.fillStyle=col;ctx.fillRect(W-pad.r,boxY,pad.r,h);ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText(fmt(price,chartDecimals()),W-pad.r+5,boxY+14);if(chartSettings.countdown){ctx.font='10px sans-serif';ctx.fillText(candleRemain(),W-pad.r+5,boxY+29)}if(chartSettings.symbolLabel){const lab=apiSymbol().replace('USDT','-USDT'),tw=ctx.measureText(lab).width+10;ctx.fillStyle=col;ctx.fillRect(W-pad.r-tw,boxY,tw,22);ctx.fillStyle='#fff';ctx.fillText(lab,W-pad.r-tw+5,boxY+14)}}
-    for(const o of activeChartOrders()){if(o.limit<lo||o.limit>hi)continue;const oy=y(o.limit),col=o.side==='buy'?chartSettings.bull:chartSettings.bear;ctx.setLineDash([6,4]);ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(pad.l,oy);ctx.lineTo(W-pad.r,oy);ctx.stroke();ctx.setLineDash([]);const tw=ctx.measureText(o.label).width+12;ctx.fillStyle=o.side==='buy'?'#14251f':'#2a171b';ctx.fillRect(pad.l+8,oy-10,tw,20);ctx.fillStyle=col;ctx.fillText(o.label,pad.l+14,oy+3)}
-    const ch=crosshairLocked&&lockedCrosshair?lockedCrosshair:(hoverIndex>=0?{idx:hoverIndex,price:hoverPrice}:null);if(ch&&chartSettings.crosshair){const x=xForIndex(ch.idx,geom,pad,plotW);if(x>=pad.l&&x<=W-pad.r){ctx.strokeStyle='#697386';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,L.mainBottom);ctx.stroke();if(Number.isFinite(ch.price)){const yy=y(ch.price);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke()}ctx.setLineDash([])}}
-    ctx.strokeStyle='#303741';ctx.beginPath();ctx.moveTo(W-pad.r,pad.t);ctx.lineTo(W-pad.r,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,H-pad.b);ctx.lineTo(W-pad.r,H-pad.b);ctx.stroke();updateIndicatorLegend(geom);
-  }
-  function chartPriceAtClientY(clientY){const r=canvas.getBoundingClientRect(),L=chartLayout(),{hi,lo}=calcPriceBounds(),y=clamp(clientY-r.top,L.pad.t,L.mainBottom);return hi-(y-L.pad.t)/L.mainH*(hi-lo)}
-
   const oldSyncSettings=syncChartSettingsForm;syncChartSettingsForm=function(){oldSyncSettings();$('csMAEnabled').checked=!!chartSettings.maEnabled;$('csMA5').checked=!!chartSettings.ma5;$('csMA10').checked=!!chartSettings.ma10;$('csMA30').checked=!!chartSettings.ma30;$('csMA60').checked=!!chartSettings.ma60;$('csMADisplay').value=chartSettings.maDisplay||'line-values';$('csVolumeEnabled').checked=!!chartSettings.volumeEnabled;$('csVolumeMode').value=chartSettings.volumeMode||'separate'};
   const oldReadSettings=readChartSettingsForm;readChartSettingsForm=function(){oldReadSettings();chartSettings.maEnabled=$('csMAEnabled').checked;chartSettings.ma5=$('csMA5').checked;chartSettings.ma10=$('csMA10').checked;chartSettings.ma30=$('csMA30').checked;chartSettings.ma60=$('csMA60').checked;chartSettings.maDisplay=$('csMADisplay').value;chartSettings.volumeEnabled=$('csVolumeEnabled').checked;chartSettings.volumeMode=$('csVolumeMode').value};
 
@@ -133,7 +103,7 @@
   window.addEventListener('mousemove',e=>{if(volumeDragging){e.preventDefault();e.stopImmediatePropagation();const r=canvas.getBoundingClientRect(),L=chartLayout(),y=e.clientY-r.top,available=Math.max(1,r.height-L.pad.t-L.pad.b);chartSettings.volumeRatio=clamp((r.height-L.pad.b-y)/available,.1,.55);draw();return}if(nearVolumeDivider(e))canvas.style.cursor='row-resize';else if(!dragging)canvas.style.cursor='crosshair'},true);
   window.addEventListener('mouseup',()=>{if(volumeDragging){volumeDragging=false;$('chartwrap').classList.remove('volume-resizing');saveChartSettings()}},true);
 
-  window.draw=draw;window.chartPriceAtClientY=chartPriceAtClientY;
+  // All chart rendering and coordinate conversion are owned by src/chart/renderer.js.
 
   let flashTimer=0;window.addEventListener('greedbit:tick',e=>{const dir=e.detail?.direction;if(!dir)return;const cls=dir>0?'market-flash-up':'market-flash-down';for(const el of [$('lastPrice'),$('midPrice')]){if(!el)continue;el.classList.remove('market-flash-up','market-flash-down');void el.offsetWidth;el.classList.add(cls)}clearTimeout(flashTimer);flashTimer=setTimeout(()=>[$('lastPrice'),$('midPrice')].forEach(el=>el?.classList.remove('market-flash-up','market-flash-down')),170);updateConvertedPrice()});
 
