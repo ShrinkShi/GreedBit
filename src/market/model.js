@@ -196,7 +196,7 @@ executeOpen=function(side,margin,entry,mode,lev,tp,sl,source='市价开仓',from
   position.liq=liqPrice(position.side,position.entry,position.mode,position.margin,position.notional,position.id,position.symbol);
   trades.unshift({time:lot.openedAt,ts:lot.openedTs,symbol:targetSymbol,side,qty,price:entry,type:source,fee:q.usdt,feeAsset:q.asset});
   accountStats.trades++;
-  playFillSound();saveState();return position;
+  playFillSound();saveState();notifyPositionBookChanged();return position;
 };
 placeOrder=function(side){
   if(!user)return openAuth('login');if(!ensureStateFresh())return;if(!marketReady||!price)return notify('下单失败','当前行情尚未连接','error');const w=futuresWallet(),margin=+$('marginInput').value,mode=$('marginMode').value,tpsl=$('tpslEnable').checked,tp=tpsl?(+$('tpInput').value||0):0,sl=tpsl?(+$('slInput').value||0):0;if(!margin||margin<=0)return notify('下单失败','请输入有效保证金','error');
@@ -238,7 +238,7 @@ closePosition=function(id,reason='手动平仓',fill=price,fraction=1,liquidity=
     p.liq=liqPrice(p.side,p.entry,p.mode,p.margin,p.notional,p.id,p.symbol);
   }
   playFillSound();notify(reason,`${p.symbol} ${realized>=0?'+':''}${fmt(realized)} USDT`,realized>=0?'success':'warning');
-  renderTable();updateAssets();saveState();draw();return realized;
+  renderTable();updateAssets();saveState();notifyPositionBookChanged();draw();return realized;
 };
 const baseUpdatePreviewV13=updatePreview;
 updatePreview=function(){
