@@ -24,14 +24,15 @@ function render(){
   $id('thead').innerHTML='<tr><th>合约</th><th>方向</th><th>模式</th><th>杠杆</th><th>仓位价值(USDT)</th><th>开仓均价</th><th>合约标记价</th><th>保证金</th><th>未实现盈亏</th><th>ROE</th><th>强平价</th><th>操作</th></tr>';
   $id('tbody').innerHTML=list.length?list.map(p=>{
     const mark=marketMark(p),pnl=(mark-p.entry)*p.qty*(p.side==='long'?1:-1);
-    const roe=p.margin?pnl/p.margin*100:0,kind=profitClass(pnl),dec=configs[p.symbol]?.dec??2;
+    const roe=p.margin?pnl/p.margin*100:0,kind=profitClass(pnl),dec=configs[p.symbol]?.dec??2,
+      liq=liqPrice(p.side,p.entry,p.mode,p.margin,p.notional,p.id,p.symbol)||p.liq;
     return `<tr class="gb-pos-row">
       <td>${label(p.symbol)}</td><td class="${p.side==='long'?'gb-pos-profit':'gb-pos-loss'}">${p.side==='long'?'多':'空'}</td>
       <td>${p.mode==='cross'?'全仓':'逐仓'}</td><td>${lev(p.leverage)}</td>
       <td>${number(p.qty*mark)}</td><td>${number(p.entry,dec)}</td><td>${number(mark,dec)}</td>
       <td>${number(p.margin)}</td><td class="${kind}">${pnl>0?'+':''}${number(pnl)}</td>
       <td class="${profitClass(roe)}">${roe>0?'+':''}${number(roe)}%</td>
-      <td>${p.liq?number(p.liq,dec):'--'}</td>
+      <td>${liq?number(liq,dec):'--'}</td>
       <td class="gb-pos-actions">
         <button data-gb-pos-action="market" data-id="${p.id}">市价全平</button>
         <button data-gb-pos-action="reverse" data-id="${p.id}">一键反手</button>
