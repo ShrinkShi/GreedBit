@@ -325,6 +325,7 @@ function reserveAdvanced(side){
   if(!ensureStateFresh())return;
   const margin=+$('marginInput').value,mode=$('marginMode').value,tp=$('tpslEnable').checked?(+$('tpInput').value||0):0,sl=$('tpslEnable').checked?(+$('slInput').value||0):0;
   if(!margin||margin<=0)return notify('委托失败','请输入保证金','error');
+   if(!window.GreedBitPositionBook?.canOpen(positions,{symbol,mode,leverage})){syncCrossLeverage();return notify('委托失败','全仓仓位已锁定杠杆，请保持一致','warning')}
   const w=futuresWallet(),rate=window.GreedBitV13?.TAKER_RATE||.0006,fee=margin*leverage*rate,total=margin+fee;if(total>w.usdt)return notify('委托失败','合约账户余额不足','error');
   const o={id:Date.now()+Math.random(),kind:advancedKind,side,margin,mode,leverage,tp,sl,symbol,reserved:total,createdAt:Date.now(),status:'open'};
   if(advancedKind==='plan'){o.trigger=+$('planTriggerInput').value;if(!o.trigger)return notify('委托失败','请输入触发价','error')}
@@ -349,6 +350,10 @@ function processAdvancedOrders(){
   const now=Date.now()/1000;let changed=false;
   for(let i=advancedOrders.length-1;i>=0;i--){
     const o=advancedOrders[i];if(o.symbol!==symbol||o.status!=='open')continue;
+    if(!window.GreedBitPositionBook?.canOpen(positions,{symbol:o.symbol,mode:o.mode,leverage:o.leverage})){
+      const w=futuresWallet();w.frozen=Math.max(0,w.frozen-o.reserved);w.usdt+=o.reserved;
+      advancedOrders.splice(i,1);changed=true;notify('高级委托已撤销','全仓杠杆与现有持仓不一致','warning');continue;
+    }
     let done=false;
     if(o.kind==='plan'){
       const hit=o.side==='long'?price>=o.trigger:price<=o.trigger;if(hit&&fireAdvanced(o,o.margin))done=true
