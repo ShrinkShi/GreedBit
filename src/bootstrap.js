@@ -3,7 +3,7 @@
  */
 (function(){
 'use strict';
-const BUILD='0100-20261104a';
+const BUILD='0101-20261104a';
 const MODULE_TIMEOUT_MS=20000;
 const BOOT_TIMEOUT_MS=90000;
 const MODULE_RETRY_LIMIT=1;
@@ -24,6 +24,7 @@ const MODULES=[
   'src/market/external.js',
   'src/trading/contracts.js',
   'src/trading/records.js',
+  'src/trading/positions-ui.js',
   'src/ui/terminal-theme.js',
   'src/ui/runtime.js',
   'src/strategy/grid.js',
