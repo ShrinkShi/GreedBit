@@ -17,8 +17,10 @@
   }
   function canOpen(book,{symbol,mode,leverage}){
     if(mode!=='cross')return true;
-    const locked=lockedLeverage(book,symbol);
-    return locked===null||(valid(locked)&&Math.abs(locked-number(leverage))<=EPS*Math.max(1,Math.abs(locked)));
+    // Historical data may contain inconsistent leverage on opposite-side cross positions.
+    // Never silently choose one and allow a new order that conflicts with the other.
+    const matches=book.filter(p=>p&&p.mode==='cross'&&p.symbol===symbol&&number(p.qty)>EPS);
+    return matches.every(p=>valid(number(p.leverage))&&Math.abs(number(p.leverage)-number(leverage))<=EPS*Math.max(1,Math.abs(number(p.leverage))));
   }
   function mergeCross(a,b){
     if(a.mode!=='cross'||b.mode!=='cross'||a.symbol!==b.symbol||a.side!==b.side)throw new Error('只能合并同交易对、同方向的全仓仓位');
