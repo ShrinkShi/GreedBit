@@ -99,8 +99,10 @@ function buildIndexTicks(geom,target=8){
  * Always use the SAME y() transform as grid, candles and price ticks.
  */
 function drawPositionOverlay(y,lo,hi,pad,W,H){
-  if(currentPage!=='futures'||tradingMode!=='futures'||!Array.isArray(positions))return;
-  const rows=positions.filter(p=>p.symbol===symbol&&Number.isFinite(+p.entry)&&p.entry>=lo&&p.entry<=hi);
+  // The shared trading page may be named "trade" even while displaying futures.
+  // Rendering depends on the trading mode and the visible chart, not one route spelling.
+  if(!user||tradingMode!=='futures'||(currentPage!=='futures'&&currentPage!=='trade'))return;
+  const rows=window.GreedBitPositionBook?.visibleChartPositions(positions,{symbol,lo,hi})||[];
   if(!rows.length)return;
   const usedLabels=[];
   ctx.save();ctx.font='600 10px system-ui,sans-serif';ctx.textBaseline='middle';
@@ -166,5 +168,21 @@ function draw(){
   const ch=crosshairLocked&&lockedCrosshair?lockedCrosshair:(hoverIndex>=0?{idx:hoverIndex,price:hoverPrice}:null);if(ch&&chartSettings.crosshair){const x=xForIndex(ch.idx,geom,pad,plotW);if(x>=pad.l&&x<=W-pad.r){ctx.strokeStyle='#697386';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,H-pad.b);ctx.stroke();if(Number.isFinite(ch.price)){const yy=y(ch.price);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(W-pad.r,yy);ctx.stroke()}ctx.setLineDash([])}}
   ctx.strokeStyle='#303741';ctx.beginPath();ctx.moveTo(W-pad.r,pad.t);ctx.lineTo(W-pad.r,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,H-pad.b);ctx.lineTo(W-pad.r,H-pad.b);ctx.stroke();
 }
-window.GreedBitChartRenderer={viewGeometry,resize,calcPriceBounds,xForIndex,timestampAtIndex,buildPriceTicks,buildIndexTicks,draw};
+/* State hydration is independent of candle loading. Request one complete redraw after
+ * login/session restore and after all dynamically loaded modules finish starting.
+ * This is a single event-driven invalidation, not a second canvas rendering layer.
+ */
+let positionsRedrawQueued=false;
+function invalidatePositionChart(){
+  if(positionsRedrawQueued)return;
+  positionsRedrawQueued=true;
+  requestAnimationFrame(()=>{
+    positionsRedrawQueued=false;
+    if(window.GreedBitBootstrap&&!window.GreedBitBootstrap.ready)return;
+    draw();
+  });
+}
+document.addEventListener('greedbit:positions-changed',invalidatePositionChart);
+document.addEventListener('greedbit:ready',invalidatePositionChart);
+window.GreedBitChartRenderer={viewGeometry,resize,calcPriceBounds,xForIndex,timestampAtIndex,buildPriceTicks,buildIndexTicks,draw,invalidatePositionChart};
 draw();
