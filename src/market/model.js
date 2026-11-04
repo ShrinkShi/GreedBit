@@ -229,6 +229,8 @@ closePosition=function(id,reason='手动平仓',fill=price,fraction=1,liquidity=
   closedPositions.unshift({...p,qty,margin,notional:p.notional*f,close:fill,realized,gross,fee:openFeeShare,closeFee:q.usdt,feeAsset:q.asset,reason,closedAt:nowText(),partial:f<1});
   if(f>=1-1e-9){
     positions.splice(idx,1);
+    const stale=closeOrders.filter(o=>o.positionId===id);
+    for(const o of stale)orderHistory.unshift({...o,type:'限价平仓',status:'已撤销（仓位已平）',finishedAt:nowText(),finishedTs:Date.now()});
     closeOrders=closeOrders.filter(o=>o.positionId!==id);
   }else{
     p.qty-=qty;p.margin-=margin;p.notional*=1-f;
